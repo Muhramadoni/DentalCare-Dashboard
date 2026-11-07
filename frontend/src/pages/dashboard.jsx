@@ -129,7 +129,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
             <main className="flex-1 h-screen overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
                 {/* 1. Header Halaman */}
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
                         Ringkasan Operasional Klinik
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
@@ -145,7 +145,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                             <span className="text-sm font-medium text-gray-600">
                                 Total Reservasi Hari Ini
                             </span>
-                            <div className="w-9 h-9 rounded-xl bg-[#49baff] text-white flex items-center justify-center shadow-xs">
+                            <div className="w-10 h-10 rounded-full bg-[#49baff] text-white flex items-center justify-center shadow-xs">
                                 <ReservationIcon className="w-5 h-5" />
                             </div>
                         </div>
@@ -153,7 +153,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                             <span className="text-3xl sm:text-4xl font-bold text-[#49baff] tracking-tight">
                                 100
                             </span>
-                            <span className="bg-[#adc91f] text-white text-xs font-semibold px-3 py-0.5 rounded-full shadow-xs">
+                            <span className="bg-[#adc91f] text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-xs">
                                 Pasien
                             </span>
                         </div>
@@ -165,7 +165,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                             <span className="text-sm font-medium text-gray-600">
                                 Dokter Pratik
                             </span>
-                            <div className="w-9 h-9 rounded-xl bg-[#49baff] text-white flex items-center justify-center shadow-xs">
+                            <div className="w-10 h-10 rounded-full bg-[#49baff] text-white flex items-center justify-center shadow-xs">
                                 <DoctorIcon className="w-5 h-5" />
                             </div>
                         </div>
@@ -173,7 +173,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                             <span className="text-3xl sm:text-4xl font-bold text-[#49baff] tracking-tight">
                                 7
                             </span>
-                            <span className="bg-[#adc91f] text-white text-xs font-semibold px-3 py-0.5 rounded-full shadow-xs">
+                            <span className="bg-[#adc91f] text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-xs">
                                 Dokter
                             </span>
                         </div>
@@ -185,10 +185,10 @@ export default function Dashboard({ onNavigate, onLogout }) {
                     {/* Kolom Kiri: Tabel Daftar Reservasi Pasien (span 2) */}
                     <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
                         <div className="mb-4">
-                            <h2 className="text-base sm:text-lg font-bold text-slate-800">
+                            <h2 className="text-base sm:text-lg font-semibold text-slate-800">
                                 Daftar Reservasi Pasien
                             </h2>
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="text-sm text-gray-500 mt-0.5">
                                 Ringkasan Data Reservasi Pasien Berdasarkan Reservasi Via WA
                             </p>
                         </div>
@@ -226,12 +226,12 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                                     <td className="px-5 py-3.5 text-center">
                                                         {isAppointment ? (
                                                             /* Badge Appointment (Cyan Style sesuai DESIGN.md) */
-                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e6f7ff] text-[#49baff] border border-[#49baff]">
+                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
                                                                 Appointment
                                                             </span>
                                                         ) : (
                                                             /* Badge Reschedule (Lime Style sesuai DESIGN.md) */
-                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#f6fcc9] text-[#8da607] border border-[#adc91f]">
+                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
                                                                 Reschedule
                                                             </span>
                                                         )}
@@ -248,11 +248,11 @@ export default function Dashboard({ onNavigate, onLogout }) {
                     {/* Kolom Kanan: Riwayat Aktivitas Real-time (span 1) */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
                         <div className="mb-5">
-                            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <h2 className="text-base sm:text-lg font-semibold text-slate-800 flex items-center gap-2">
                                 <ActivityIcon className="w-5 h-5 text-slate-700 shrink-0" />
                                 <span>Riwayat Aktivitas</span>
                             </h2>
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="text-sm text-gray-500 mt-0.5">
                                 Log pembaruan sistem secara real-time
                             </p>
                         </div>

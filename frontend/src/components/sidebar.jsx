@@ -36,18 +36,19 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
         <aside className="w-64 lg:w-[260px] h-screen bg-[#001e2f] text-white flex flex-col justify-between p-5 select-none shrink-0 sticky top-0 overflow-y-auto z-30 font-['Poppins']">
             {/* Bagian Atas: Logo & Menu Navigasi */}
             <div>
-                {/* Logo Klinik Gigi */}
+                {/* Logo Klinik Gigi & Teks Branding Seimbang */}
                 <div className="flex items-center gap-3 px-2 py-3 mb-6">
                     <img
                         src={logoImg}
                         alt="Logo IN Dental Care"
                         className="w-10 h-10 object-contain shrink-0"
                     />
-                    <div className="flex flex-col">
-                        <span className="text-sm font-bold tracking-wide text-white leading-tight">
-                            IN DENTAL CARE
+                    <div className="flex flex-col justify-center gap-1 min-w-0">
+                        <span className="text-[15px] font-semibold tracking-wide leading-none">
+                            <span className="text-[#0584bc]">IN DENTAL </span>
+                            <span className="text-[#adc91f]">CARE</span>
                         </span>
-                        <span className="text-[10px] font-semibold text-[#49baff] tracking-wider uppercase">
+                        <span className="text-[9.5px] font-medium text-[#49baff] tracking-wider uppercase leading-none">
                             Care For Every Smile
                         </span>
                     </div>
@@ -64,11 +65,10 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                                 key={item.id}
                                 type="button"
                                 onClick={() => onTabChange && onTabChange(item.id)}
-                                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
-                                    isActive
-                                        ? 'bg-[#49baff] text-white font-semibold shadow-md shadow-[#49baff]/25'
-                                        : 'text-slate-300 hover:text-white hover:bg-[#0a232f]'
-                                }`}
+                                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-normal transition-all duration-200 cursor-pointer ${isActive
+                                    ? 'bg-[#0584bc] text-white font-semibold'
+                                    : 'text-slate-300 hover:text-white'
+                                    }`}
                             >
                                 <Icon className="w-5 h-5 shrink-0" />
                                 <span>{item.label}</span>
@@ -86,7 +86,7 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                         A
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-white leading-tight">
+                        <span className="text-sm font-medium text-white leading-tight">
                             Admin
                         </span>
                         <span className="text-xs text-slate-400 truncate">
@@ -107,7 +107,7 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                             }
                         }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#e62e2e] hover:bg-[#cf2525] active:scale-[0.99] text-white text-sm font-semibold transition-all duration-200 cursor-pointer shadow-md shadow-red-900/20"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#e62e2e] hover:bg-[#cf2525] active:scale-[0.99] text-white text-sm font-medium transition-all duration-200 cursor-pointer shadow-md shadow-red-900/20"
                 >
                     <span>Logout</span>
                     <LogoutIcon className="w-4 h-4" />
