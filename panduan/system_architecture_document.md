@@ -34,7 +34,7 @@ in-dental-care-admin/
 │   ├── public/
 │   │   └── favicon.ico
 │   ├── src/
-│   │   ├── components/       # Komponen UI modular (Navbar, Sidebar, Modals, Tables)
+│   │   ├── components/       # Komponen UI modular (Sidebar, Modals, Icons)
 │   │   ├── pages/          # Halaman utama (Login, Ringkasan, Reservasi, Dokter, EMR)
 │   │   ├── assets/         # Gambar, ikon SVG, dan stylesheet
 │   │   ├── App.jsx         # Root component SPA & state management
