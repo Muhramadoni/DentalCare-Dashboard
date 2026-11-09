@@ -381,3 +381,27 @@ export function ChevronDownIcon({ className = 'w-4 h-4', ...props }) {
         </svg>
     )
 }
+
+/**
+ * Filter Reset Icon (funnel + refresh arrow)
+ */
+export function FilterResetIcon({ className = 'w-4 h-4', ...props }) {
+    return (
+        <svg
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+            {...props}
+        >
+            {/* Funnel shape */}
+            <path d="M3 4h18l-7 8v5l-4 2v-7L3 4z" />
+            {/* Refresh arrow (curved, top-right of funnel) */}
+            <path d="M17 11a4 4 0 1 1-1.5-3.1" />
+            <polyline points="17 7 17 11 13 11" />
+        </svg>
+    )
+}

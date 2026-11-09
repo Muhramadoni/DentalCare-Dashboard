@@ -168,18 +168,13 @@ export function ReservationModal({
                             <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
                                 Tanggal
                             </label>
-                            <div className="relative flex items-center">
-                                <input
-                                    type="text"
-                                    value={tanggal}
-                                    onChange={(e) => setTanggal(e.target.value)}
-                                    placeholder="DD/MM/YYYY (contoh: 20-05-2026)"
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
-                                />
-                                <div className="absolute right-3 text-gray-400 pointer-events-none">
-                                    <CalendarOutlineIcon className="w-4 h-4" />
-                                </div>
-                            </div>
+                            <input
+                                type="date"
+                                value={tanggal}
+                                onChange={(e) => setTanggal(e.target.value)}
+                                onClick={(e) => e.target.showPicker?.()}
+                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all cursor-pointer"
+                            />
                         </div>
 
                         {/* Waktu */}
@@ -285,63 +280,100 @@ export function DoctorModal({
     const isEdit = Boolean(initialData)
 
     const [nama, setNama] = useState('')
-    const [spesialisasi, setSpesialisasi] = useState('Dokter Gigi Umum')
-    const [cabangGaruda, setCabangGaruda] = useState(true)
+    const [spesialisasi, setSpesialisasi] = useState('')
+    const [cabangGaruda, setCabangGaruda] = useState(false)
     const [cabangMuchtar, setCabangMuchtar] = useState(false)
     const [error, setError] = useState('')
 
-    // Hari-hari operasional klinik
-    const defaultDays = [
-        { key: 'Senin', label: 'Senin', active: true, start: '09.00', end: '13.00' },
-        { key: 'Selasa', label: 'Selasa', active: true, start: '09.00', end: '13.00' },
-        { key: 'Rabu', label: 'Rabu', active: true, start: '15.00', end: '20.00' },
-        { key: 'Kamis', label: 'Kamis', active: true, start: '08.00', end: '20.00' },
-        { key: 'Jumat', label: 'Jumat', active: true, start: '09.00', end: '13.00' },
-        { key: 'Sabtu', label: 'Sabtu', active: true, start: '09.00', end: '13.00' },
-        { key: 'Minggu', label: 'Minggu', active: true, start: '09.00', end: '13.00' },
+    // Template 7 hari operasional klinik (Senin - Minggu)
+    const createEmptyDays = () => [
+        { key: 'Senin', label: 'Senin', active: false, start: '', end: '' },
+        { key: 'Selasa', label: 'Selasa', active: false, start: '', end: '' },
+        { key: 'Rabu', label: 'Rabu', active: false, start: '', end: '' },
+        { key: 'Kamis', label: 'Kamis', active: false, start: '', end: '' },
+        { key: 'Jumat', label: 'Jumat', active: false, start: '', end: '' },
+        { key: 'Sabtu', label: 'Sabtu', active: false, start: '', end: '' },
+        { key: 'Minggu', label: 'Minggu', active: false, start: '', end: '' },
     ]
 
-    const [daysSchedule, setDaysSchedule] = useState(defaultDays)
+    const [garudaDays, setGarudaDays] = useState(createEmptyDays)
+    const [muchtarDays, setMuchtarDays] = useState(createEmptyDays)
 
     useEffect(() => {
         if (initialData) {
             setNama(initialData.nama || '')
-            setSpesialisasi(initialData.spesialisasi || 'Dokter Gigi Umum')
-            setCabangGaruda(initialData.cabang?.includes('Garuda') ?? true)
-            setCabangMuchtar(initialData.cabang?.includes('Muchtar') ?? false)
+            setSpesialisasi(initialData.spesialisasi || '')
+            const hasGaruda = initialData.cabang
+                ? initialData.cabang.toLowerCase().includes('garuda')
+                : true
+            const hasMuchtar = initialData.cabang
+                ? initialData.cabang.toLowerCase().includes('muchtar')
+                : false
+            setCabangGaruda(hasGaruda)
+            setCabangMuchtar(hasMuchtar)
 
-            if (initialData.jadwal) {
-                setDaysSchedule((prev) =>
-                    prev.map((d) => {
-                        const existing = initialData.jadwal.find((j) => j.hari.toLowerCase().includes(d.key.toLowerCase()))
-                        if (existing) {
-                            const [start, end] = existing.jam.split(' - ')
-                            return { ...d, active: true, start: start || d.start, end: end || d.end }
-                        }
-                        return d
-                    })
-                )
-            }
+            const mapSchedule = (targetJadwal) =>
+                createEmptyDays().map((d) => {
+                    const match = targetJadwal.find((j) =>
+                        j.hari.toLowerCase().includes(d.key.toLowerCase())
+                    )
+                    if (match) {
+                        const [start, end] = match.jam.split(' - ')
+                        return { ...d, active: true, start: start || '', end: end || '' }
+                    }
+                    return d
+                })
+
+            const rawJadwal = initialData.jadwal || []
+            setGarudaDays(
+                mapSchedule(initialData.jadwalGaruda || (hasGaruda ? rawJadwal : []))
+            )
+            setMuchtarDays(
+                mapSchedule(initialData.jadwalMuchtar || (hasMuchtar && !hasGaruda ? rawJadwal : []))
+            )
         } else {
             setNama('')
-            setSpesialisasi('Dokter Gigi Umum')
-            setCabangGaruda(true)
+            setSpesialisasi('')
+            setCabangGaruda(false)
             setCabangMuchtar(false)
-            setDaysSchedule(defaultDays)
+            setGarudaDays(createEmptyDays())
+            setMuchtarDays(createEmptyDays())
         }
         setError('')
     }, [initialData, isOpen])
 
     if (!isOpen) return null
 
-    const handleToggleDay = (index) => {
-        setDaysSchedule((prev) =>
-            prev.map((day, i) => (i === index ? { ...day, active: !day.active } : day))
+    // Handler toggle hari & input jam untuk Cabang Garuda
+    const handleToggleGarudaDay = (index) => {
+        setGarudaDays((prev) =>
+            prev.map((day, i) =>
+                i === index
+                    ? { ...day, active: !day.active }
+                    : day
+            )
         )
     }
 
-    const handleTimeChange = (index, field, value) => {
-        setDaysSchedule((prev) =>
+    const handleGarudaTimeChange = (index, field, value) => {
+        setGarudaDays((prev) =>
+            prev.map((day, i) => (i === index ? { ...day, [field]: value } : day))
+        )
+    }
+
+    // Handler toggle hari & input jam untuk Cabang Muchtar
+    const handleToggleMuchtarDay = (index) => {
+        setMuchtarDays((prev) =>
+            prev.map((day, i) =>
+                i === index
+                    ? { ...day, active: !day.active }
+                    : day
+            )
+        )
+    }
+
+    const handleMuchtarTimeChange = (index, field, value) => {
+        setMuchtarDays((prev) =>
             prev.map((day, i) => (i === index ? { ...day, [field]: value } : day))
         )
     }
@@ -363,12 +395,25 @@ export function DoctorModal({
             return
         }
 
-        const activeJadwal = daysSchedule
-            .filter((d) => d.active)
-            .map((d) => ({
-                hari: `${d.key}:`,
-                jam: `${d.start} - ${d.end}`,
-            }))
+        const activeGaruda = cabangGaruda
+            ? garudaDays
+                  .filter((d) => d.active)
+                  .map((d) => ({
+                      hari: `${d.key}:`,
+                      jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
+                  }))
+            : []
+
+        const activeMuchtar = cabangMuchtar
+            ? muchtarDays
+                  .filter((d) => d.active)
+                  .map((d) => ({
+                      hari: `${d.key}:`,
+                      jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
+                  }))
+            : []
+
+        const activeJadwal = [...activeGaruda, ...activeMuchtar]
 
         const payload = {
             id: initialData?.id || Date.now(),
@@ -378,10 +423,15 @@ export function DoctorModal({
             cabang: [cabangGaruda ? 'Garuda' : '', cabangMuchtar ? 'Muchtar' : '']
                 .filter(Boolean)
                 .join(', '),
-            jadwal: activeJadwal.length > 0 ? activeJadwal : [
-                { hari: 'Rabu:', jam: '15.00 - 20.00' },
-                { hari: 'Kamis:', jam: '08.00 - 20.00' },
-            ],
+            jadwal:
+                activeJadwal.length > 0
+                    ? activeJadwal
+                    : [
+                          { hari: 'Rabu:', jam: '15.00 - 20.00' },
+                          { hari: 'Kamis:', jam: '08.00 - 20.00' },
+                      ],
+            jadwalGaruda: activeGaruda,
+            jadwalMuchtar: activeMuchtar,
         }
 
         onSubmit(payload)
@@ -457,14 +507,14 @@ export function DoctorModal({
                                     type="text"
                                     value={spesialisasi}
                                     onChange={(e) => setSpesialisasi(e.target.value)}
-                                    placeholder="Dokter Gigi Umum"
+                                    placeholder="Masukkan Spesialisasi"
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
                                 />
                                 {spesialisasi && (
                                     <button
                                         type="button"
                                         onClick={() => setSpesialisasi('')}
-                                        className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                                        className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                                     >
                                         <ClearIcon className="w-3.5 h-3.5" />
                                     </button>
@@ -491,43 +541,43 @@ export function DoctorModal({
                                     Pilih hari & jam operasional
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    {daysSchedule.map((day, idx) => (
+                                    {garudaDays.map((day, idx) => (
                                         <div
                                             key={day.key}
-                                            className={`rounded-xl border p-2.5 flex flex-col gap-2 transition-all ${
+                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${
                                                 day.active
-                                                    ? 'border-gray-300 bg-white'
-                                                    : 'border-gray-200 bg-gray-50/60 opacity-60'
+                                                    ? 'border-gray-300 bg-white shadow-2xs gap-2'
+                                                    : 'border-gray-200 bg-gray-50/60'
                                             }`}
                                         >
                                             <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
                                                 <input
                                                     type="checkbox"
                                                     checked={day.active}
-                                                    onChange={() => handleToggleDay(idx)}
+                                                    onChange={() => handleToggleGarudaDay(idx)}
                                                     className="w-3.5 h-3.5 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
                                                 />
                                                 <span>{day.label}</span>
                                             </label>
 
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    disabled={!day.active}
-                                                    value={day.start}
-                                                    onChange={(e) => handleTimeChange(idx, 'start', e.target.value)}
-                                                    placeholder="09.00"
-                                                    className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none disabled:bg-gray-100"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    disabled={!day.active}
-                                                    value={day.end}
-                                                    onChange={(e) => handleTimeChange(idx, 'end', e.target.value)}
-                                                    placeholder="13.00"
-                                                    className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none disabled:bg-gray-100"
-                                                />
-                                            </div>
+                                            {day.active && (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={day.start}
+                                                        onChange={(e) => handleGarudaTimeChange(idx, 'start', e.target.value)}
+                                                        placeholder="09.00"
+                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={day.end}
+                                                        onChange={(e) => handleGarudaTimeChange(idx, 'end', e.target.value)}
+                                                        placeholder="13.00"
+                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -546,6 +596,55 @@ export function DoctorModal({
                             />
                             <span>Praktik di cabang muchtar</span>
                         </label>
+
+                        {cabangMuchtar && (
+                            <div className="mt-3">
+                                <p className="text-xs font-medium text-gray-700 mb-3">
+                                    Pilih hari & jam operasional
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    {muchtarDays.map((day, idx) => (
+                                        <div
+                                            key={day.key}
+                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${
+                                                day.active
+                                                    ? 'border-gray-300 bg-white shadow-2xs gap-2'
+                                                    : 'border-gray-200 bg-gray-50/60'
+                                            }`}
+                                        >
+                                            <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={day.active}
+                                                    onChange={() => handleToggleMuchtarDay(idx)}
+                                                    className="w-3.5 h-3.5 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
+                                                />
+                                                <span>{day.label}</span>
+                                            </label>
+
+                                            {day.active && (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={day.start}
+                                                        onChange={(e) => handleMuchtarTimeChange(idx, 'start', e.target.value)}
+                                                        placeholder="09.00"
+                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={day.end}
+                                                        onChange={(e) => handleMuchtarTimeChange(idx, 'end', e.target.value)}
+                                                        placeholder="13.00"
+                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer Actions */}
@@ -719,18 +818,13 @@ export function EMRModal({
                             <label className="block text-xs font-medium text-gray-800 mb-1">
                                 Tanggal
                             </label>
-                            <div className="relative flex items-center">
-                                <input
-                                    type="text"
-                                    value={tanggal}
-                                    onChange={(e) => setTanggal(e.target.value)}
-                                    placeholder="DD/MM/YYYY"
-                                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none pr-8"
-                                />
-                                <div className="absolute right-2.5 text-gray-400 pointer-events-none">
-                                    <CalendarOutlineIcon className="w-3.5 h-3.5" />
-                                </div>
-                            </div>
+                            <input
+                                type="date"
+                                value={tanggal}
+                                onChange={(e) => setTanggal(e.target.value)}
+                                onClick={(e) => e.target.showPicker?.()}
+                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer"
+                            />
                         </div>
 
                         {/* Regio (Gigi) */}

@@ -219,7 +219,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
                                                     <td className="px-5 py-3.5 text-center text-slate-800">
                                                         {item.jadwal}
                                                     </td>
-                                                    <td className="px-5 py-3.5 text-center text-slate-800 font-normal">
+                                                    <td className="px-5 py-3.5 text-center text-slate-800">
                                                         {item.dokter}
                                                     </td>
                                                     <td className="px-5 py-3.5 text-center">

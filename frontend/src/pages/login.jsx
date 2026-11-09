@@ -35,10 +35,12 @@ export default function Login({ onLoginSuccess }) {
         setTimeout(() => {
             setIsLoading(false)
             setLoginSuccess(true)
-            if (onLoginSuccess) {
-                onLoginSuccess({ email })
-            }
-        }, 800)
+            setTimeout(() => {
+                if (onLoginSuccess) {
+                    onLoginSuccess({ email })
+                }
+            }, 500)
+        }, 500)
     }
 
     return (

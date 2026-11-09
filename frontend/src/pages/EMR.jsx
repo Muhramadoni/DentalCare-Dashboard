@@ -3,6 +3,7 @@ import Sidebar from '../components/sidebar'
 import {
     CalendarOutlineIcon,
     ChevronDownIcon,
+    FilterResetIcon,
     SearchIcon,
 } from '../components/icon'
 
@@ -169,7 +170,16 @@ export default function EMR({ onNavigate, onLogout }) {
         const matchesDokter =
             selectedDokterFilter === 'Semua Dokter' || item.dokter === selectedDokterFilter
 
-        return matchesSearch && matchesPasien && matchesDokter
+        // Konversi tanggal item (DD-MM-YYYY) → Date untuk perbandingan
+        let matchesDate = true
+        if (startDate || endDate) {
+            const [d, m, y] = item.tanggal.split('-')
+            const itemDate = new Date(`${y}-${m}-${d}`)
+            if (startDate) matchesDate = matchesDate && itemDate >= new Date(startDate)
+            if (endDate)   matchesDate = matchesDate && itemDate <= new Date(endDate)
+        }
+
+        return matchesSearch && matchesPasien && matchesDokter && matchesDate
     })
 
     return (
@@ -252,18 +262,13 @@ export default function EMR({ onNavigate, onLogout }) {
                                     <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
                                         Tanggal
                                     </label>
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="text"
-                                            value={inputTanggal}
-                                            onChange={(e) => setInputTanggal(e.target.value)}
-                                            placeholder="DD/MM/YYYY"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none pr-10"
-                                        />
-                                        <div className="absolute right-3.5 text-gray-400 pointer-events-none">
-                                            <CalendarOutlineIcon className="w-4 h-4" />
-                                        </div>
-                                    </div>
+                                    <input
+                                        type="date"
+                                        value={inputTanggal}
+                                        onChange={(e) => setInputTanggal(e.target.value)}
+                                        onClick={(e) => e.target.showPicker?.()}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer"
+                                    />
                                 </div>
 
                                 {/* Regio (Gigi) */}
@@ -417,15 +422,12 @@ export default function EMR({ onNavigate, onLogout }) {
                                 {/* Tgl Mulai */}
                                 <div className="relative flex items-center w-36">
                                     <input
-                                        type="text"
+                                        type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        placeholder="Tgl: DD/MM/YYYY"
-                                        className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none"
+                                        onClick={(e) => e.target.showPicker?.()}
+                                        className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
                                     />
-                                    <div className="absolute right-2.5 text-gray-400 pointer-events-none">
-                                        <CalendarOutlineIcon className="w-3.5 h-3.5" />
-                                    </div>
                                 </div>
 
                                 <span className="text-gray-400 text-xs">-</span>
@@ -433,15 +435,12 @@ export default function EMR({ onNavigate, onLogout }) {
                                 {/* Tgl Selesai */}
                                 <div className="relative flex items-center w-36">
                                     <input
-                                        type="text"
+                                        type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        placeholder="Tgl: DD/MM/YYYY"
-                                        className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none"
+                                        onClick={(e) => e.target.showPicker?.()}
+                                        className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
                                     />
-                                    <div className="absolute right-2.5 text-gray-400 pointer-events-none">
-                                        <CalendarOutlineIcon className="w-3.5 h-3.5" />
-                                    </div>
                                 </div>
 
                                 {/* Dropdown Semua Pasien */}
@@ -477,6 +476,22 @@ export default function EMR({ onNavigate, onLogout }) {
                                         <ChevronDownIcon className="w-3.5 h-3.5" />
                                     </div>
                                 </div>
+
+                                {/* Tombol Reset Filter */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setStartDate('')
+                                        setEndDate('')
+                                        setSelectedPasienFilter('Semua Pasien')
+                                        setSelectedDokterFilter('Semua Dokter')
+                                        setSearchQuery('')
+                                    }}
+                                    title="Reset semua filter"
+                                    className="flex items-center justify-center p-2 rounded-xl border border-gray-300 bg-white text-gray-500 hover:border-[#49baff] hover:text-[#49baff] hover:bg-[#49baff]/5 active:scale-95 transition-all cursor-pointer"
+                                >
+                                    <FilterResetIcon className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
 

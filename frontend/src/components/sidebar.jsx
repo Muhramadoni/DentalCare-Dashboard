@@ -55,7 +55,7 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                 </div>
 
                 {/* List Menu Navigasi */}
-                <nav className="space-y-2">
+                <nav className="space-y-1.5">
                     {menuItems.map((item) => {
                         const Icon = item.icon
                         const isActive = activeTab === item.id
@@ -65,13 +65,14 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                                 key={item.id}
                                 type="button"
                                 onClick={() => onTabChange && onTabChange(item.id)}
-                                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-normal transition-all duration-200 cursor-pointer ${isActive
-                                    ? 'bg-[#0584bc] text-white font-semibold'
-                                    : 'text-slate-300 hover:text-white'
-                                    }`}
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 sm:py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer ${
+                                    isActive
+                                        ? 'bg-[#0584bc] text-white font-semibold shadow-sm'
+                                        : 'text-slate-300 font-medium hover:text-white hover:bg-white/5'
+                                }`}
                             >
                                 <Icon className="w-5 h-5 shrink-0" />
-                                <span>{item.label}</span>
+                                <span className="tracking-normal">{item.label}</span>
                             </button>
                         )
                     })}
@@ -79,17 +80,17 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
             </div>
 
             {/* Bagian Bawah: Profil Admin & Tombol Logout */}
-            <div className="pt-6 border-t border-slate-800/80 space-y-4">
+            <div className="pt-5 border-t border-slate-800/80 space-y-4">
                 {/* Info Admin */}
                 <div className="flex items-center gap-3 px-2">
-                    <div className="w-10 h-10 rounded-full bg-[#49baff] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-[#49baff] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                         A
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-medium text-white leading-tight">
+                        <span className="text-sm font-semibold text-white leading-tight">
                             Admin
                         </span>
-                        <span className="text-xs text-slate-400 truncate">
+                        <span className="text-xs font-normal text-slate-400 truncate mt-0.5">
                             admin@gmail.com
                         </span>
                     </div>
@@ -107,7 +108,7 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                             }
                         }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#e62e2e] hover:bg-[#cf2525] active:scale-[0.99] text-white text-sm font-medium transition-all duration-200 cursor-pointer shadow-md shadow-red-900/20"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 rounded-xl bg-[#e31e1e] hover:bg-[#cf1b1b] active:scale-[0.99] text-white text-sm font-semibold transition-all duration-200 cursor-pointer shadow-md shadow-red-950/20"
                 >
                     <span>Logout</span>
                     <LogoutIcon className="w-4 h-4" />

@@ -6,8 +6,8 @@ import Dokter from './pages/dokter'
 import EMR from './pages/EMR'
 
 function App() {
-    // Default disetel ke 'emr' agar pengguna dapat langsung melihat visualisasi halaman EMR
-    const [currentPage, setCurrentPage] = useState('emr')
+    // Alur awal aplikasi: mulai dari halaman Login, setelah login masuk ke Ringkasan Utama (Dashboard)
+    const [currentPage, setCurrentPage] = useState('login')
 
     const handleNavigate = (pageId) => {
         if (pageId === 'ringkasan') {
@@ -26,7 +26,7 @@ function App() {
     return (
         <main className="w-full min-h-screen">
             {currentPage === 'login' && (
-                <Login onLoginSuccess={() => setCurrentPage('emr')} />
+                <Login onLoginSuccess={() => setCurrentPage('dashboard')} />
             )}
 
             {currentPage === 'dashboard' && (
