@@ -280,7 +280,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-8 h-8 rounded-full bg-[#49baff] text-white flex items-center justify-center shrink-0 shadow-xs">
                                             {item.type === 'status' ? (
-                                                <DashboardIcon className="w-4 h-4" />
+                                                <ReservationIcon className="w-4 h-4" />
                                             ) : (
                                                 <DoctorIcon className="w-4 h-4" />
                                             )}

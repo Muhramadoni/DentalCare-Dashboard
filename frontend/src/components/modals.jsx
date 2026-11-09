@@ -3,7 +3,6 @@ import {
     ReservationIcon,
     DoctorIcon,
     EMRIcon,
-    EditIcon,
     ClearIcon,
     CalendarOutlineIcon,
     ClockOutlineIcon,
@@ -104,18 +103,10 @@ export function ReservationModal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn">
             <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col p-6 sm:p-8">
                 {/* Header Modal */}
-                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
                     <div className="flex items-center gap-2.5">
-                        {isEdit ? (
-                            <div className="w-8 h-8 rounded-lg bg-[#adc91f] text-white flex items-center justify-center">
-                                <EditIcon className="w-4 h-4" />
-                            </div>
-                        ) : (
-                            <div className="w-8 h-8 rounded-lg bg-[#49baff] text-white flex items-center justify-center">
-                                <ReservationIcon className="w-4 h-4" />
-                            </div>
-                        )}
-                        <h2 className="text-base sm:text-lg font-semibold text-slate-800">
+                        <ReservationIcon className="w-5 h-5 text-slate-700 shrink-0" />
+                        <h2 className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight">
                             {isEdit ? 'Update Reservasi Pasien' : 'Tambah Reservasi Baru'}
                         </h2>
                     </div>
@@ -125,7 +116,7 @@ export function ReservationModal({
                         className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                         aria-label="Tutup modal"
                     >
-                        <ClearIcon className="w-5 h-5" />
+                        <ClearIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                     </button>
                 </div>
 
@@ -192,7 +183,7 @@ export function ReservationModal({
                                     placeholder="09.42 WIB"
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
                                 />
-                                <div className="absolute right-3 text-gray-400 pointer-events-none">
+                                <div className="absolute right-3 text-gray-800 pointer-events-none">
                                     <ClockOutlineIcon className="w-4 h-4" />
                                 </div>
                             </div>
@@ -468,12 +459,10 @@ export function DoctorModal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn overflow-y-auto">
             <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-slate-100 flex flex-col p-6 sm:p-7 max-h-[92vh] overflow-y-auto my-auto">
                 {/* Header Modal */}
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#49baff] text-white flex items-center justify-center">
-                            <DoctorIcon className="w-4 h-4" />
-                        </div>
-                        <h2 className="text-base sm:text-lg font-semibold text-slate-800">
+                        <DoctorIcon className="w-5 h-5 text-slate-700 shrink-0" />
+                        <h2 className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight">
                             {isEdit ? 'Update Data Dokter' : 'Tambah Dokter Baru'}
                         </h2>
                     </div>
@@ -483,7 +472,7 @@ export function DoctorModal({
                         className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                         aria-label="Tutup modal"
                     >
-                        <ClearIcon className="w-5 h-5" />
+                        <ClearIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                     </button>
                 </div>
 
@@ -787,12 +776,10 @@ export function EMRModal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn overflow-y-auto">
             <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-100 flex flex-col p-6 sm:p-7 max-h-[92vh] overflow-y-auto my-auto">
                 {/* Header Modal */}
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#49baff] text-white flex items-center justify-center">
-                            <EMRIcon className="w-4 h-4" />
-                        </div>
-                        <h2 className="text-base sm:text-lg font-semibold text-slate-800">
+                        <EMRIcon className="w-5 h-5 text-slate-700 shrink-0" />
+                        <h2 className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight">
                             {isEdit ? 'Update Rekam Medis (EMR)' : 'Tambah Rekam Medis Baru'}
                         </h2>
                     </div>
@@ -802,7 +789,7 @@ export function EMRModal({
                         className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                         aria-label="Tutup modal"
                     >
-                        <ClearIcon className="w-5 h-5" />
+                        <ClearIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                     </button>
                 </div>
 
