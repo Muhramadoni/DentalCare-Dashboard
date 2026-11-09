@@ -272,16 +272,16 @@ export default function EMR({ onNavigate, onLogout }) {
                 prev.map((item) =>
                     item.id === editingId
                         ? {
-                              ...item,
-                              namaPasien: inputPasien.trim(),
-                              tanggal: displayDate,
-                              regio: inputRegio.trim() || '-',
-                              dokter: inputDokter,
-                              anamnesa: inputAnamnesa.trim() || '-',
-                              tindakan: inputTindakan.trim() || '-',
-                              resep: inputResep.trim() || '-',
-                              terapi: inputTerapi.trim() || '-',
-                          }
+                            ...item,
+                            namaPasien: inputPasien.trim(),
+                            tanggal: displayDate,
+                            regio: inputRegio.trim() || '-',
+                            dokter: inputDokter,
+                            anamnesa: inputAnamnesa.trim() || '-',
+                            tindakan: inputTindakan.trim() || '-',
+                            resep: inputResep.trim() || '-',
+                            terapi: inputTerapi.trim() || '-',
+                        }
                         : item
                 )
             )
@@ -329,7 +329,7 @@ export default function EMR({ onNavigate, onLogout }) {
             const [d, m, y] = item.tanggal.split('-')
             const itemDate = new Date(`${y}-${m}-${d}`)
             if (startDate) matchesDate = matchesDate && itemDate >= new Date(startDate)
-            if (endDate)   matchesDate = matchesDate && itemDate <= new Date(endDate)
+            if (endDate) matchesDate = matchesDate && itemDate <= new Date(endDate)
         }
 
         return matchesSearch && matchesPasien && matchesDokter && matchesDate
@@ -442,9 +442,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                                 className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
                                             >
                                                 <ChevronDownIcon
-                                                    className={`w-4 h-4 transition-transform duration-200 ${
-                                                        isPasienFormOpen ? 'rotate-180' : ''
-                                                    }`}
+                                                    className={`w-4 h-4 transition-transform duration-200 ${isPasienFormOpen ? 'rotate-180' : ''
+                                                        }`}
                                                 />
                                             </button>
                                         </div>
@@ -474,11 +473,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     setInputPasien(p)
                                                                     setIsPasienFormOpen(false)
                                                                 }}
-                                                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                                                                    isSelected
-                                                                        ? 'bg-blue-50 text-[#1e88e5] font-semibold'
-                                                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                                                }`}
+                                                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${isSelected
+                                                                    ? 'bg-blue-50 text-[#1e88e5] font-semibold'
+                                                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                                                    }`}
                                                             >
                                                                 <span>{p}</span>
                                                                 {isSelected && (
@@ -700,11 +698,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                             setIsPasienFilterOpen((prev) => !prev)
                                             setPasienFilterSearch('')
                                         }}
-                                        className={`w-full min-w-[160px] max-w-[220px] px-3 py-2 rounded-xl border text-xs sm:text-sm flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                                            selectedPasienFilter !== 'Semua Pasien'
-                                                ? 'bg-blue-50/70 border-[#49baff] text-[#1e88e5] font-semibold'
-                                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                                        }`}
+                                        className={`w-full min-w-[160px] max-w-[220px] px-3 py-2 rounded-xl border text-xs sm:text-sm flex items-center justify-between gap-2 transition-all cursor-pointer ${selectedPasienFilter !== 'Semua Pasien'
+                                            ? 'bg-blue-50/70 border-[#49baff] text-[#1e88e5] font-semibold'
+                                            : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                                            }`}
                                         title={selectedPasienFilter}
                                     >
                                         <span className="truncate">
@@ -726,9 +723,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                                 </span>
                                             )}
                                             <ChevronDownIcon
-                                                className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${
-                                                    isPasienFilterOpen ? 'rotate-180' : ''
-                                                }`}
+                                                className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isPasienFilterOpen ? 'rotate-180' : ''
+                                                    }`}
                                             />
                                         </div>
                                     </button>
@@ -784,11 +780,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                                             setSelectedPasienFilter('Semua Pasien')
                                                             setIsPasienFilterOpen(false)
                                                         }}
-                                                        className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                                                            selectedPasienFilter === 'Semua Pasien'
-                                                                ? 'bg-blue-50 text-[#1e88e5] font-semibold'
-                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                                        }`}
+                                                        className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${selectedPasienFilter === 'Semua Pasien'
+                                                            ? 'bg-blue-50 text-[#1e88e5] font-semibold'
+                                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                                            }`}
                                                     >
                                                         <span>Semua Pasien</span>
                                                         {selectedPasienFilter === 'Semua Pasien' && (
@@ -810,11 +805,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     setIsPasienFilterOpen(false)
                                                                     setPasienFilterSearch('')
                                                                 }}
-                                                                className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                                                                    isSelected
-                                                                        ? 'bg-blue-50 text-[#1e88e5] font-semibold'
-                                                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                                                }`}
+                                                                className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${isSelected
+                                                                    ? 'bg-blue-50 text-[#1e88e5] font-semibold'
+                                                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                                                    }`}
                                                             >
                                                                 <span className="truncate">{p}</span>
                                                                 {isSelected && (
@@ -864,7 +858,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                         setCurrentPage(1)
                                     }}
                                     title="Reset semua filter"
-                                    className="flex items-center justify-center p-2 rounded-xl border border-gray-300 bg-white text-gray-500 hover:border-[#49baff] hover:text-[#49baff] hover:bg-[#49baff]/5 active:scale-95 transition-all cursor-pointer"
+                                    className="flex items-center justify-center p-2 rounded-xl border border-gray-300 bg-white text-gray-500 hover:border-gray-400 hover:text-gray-400 active:scale-95 transition-all cursor-pointer"
                                 >
                                     <FilterResetIcon className="w-4 h-4" />
                                 </button>
@@ -898,11 +892,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                                         <tr
                                                             key={item.id}
                                                             onClick={() => handleSelectRowToUpdate(item)}
-                                                            className={`transition-colors cursor-pointer ${
-                                                                isSelected
-                                                                    ? 'bg-blue-50/80 text-blue-900 font-semibold'
-                                                                    : 'hover:bg-gray-50/80'
-                                                            }`}
+                                                            className={`transition-colors cursor-pointer ${isSelected
+                                                                ? 'bg-blue-50/80 text-blue-900 font-semibold'
+                                                                : 'hover:bg-gray-50/80'
+                                                                }`}
                                                             title="Klik untuk mengedit data ini di form atas"
                                                         >
                                                             <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
