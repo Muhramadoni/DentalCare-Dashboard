@@ -102,22 +102,18 @@ export function ErrorIcon({ className = 'w-4 h-4', ...props }) {
 }
 
 /**
- * Dashboard / Ringkasan Utama Icon (Trend Graph in box)
+ * Dashboard / Ringkasan Utama Icon (Font Awesome — chart-line)
  */
 export function DashboardIcon({ className = 'w-5 h-5', ...props }) {
     return (
         <svg
             className={className}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
+            fill="currentColor"
+            viewBox="0 0 640 640"
+            xmlns="http://www.w3.org/2000/svg"
             {...props}
         >
-            <rect x="3" y="3" width="18" height="18" rx="3" />
-            <path d="M7 14l3.5-4 3 2.5 4-5" />
+            <path d="M128 128C128 110.3 113.7 96 96 96C78.3 96 64 110.3 64 128L64 464C64 508.2 99.8 544 144 544L544 544C561.7 544 576 529.7 576 512C576 494.3 561.7 480 544 480L144 480C135.2 480 128 472.8 128 464L128 128zM534.6 214.6C547.1 202.1 547.1 181.8 534.6 169.3C522.1 156.8 501.8 156.8 489.3 169.3L384 274.7L326.6 217.4C314.1 204.9 293.8 204.9 281.3 217.4L185.3 313.4C172.8 325.9 172.8 346.2 185.3 358.7C197.8 371.2 218.1 371.2 230.6 358.7L304 285.3L361.4 342.7C373.9 355.2 394.2 355.2 406.7 342.7L534.7 214.7z" />
         </svg>
     )
 }
@@ -161,14 +157,17 @@ export function DoctorIcon({ className = 'w-5 h-5', ...props }) {
             viewBox="0 0 24 24"
             {...props}
         >
-            <circle cx="9" cy="7" r="4" />
-            <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" />
-            <circle cx="19" cy="11" r="2" />
-            <path d="M19 8v1a3 3 0 01-3 3h-1" />
+            {/* Kepala */}
+            <circle cx="10" cy="7" r="4" />
+            
+            {/* Badan */}
+            <path d="M3 21v-1a6 6 0 0 1 12 0v1" />
+            
+            {/* Tanda Plus Outline (User-plus style) */}
+            <path d="M19 10v4m-2-2h4" />
         </svg>
-    )
+    );
 }
-
 /**
  * EMR Icon (Medical Record Document with Plus badge)
  */
@@ -383,31 +382,6 @@ export function ChevronDownIcon({ className = 'w-4 h-4', ...props }) {
 }
 
 /**
- * Filter Reset Icon (funnel + panah rotasi CCW, mirip reference)
- */
-export function FilterResetIcon({ className = 'w-4 h-4', ...props }) {
-    return (
-        <svg
-            className={className}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
-            {...props}
-        >
-            {/* Funnel/filter — area kiri (x: 2–13) */}
-            <path d="M2 4h11l-4 6v5l-3 1.5v-6.5L2 4z" />
-            {/* Panah rotasi CCW ~300° — area kanan, center (18,14), r=4.5 */}
-            <path d="M22 11a4.5 4.5 0 1 0-4.5 7" />
-            {/* Arrowhead di ujung busur */}
-            <polyline points="17.5 18 17.5 21.5 21 18" />
-        </svg>
-    )
-}
-
-/**
  * Check Icon (Centang)
  */
 export function CheckIcon({ className = 'w-4 h-4', ...props }) {
@@ -463,6 +437,23 @@ export function ChevronRightIcon({ className = 'w-4 h-4', ...props }) {
             {...props}
         >
             <polyline points="9 18 15 12 9 6" />
+        </svg>
+    )
+}
+
+/**
+ * Filter Reset Icon (Font Awesome Free — fa-filter)
+ */
+export function FilterResetIcon({ className = 'w-4 h-4', ...props }) {
+    return (
+        <svg
+            className={className}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 640 640"
+            fill="currentColor"
+            {...props}
+        >
+            <path d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
         </svg>
     )
 }
