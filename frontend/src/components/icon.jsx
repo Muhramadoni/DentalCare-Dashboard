@@ -383,7 +383,7 @@ export function ChevronDownIcon({ className = 'w-4 h-4', ...props }) {
 }
 
 /**
- * Filter Reset Icon (funnel + refresh arrow)
+ * Filter Reset Icon (funnel + panah rotasi CCW, mirip reference)
  */
 export function FilterResetIcon({ className = 'w-4 h-4', ...props }) {
     return (
@@ -397,11 +397,74 @@ export function FilterResetIcon({ className = 'w-4 h-4', ...props }) {
             viewBox="0 0 24 24"
             {...props}
         >
-            {/* Funnel shape */}
-            <path d="M3 4h18l-7 8v5l-4 2v-7L3 4z" />
-            {/* Refresh arrow (curved, top-right of funnel) */}
-            <path d="M17 11a4 4 0 1 1-1.5-3.1" />
-            <polyline points="17 7 17 11 13 11" />
+            {/* Funnel/filter — area kiri (x: 2–13) */}
+            <path d="M2 4h11l-4 6v5l-3 1.5v-6.5L2 4z" />
+            {/* Panah rotasi CCW ~300° — area kanan, center (18,14), r=4.5 */}
+            <path d="M22 11a4.5 4.5 0 1 0-4.5 7" />
+            {/* Arrowhead di ujung busur */}
+            <polyline points="17.5 18 17.5 21.5 21 18" />
         </svg>
     )
 }
+
+/**
+ * Check Icon (Centang)
+ */
+export function CheckIcon({ className = 'w-4 h-4', ...props }) {
+    return (
+        <svg
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+            {...props}
+        >
+            <polyline points="20 6 9 17 4 12" />
+        </svg>
+    )
+}
+
+/**
+ * Chevron Left Icon
+ */
+export function ChevronLeftIcon({ className = 'w-4 h-4', ...props }) {
+    return (
+        <svg
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+            {...props}
+        >
+            <polyline points="15 18 9 12 15 6" />
+        </svg>
+    )
+}
+
+/**
+ * Chevron Right Icon
+ */
+export function ChevronRightIcon({ className = 'w-4 h-4', ...props }) {
+    return (
+        <svg
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+            {...props}
+        >
+            <polyline points="9 18 15 12 9 6" />
+        </svg>
+    )
+}
+
+

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Sidebar from '../components/sidebar'
 import { ReservationModal } from '../components/modals'
+import Pagination from '../components/pagination'
 import {
     SearchIcon,
     ChevronDownIcon,
@@ -68,10 +69,17 @@ export default function Reservasi({ onNavigate, onLogout }) {
     // State Filter & Pencarian
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('Semua Status')
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 5
 
     // State Modal Pop-up (Tambah & Update)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingItem, setEditingItem] = useState(null)
+
+    // Reset ke halaman 1 saat pencarian atau filter status berubah
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, statusFilter])
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId)
@@ -205,64 +213,66 @@ export default function Reservasi({ onNavigate, onLogout }) {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
                                     {filteredList.length > 0 ? (
-                                        filteredList.map((item) => {
-                                            const isAppointment = item.status === 'Appointment'
+                                        filteredList
+                                            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                            .map((item) => {
+                                                const isAppointment = item.status === 'Appointment'
 
-                                            return (
-                                                <tr
-                                                    key={item.id}
-                                                    className="hover:bg-gray-50/70 transition-colors"
-                                                >
-                                                    <td className="px-5 py-3.5 text-slate-800">
-                                                        {item.namaPasien}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center text-slate-800">
-                                                        {item.jadwal}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center text-slate-800">
-                                                        {item.dokter}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center">
-                                                        {isAppointment ? (
-                                                            /* Badge Appointment (Cyan Style sesuai dashboard) */
-                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
-                                                                Appointment
-                                                            </span>
-                                                        ) : (
-                                                            /* Badge Reschedule (Lime Style sesuai dashboard) */
-                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
-                                                                Reschedule
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            {/* Tombol Edit (Hijau Lime #adc91f) */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleOpenEditModal(item)}
-                                                                className="w-8 h-8 rounded-lg bg-[#adc91f] hover:bg-[#98c51a] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
-                                                                title="Edit Reservasi"
-                                                                aria-label="Edit Reservasi"
-                                                            >
-                                                                <EditIcon className="w-4 h-4" />
-                                                            </button>
+                                                return (
+                                                    <tr
+                                                        key={item.id}
+                                                        className="hover:bg-gray-50/70 transition-colors"
+                                                    >
+                                                        <td className="px-5 py-3.5 text-slate-800">
+                                                            {item.namaPasien}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center text-slate-800">
+                                                            {item.jadwal}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center text-slate-800">
+                                                            {item.dokter}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center">
+                                                            {isAppointment ? (
+                                                                /* Badge Appointment (Cyan Style sesuai dashboard) */
+                                                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
+                                                                    Appointment
+                                                                </span>
+                                                            ) : (
+                                                                /* Badge Reschedule (Lime Style sesuai dashboard) */
+                                                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
+                                                                    Reschedule
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center">
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                {/* Tombol Edit (Hijau Lime #adc91f) */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleOpenEditModal(item)}
+                                                                    className="w-8 h-8 rounded-lg bg-[#adc91f] hover:bg-[#98c51a] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                    title="Edit Reservasi"
+                                                                    aria-label="Edit Reservasi"
+                                                                >
+                                                                    <EditIcon className="w-4 h-4" />
+                                                                </button>
 
-                                                            {/* Tombol Delete (Merah #e62e2e) */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteReservasi(item.id, item.namaPasien)}
-                                                                className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
-                                                                title="Hapus Reservasi"
-                                                                aria-label="Hapus Reservasi"
-                                                            >
-                                                                <TrashIcon className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })
+                                                                {/* Tombol Delete (Merah #e62e2e) */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteReservasi(item.id, item.namaPasien)}
+                                                                    className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                    title="Hapus Reservasi"
+                                                                    aria-label="Hapus Reservasi"
+                                                                >
+                                                                    <TrashIcon className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })
                                     ) : (
                                         <tr>
                                             <td
@@ -277,6 +287,14 @@ export default function Reservasi({ onNavigate, onLogout }) {
                             </table>
                         </div>
                     </div>
+
+                    {/* Pagination jika data lebih dari 5 */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={filteredList.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             </main>
 

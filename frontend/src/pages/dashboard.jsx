@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Sidebar from '../components/sidebar'
+import Pagination from '../components/pagination'
 import {
     ReservationIcon,
     DoctorIcon,
@@ -9,6 +10,8 @@ import {
 
 export default function Dashboard({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('ringkasan')
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 5
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId)
@@ -206,43 +209,53 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
-                                        {reservasiList.map((item, index) => {
-                                            const isAppointment = item.status === 'Appointment'
+                                        {reservasiList
+                                            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                            .map((item, index) => {
+                                                const isAppointment = item.status === 'Appointment'
 
-                                            return (
-                                                <tr
-                                                    key={index}
-                                                    className="hover:bg-gray-50/70 transition-colors"
-                                                >
-                                                    <td className="px-5 py-3.5 text-slate-800">
-                                                        {item.namaPasien}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center text-slate-800">
-                                                        {item.jadwal}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center text-slate-800">
-                                                        {item.dokter}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center">
-                                                        {isAppointment ? (
-                                                            /* Badge Appointment (Cyan Style sesuai DESIGN.md) */
-                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
-                                                                Appointment
-                                                            </span>
-                                                        ) : (
-                                                            /* Badge Reschedule (Lime Style sesuai DESIGN.md) */
-                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
-                                                                Reschedule
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
+                                                return (
+                                                    <tr
+                                                        key={index}
+                                                        className="hover:bg-gray-50/70 transition-colors"
+                                                    >
+                                                        <td className="px-5 py-3.5 text-slate-800">
+                                                            {item.namaPasien}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center text-slate-800">
+                                                            {item.jadwal}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center text-slate-800">
+                                                            {item.dokter}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center">
+                                                            {isAppointment ? (
+                                                                /* Badge Appointment (Cyan Style sesuai DESIGN.md) */
+                                                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
+                                                                    Appointment
+                                                                </span>
+                                                            ) : (
+                                                                /* Badge Reschedule (Lime Style sesuai DESIGN.md) */
+                                                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
+                                                                    Reschedule
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+
+                        {/* Pagination jika data lebih dari 5 */}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalItems={reservasiList.length}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
+                        />
                     </div>
 
                     {/* Kolom Kanan: Riwayat Aktivitas Real-time (span 1) */}

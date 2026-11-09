@@ -9,6 +9,7 @@ import {
     ClockOutlineIcon,
     ChevronDownIcon,
 } from './icon'
+import { toDateInputValue, toDisplayDate } from '../utils/date'
 
 /**
  * Modal Tambah / Update Reservasi Pasien
@@ -41,10 +42,10 @@ export function ReservationModal({
             setNamaPasien(initialData.namaPasien || '')
             if (initialData.jadwal) {
                 const parts = initialData.jadwal.split(' ')
-                setTanggal(parts[0] || '')
+                setTanggal(toDateInputValue(parts[0] || ''))
                 setWaktu(parts.slice(1).join(' ') || '')
             } else {
-                setTanggal(initialData.tanggal || '')
+                setTanggal(toDateInputValue(initialData.tanggal || ''))
                 setWaktu(initialData.waktu || '')
             }
             setDokter(initialData.dokter || '')
@@ -86,10 +87,11 @@ export function ReservationModal({
             return
         }
 
+        const displayDate = toDisplayDate(tanggal.trim())
         const payload = {
             id: initialData?.id || Date.now(),
             namaPasien: namaPasien.trim(),
-            jadwal: `${tanggal.trim()} ${waktu.trim()}`,
+            jadwal: waktu.trim() ? `${displayDate} ${waktu.trim()}` : displayDate,
             dokter,
             status,
         }
@@ -303,17 +305,22 @@ export function DoctorModal({
         if (initialData) {
             setNama(initialData.nama || '')
             setSpesialisasi(initialData.spesialisasi || '')
-            const hasGaruda = initialData.cabang
-                ? initialData.cabang.toLowerCase().includes('garuda')
-                : true
-            const hasMuchtar = initialData.cabang
-                ? initialData.cabang.toLowerCase().includes('muchtar')
-                : false
+            const hasGaruda = initialData.cabangGaruda !== undefined
+                ? initialData.cabangGaruda
+                : (initialData.cabang
+                    ? initialData.cabang.toLowerCase().includes('garuda')
+                    : true)
+            const hasMuchtar = initialData.cabangMuchtar !== undefined
+                ? initialData.cabangMuchtar
+                : (initialData.cabang
+                    ? initialData.cabang.toLowerCase().includes('muchtar')
+                    : false)
             setCabangGaruda(hasGaruda)
             setCabangMuchtar(hasMuchtar)
 
             const mapSchedule = (targetJadwal) =>
                 createEmptyDays().map((d) => {
+                    if (!targetJadwal) return d
                     const match = targetJadwal.find((j) =>
                         j.hari.toLowerCase().includes(d.key.toLowerCase())
                     )
@@ -325,12 +332,29 @@ export function DoctorModal({
                 })
 
             const rawJadwal = initialData.jadwal || []
-            setGarudaDays(
-                mapSchedule(initialData.jadwalGaruda || (hasGaruda ? rawJadwal : []))
-            )
-            setMuchtarDays(
-                mapSchedule(initialData.jadwalMuchtar || (hasMuchtar && !hasGaruda ? rawJadwal : []))
-            )
+            let garudaSource = initialData.jadwalGaruda
+            let muchtarSource = initialData.jadwalMuchtar
+
+            if (!garudaSource && !muchtarSource) {
+                if (hasGaruda && !hasMuchtar) {
+                    garudaSource = rawJadwal
+                } else if (!hasGaruda && hasMuchtar) {
+                    muchtarSource = rawJadwal
+                } else if (hasGaruda && hasMuchtar) {
+                    garudaSource = rawJadwal.filter((j) =>
+                        ['rabu', 'kamis', 'jumat'].some((h) => j.hari.toLowerCase().includes(h))
+                    )
+                    muchtarSource = rawJadwal.filter((j) =>
+                        ['senin', 'selasa', 'sabtu', 'minggu'].some((h) => j.hari.toLowerCase().includes(h))
+                    )
+                    if (garudaSource.length === 0 && muchtarSource.length === 0) {
+                        garudaSource = rawJadwal
+                    }
+                }
+            }
+
+            setGarudaDays(mapSchedule(garudaSource || []))
+            setMuchtarDays(mapSchedule(muchtarSource || []))
         } else {
             setNama('')
             setSpesialisasi('')
@@ -423,6 +447,8 @@ export function DoctorModal({
             cabang: [cabangGaruda ? 'Garuda' : '', cabangMuchtar ? 'Muchtar' : '']
                 .filter(Boolean)
                 .join(', '),
+            cabangGaruda: Boolean(cabangGaruda),
+            cabangMuchtar: Boolean(cabangMuchtar),
             jadwal:
                 activeJadwal.length > 0
                     ? activeJadwal
@@ -702,7 +728,7 @@ export function EMRModal({
     useEffect(() => {
         if (initialData) {
             setPasien(initialData.namaPasien || '')
-            setTanggal(initialData.tanggal || '')
+            setTanggal(toDateInputValue(initialData.tanggal) || '')
             setRegio(initialData.regio || '')
             setDokter(initialData.dokter || '')
             setAnamnesa(initialData.anamnesa || '')
@@ -711,7 +737,7 @@ export function EMRModal({
             setTerapi(initialData.terapi || '')
         } else {
             setPasien('Pasien 1')
-            setTanggal('20-05-2026')
+            setTanggal('2026-05-20')
             setRegio('16')
             setDokter('drg. Indira Nugrahani')
             setAnamnesa('')
@@ -744,7 +770,7 @@ export function EMRModal({
         const payload = {
             id: initialData?.id || Date.now(),
             namaPasien: pasien,
-            tanggal: tanggal.trim(),
+            tanggal: toDisplayDate(tanggal.trim()),
             regio: regio.trim() || '-',
             dokter,
             anamnesa: anamnesa.trim() || '-',
