@@ -135,7 +135,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
             <main className="flex-1 h-screen overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
                 {/* 1. Header Halaman */}
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
                         Kelola Reservasi Pasien
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
@@ -196,11 +196,11 @@ export default function Reservasi({ onNavigate, onLogout }) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
-                                        <th className="px-6 py-4">Nama Pasien</th>
-                                        <th className="px-6 py-4 text-center">Tanggal & Waktu</th>
-                                        <th className="px-6 py-4 text-center">Dokter</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
-                                        <th className="px-6 py-4 text-center">Aksi</th>
+                                        <th className="px-5 py-3.5">Nama Pasien</th>
+                                        <th className="px-5 py-3.5 text-center">Tanggal & Waktu</th>
+                                        <th className="px-5 py-3.5 text-center">Dokter</th>
+                                        <th className="px-5 py-3.5 text-center">Status</th>
+                                        <th className="px-5 py-3.5 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
@@ -213,29 +213,29 @@ export default function Reservasi({ onNavigate, onLogout }) {
                                                     key={item.id}
                                                     className="hover:bg-gray-50/70 transition-colors"
                                                 >
-                                                    <td className="px-6 py-4 text-slate-800">
+                                                    <td className="px-5 py-3.5 text-slate-800">
                                                         {item.namaPasien}
                                                     </td>
-                                                    <td className="px-6 py-4 text-center text-slate-800">
+                                                    <td className="px-5 py-3.5 text-center text-slate-800">
                                                         {item.jadwal}
                                                     </td>
-                                                    <td className="px-6 py-4 text-center text-slate-800 font-normal">
+                                                    <td className="px-5 py-3.5 text-center text-slate-800 font-normal">
                                                         {item.dokter}
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-5 py-3.5 text-center">
                                                         {isAppointment ? (
-                                                            /* Badge Appointment (Cyan) */
-                                                            <span className="inline-block px-3.5 py-1 text-xs font-semibold rounded-full bg-[#e6f7ff] text-[#49baff] border border-[#49baff]">
+                                                            /* Badge Appointment (Cyan Style sesuai dashboard) */
+                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
                                                                 Appointment
                                                             </span>
                                                         ) : (
-                                                            /* Badge Reschedule (Lime) */
-                                                            <span className="inline-block px-3.5 py-1 text-xs font-semibold rounded-full bg-[#f6fcc9] text-[#8da607] border border-[#adc91f]">
+                                                            /* Badge Reschedule (Lime Style sesuai dashboard) */
+                                                            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
                                                                 Reschedule
                                                             </span>
                                                         )}
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-5 py-3.5 text-center">
                                                         <div className="flex items-center justify-center gap-2">
                                                             {/* Tombol Edit (Hijau Lime #adc91f) */}
                                                             <button

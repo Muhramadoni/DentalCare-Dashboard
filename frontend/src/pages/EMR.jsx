@@ -188,7 +188,7 @@ export default function EMR({ onNavigate, onLogout }) {
                    ==================================================== */}
                 <div className="flex flex-col gap-4">
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+                        <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
                             Rekam Medis Elektronik (EMR) Pasien
                         </h1>
                         <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
@@ -386,10 +386,10 @@ export default function EMR({ onNavigate, onLogout }) {
                    ==================================================== */}
                 <div className="flex flex-col gap-4">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">
+                        <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
                             Riwayat Rekam Medis (EMR)
                         </h2>
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-sm text-gray-500 mt-0.5">
                             Rekapitulasi seluruh rekam medis pasien klinik secara terpusat.
                         </p>
                     </div>
@@ -421,7 +421,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
                                         placeholder="Tgl: DD/MM/YYYY"
-                                        className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-300 text-xs text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none"
+                                        className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none"
                                     />
                                     <div className="absolute right-2.5 text-gray-400 pointer-events-none">
                                         <CalendarOutlineIcon className="w-3.5 h-3.5" />
@@ -437,7 +437,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
                                         placeholder="Tgl: DD/MM/YYYY"
-                                        className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-300 text-xs text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none"
+                                        className="w-full pl-3 pr-8 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none"
                                     />
                                     <div className="absolute right-2.5 text-gray-400 pointer-events-none">
                                         <CalendarOutlineIcon className="w-3.5 h-3.5" />
@@ -449,7 +449,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                     <select
                                         value={selectedPasienFilter}
                                         onChange={(e) => setSelectedPasienFilter(e.target.value)}
-                                        className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
+                                        className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
                                     >
                                         <option value="Semua Pasien">Semua Pasien</option>
                                         {pasienOptions.map((p, idx) => (
@@ -466,7 +466,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                     <select
                                         value={selectedDokterFilter}
                                         onChange={(e) => setSelectedDokterFilter(e.target.value)}
-                                        className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
+                                        className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
                                     >
                                         <option value="Semua Dokter">Semua Dokter</option>
                                         {dokterOptions.map((d, idx) => (
@@ -483,20 +483,20 @@ export default function EMR({ onNavigate, onLogout }) {
                         {/* Tabel Riwayat EMR (Persis 8 Kolom Sesuai Desain Kelola-EMR.png) */}
                         <div className="rounded-xl border border-gray-200 overflow-hidden">
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse text-xs">
+                                <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="border-b border-gray-200 font-semibold text-slate-800 bg-white">
-                                            <th className="px-4 py-3.5 whitespace-nowrap">Nama Pasien</th>
-                                            <th className="px-4 py-3.5 whitespace-nowrap text-center">Tanggal</th>
-                                            <th className="px-4 py-3.5 whitespace-nowrap text-center">Regio</th>
-                                            <th className="px-4 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
-                                            <th className="px-4 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
-                                            <th className="px-4 py-3.5 min-w-[160px]">PF (Resep)</th>
-                                            <th className="px-4 py-3.5 min-w-[160px]">Terapi (Prosedur)</th>
-                                            <th className="px-4 py-3.5 whitespace-nowrap">Dokter</th>
+                                        <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
+                                            <th className="px-5 py-3.5 whitespace-nowrap">Nama Pasien</th>
+                                            <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal</th>
+                                            <th className="px-5 py-3.5 whitespace-nowrap text-center">Regio</th>
+                                            <th className="px-5 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
+                                            <th className="px-5 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
+                                            <th className="px-5 py-3.5 min-w-[160px]">PF (Resep)</th>
+                                            <th className="px-5 py-3.5 min-w-[160px]">Terapi (Prosedur)</th>
+                                            <th className="px-5 py-3.5 whitespace-nowrap">Dokter</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100 text-slate-700 font-medium">
+                                    <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
                                         {filteredEmrList.length > 0 ? (
                                             filteredEmrList.map((item) => {
                                                 const isSelected = editingId === item.id
@@ -512,28 +512,28 @@ export default function EMR({ onNavigate, onLogout }) {
                                                         }`}
                                                         title="Klik untuk mengedit data ini di form atas"
                                                     >
-                                                        <td className="px-4 py-3.5 font-semibold text-slate-800 whitespace-nowrap">
+                                                        <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
                                                             {item.namaPasien}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-center whitespace-nowrap text-slate-600">
+                                                        <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
                                                             {item.tanggal}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-center whitespace-nowrap font-semibold text-slate-800">
+                                                        <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
                                                             {item.regio}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-slate-700">
+                                                        <td className="px-5 py-3.5 text-slate-700">
                                                             {item.anamnesa}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-slate-700">
+                                                        <td className="px-5 py-3.5 text-slate-700">
                                                             {item.tindakan}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-slate-700">
+                                                        <td className="px-5 py-3.5 text-slate-700">
                                                             {item.resep}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-slate-700">
+                                                        <td className="px-5 py-3.5 text-slate-700">
                                                             {item.terapi}
                                                         </td>
-                                                        <td className="px-4 py-3.5 text-slate-800 whitespace-nowrap font-normal">
+                                                        <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap font-normal">
                                                             {item.dokter}
                                                         </td>
                                                     </tr>

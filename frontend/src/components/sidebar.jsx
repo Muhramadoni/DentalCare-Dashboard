@@ -37,18 +37,18 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
             {/* Bagian Atas: Logo & Menu Navigasi */}
             <div>
                 {/* Logo Klinik Gigi & Teks Branding Seimbang */}
-                <div className="flex items-center gap-3 px-2 py-3 mb-6">
+                <div className="flex items-center gap-2.5 px-2 py-3 mb-6">
                     <img
                         src={logoImg}
                         alt="Logo IN Dental Care"
-                        className="w-10 h-10 object-contain shrink-0"
+                        className="w-8 h-8 object-contain shrink-0"
                     />
-                    <div className="flex flex-col justify-center gap-1 min-w-0">
-                        <span className="text-[15px] font-semibold tracking-wide leading-none">
+                    <div className="flex flex-col justify-center gap-0.5 min-w-0">
+                        <span className="text-[14px] sm:text-[15px] font-semibold tracking-wide leading-tight">
                             <span className="text-[#0584bc]">IN DENTAL </span>
                             <span className="text-[#adc91f]">CARE</span>
                         </span>
-                        <span className="text-[9.5px] font-medium text-[#49baff] tracking-wider uppercase leading-none">
+                        <span className="text-[9px] sm:text-[9.5px] font-medium text-[#49baff] tracking-wider uppercase leading-tight">
                             Care For Every Smile
                         </span>
                     </div>

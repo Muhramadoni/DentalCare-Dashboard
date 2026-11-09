@@ -113,7 +113,7 @@ export function ReservationModal({
                                 <ReservationIcon className="w-4 h-4" />
                             </div>
                         )}
-                        <h2 className="text-lg font-bold text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold text-slate-800">
                             {isEdit ? 'Update Reservasi Pasien' : 'Tambah Reservasi Baru'}
                         </h2>
                     </div>
@@ -397,7 +397,7 @@ export function DoctorModal({
                         <div className="w-8 h-8 rounded-lg bg-[#49baff] text-white flex items-center justify-center">
                             <DoctorIcon className="w-4 h-4" />
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold text-slate-800">
                             {isEdit ? 'Update Data Dokter' : 'Tambah Dokter Baru'}
                         </h2>
                     </div>
@@ -500,7 +500,7 @@ export function DoctorModal({
                                                     : 'border-gray-200 bg-gray-50/60 opacity-60'
                                             }`}
                                         >
-                                            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800 select-none">
+                                            <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
                                                 <input
                                                     type="checkbox"
                                                     checked={day.active}
@@ -517,7 +517,7 @@ export function DoctorModal({
                                                     value={day.start}
                                                     onChange={(e) => handleTimeChange(idx, 'start', e.target.value)}
                                                     placeholder="09.00"
-                                                    className="w-full text-center py-1 px-2 rounded-lg border border-gray-200 text-xs text-gray-700 bg-white focus:border-[#49baff] focus:outline-none disabled:bg-gray-100"
+                                                    className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none disabled:bg-gray-100"
                                                 />
                                                 <input
                                                     type="text"
@@ -525,7 +525,7 @@ export function DoctorModal({
                                                     value={day.end}
                                                     onChange={(e) => handleTimeChange(idx, 'end', e.target.value)}
                                                     placeholder="13.00"
-                                                    className="w-full text-center py-1 px-2 rounded-lg border border-gray-200 text-xs text-gray-700 bg-white focus:border-[#49baff] focus:outline-none disabled:bg-gray-100"
+                                                    className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none disabled:bg-gray-100"
                                                 />
                                             </div>
                                         </div>
@@ -667,7 +667,7 @@ export function EMRModal({
                         <div className="w-8 h-8 rounded-lg bg-[#49baff] text-white flex items-center justify-center">
                             <EMRIcon className="w-4 h-4" />
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold text-slate-800">
                             {isEdit ? 'Update Rekam Medis (EMR)' : 'Tambah Rekam Medis Baru'}
                         </h2>
                     </div>

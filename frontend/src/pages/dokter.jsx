@@ -145,7 +145,7 @@ export default function Dokter({ onNavigate, onLogout }) {
                 {/* 1. Header Halaman & Tombol Tambah Dokter */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+                        <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
                             Kelola Dokter & Jadwal Praktik
                         </h1>
                         <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
@@ -175,10 +175,10 @@ export default function Dokter({ onNavigate, onLogout }) {
                             <div>
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex flex-col min-w-0 pr-2">
-                                        <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
+                                        <h2 className="text-base sm:text-lg font-semibold text-slate-800 leading-tight truncate">
                                             {doctor.nama}
                                         </h2>
-                                        <p className="text-xs font-semibold text-[#8da607] mt-1 leading-snug">
+                                        <p className="text-sm text-gray-500 font-medium mt-0.5 leading-snug">
                                             {doctor.spesialisasi}
                                         </p>
                                     </div>
@@ -211,7 +211,7 @@ export default function Dokter({ onNavigate, onLogout }) {
 
                                 {/* Status Badge Aktif */}
                                 <div className="mt-2.5 mb-4">
-                                    <span className="inline-block px-3.5 py-0.5 text-xs font-semibold rounded-full bg-[#adc91f] text-white shadow-2xs">
+                                    <span className="inline-block bg-[#adc91f] text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-xs">
                                         {doctor.status}
                                     </span>
                                 </div>
@@ -219,7 +219,7 @@ export default function Dokter({ onNavigate, onLogout }) {
 
                             {/* Bagian Bawah Card: Jadwal Praktek */}
                             <div className="border-t border-gray-100 pt-3.5">
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-2">
+                                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-800 mb-2">
                                     <ClockOutlineIcon className="w-4 h-4 text-slate-700 shrink-0" />
                                     <span>Jadwal Praktek</span>
                                 </div>
@@ -228,7 +228,7 @@ export default function Dokter({ onNavigate, onLogout }) {
                                     {doctor.jadwal.map((j, idx) => (
                                         <div
                                             key={idx}
-                                            className="flex items-center justify-between text-xs text-gray-500 font-medium"
+                                            className="flex items-center justify-between text-xs sm:text-sm text-slate-700 font-medium"
                                         >
                                             <span>{j.hari}</span>
                                             <span>{j.jam}</span>
