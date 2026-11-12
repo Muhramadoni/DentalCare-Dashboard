@@ -74,47 +74,18 @@ in-dental-care-admin/
 4. **Pipeline Analisis Data:**
    * Skrip Python atau Jupyter Notebook terhubung ke PostgreSQL menggunakan koneksi `psycopg2`/`SQLAlchemy` untuk menarik rekap data kunjungan dan rekam medis guna menghasilkan laporan analitik.
 
-## 5. Database Schema (PostgreSQL)
+## 5. Basis Data & Skema Relasional (Database)
 
-Berikut adalah rancangan skema relasional tabel utama di PostgreSQL menggunakan penamaan tabel bahasa Indonesia:
+Seluruh rancangan skema relasional tabel, Entity Relationship Diagram (ERD), kamus data, strategi indexing, konfigurasi connection pooling, serta skrip DDL migrasi SQL lengkap dikelola secara terpusat pada dokumen tersendiri:
 
-* **Table: `admin`**
-  * `id` (SERIAL, Primary Key)
-  * `email` (VARCHAR, Unique, Not Null)
-  * `password_hash` (VARCHAR, Not Null) — *Menyimpan string hasil hashing password*
-  * `created_at` (TIMESTAMP)
+👉 **[database.md](file:///c:/Users/ASUS/OneDrive/Documents/GitHub/DentalCare-Dashboard/panduan/database.md)**
 
-* **Table: `dokter`**
-  * `id` (SERIAL, Primary Key)
-  * `nama` (VARCHAR, Not Null)
-  * `spesialisasi` (VARCHAR)
-  * `cabang` (VARCHAR) — *Contoh: Garuda, Muchtar Raya*
-  * `jadwal_json` (JSONB) — *Menyimpan konfigurasi hari & jam praktik fleksibel*
-  * `status` (VARCHAR)
-
-* **Table: `pasien`**
-  * `id` (SERIAL, Primary Key)
-  * `nama` (VARCHAR, Not Null)
-  * `created_at` (TIMESTAMP)
-
-* **Table: `reservasi`**
-  * `id` (SERIAL, Primary Key)
-  * `pasien_id` (INT, Foreign Key references `pasien(id)`)
-  * `dokter_id` (INT, Foreign Key references `dokter(id)`)
-  * `tanggal_reservasi` (DATE, Not Null)
-  * `waktu_reservasi` (VARCHAR, Not Null)
-  * `status` (VARCHAR) — *Appointment atau Reschedule*
-
-* **Table: `rekam_medis`**
-  * `id` (SERIAL, Primary Key)
-  * `pasien_id` (INT, Foreign Key references `pasien(id)`)
-  * `dokter_id` (INT, Foreign Key references `dokter(id)`)
-  * `tanggal_rekam` (DATE, Not Null)
-  * `regio` (VARCHAR) — *Nomor gigi / area*
-  * `anamnesa` (TEXT)
-  * `tindakan` (TEXT)
-  * `resep` (TEXT) — *PF (Resep)*
-  * `terapi` (TEXT)
+Ringkasan 5 tabel utama yang dikelola pada basis data PostgreSQL:
+* **`user`:** Akun login email dan password terenkripsi (`password_hash`).
+* **`dokter`:** Master data dokter, cabang tempat praktik, dan konfigurasi jadwal (`jadwal_json`).
+* **`pasien`:** Data nama pasien klinik gigi.
+* **`reservasi`:** Jadwal janji temu pasien dengan dokter (`pasien_id`, `dokter_id`, `tanggal_reservasi`, `waktu_reservasi`, `status`).
+* **`rekam_medis`:** Data rekam medis elektronik / EMR (`pasien_id`, `dokter_id`, `tanggal_rekam`, `regio`, `anamnesa`, `tindakan`, `resep`, `terapi`).
 
 ## 6. Skalabilitas & Performance (Scalability)
 
