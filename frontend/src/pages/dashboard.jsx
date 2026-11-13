@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../components/sidebar'
 import Pagination from '../components/pagination'
-import { FaCalendarTimes, FaHistory } from 'react-icons/fa'
 import {
     ReservationIcon,
     DoctorIcon,
     DashboardIcon,
     ActivityIcon,
+    CalendarOutlineIcon,
     SpinnerIcon,
     ErrorIcon,
 } from '../components/icon'
@@ -225,7 +225,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                             <tr>
                                                 <td colSpan={4} className="py-12 text-center text-gray-400">
                                                     <div className="flex flex-col items-center justify-center gap-1.5">
-                                                        <FaCalendarTimes className="w-8 h-8 text-slate-300" />
+                                                        <CalendarOutlineIcon className="w-8 h-8 text-slate-300" />
                                                         <p className="font-medium text-slate-600 text-sm mt-1">Belum ada data reservasi</p>
                                                         <p className="text-gray-400 text-xs">Jadwal reservasi pasien yang dibuat akan otomatis muncul di sini.</p>
                                                     </div>
@@ -303,7 +303,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                 </div>
                             ) : aktivitasList.length === 0 ? (
                                 <div className="py-10 text-center text-gray-400 flex flex-col items-center justify-center gap-1.5">
-                                    <FaHistory className="w-7 h-7 text-slate-300" />
+                                    <ActivityIcon className="w-7 h-7 text-slate-300" />
                                     <p className="font-medium text-slate-600 text-xs mt-1">Belum ada aktivitas tercatat</p>
                                     <p className="text-gray-400 text-[11px]">Log pembaruan sistem akan muncul otomatis saat ada aktivitas.</p>
                                 </div>

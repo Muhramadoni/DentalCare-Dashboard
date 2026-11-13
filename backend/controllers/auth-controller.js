@@ -122,5 +122,35 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { login, logout };
+/**
+ * POST /api/v1/auth/refresh
+ * Memperbarui JWT token jika token masih valid (Sliding Session)
+ * Dipanggil frontend saat admin masih aktif, sebelum token kadaluarsa
+ * Token lama harus valid → middleware authenticateToken memvalidasinya lebih dulu
+ */
+const refresh = async (req, res, next) => {
+  try {
+    // req.user sudah diisi oleh authenticateToken middleware
+    const tokenPayload = {
+      id: req.user.id,
+      email: req.user.email,
+    };
+
+    // Terbitkan token baru dengan masa berlaku penuh (1 jam dari sekarang)
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+      algorithm: 'HS256',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Sesi berhasil diperpanjang.',
+      data: { token },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, logout, refresh };
 
