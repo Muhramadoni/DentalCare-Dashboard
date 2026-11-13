@@ -6,8 +6,11 @@ import Dokter from './pages/dokter'
 import EMR from './pages/EMR'
 
 function App() {
-    // Alur awal aplikasi: mulai dari halaman Login, setelah login masuk ke Ringkasan Utama (Dashboard)
-    const [currentPage, setCurrentPage] = useState('login')
+    // Cek apakah token autentikasi tersimpan di localStorage
+    const [currentPage, setCurrentPage] = useState(() => {
+        const token = localStorage.getItem('auth_token')
+        return token ? 'dashboard' : 'login'
+    })
 
     const handleNavigate = (pageId) => {
         if (pageId === 'ringkasan') {
@@ -23,6 +26,26 @@ function App() {
         }
     }
 
+    const handleLogout = async () => {
+        const token = localStorage.getItem('auth_token')
+        if (token) {
+            try {
+                await fetch('http://localhost:5000/api/v1/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                })
+            } catch (error) {
+                console.error('Logout error:', error)
+            }
+        }
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('user_email')
+        setCurrentPage('login')
+    }
+
     return (
         <main className="w-full min-h-screen">
             {currentPage === 'login' && (
@@ -32,28 +55,28 @@ function App() {
             {currentPage === 'dashboard' && (
                 <Dashboard
                     onNavigate={handleNavigate}
-                    onLogout={() => setCurrentPage('login')}
+                    onLogout={handleLogout}
                 />
             )}
 
             {currentPage === 'reservasi' && (
                 <Reservasi
                     onNavigate={handleNavigate}
-                    onLogout={() => setCurrentPage('login')}
+                    onLogout={handleLogout}
                 />
             )}
 
             {currentPage === 'dokter' && (
                 <Dokter
                     onNavigate={handleNavigate}
-                    onLogout={() => setCurrentPage('login')}
+                    onLogout={handleLogout}
                 />
             )}
 
             {currentPage === 'emr' && (
                 <EMR
                     onNavigate={handleNavigate}
-                    onLogout={() => setCurrentPage('login')}
+                    onLogout={handleLogout}
                 />
             )}
         </main>

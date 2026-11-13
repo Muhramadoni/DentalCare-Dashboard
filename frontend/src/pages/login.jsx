@@ -15,7 +15,7 @@ export default function Login({ onLoginSuccess }) {
         setEmail('')
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         setErrorMessage('')
 
@@ -31,16 +31,53 @@ export default function Login({ onLoginSuccess }) {
 
         setIsLoading(true)
 
-        // Simulasi proses autentikasi login
-        setTimeout(() => {
+        try {
+            // Panggil API Login Backend (sesuai apiguide.md: POST /api/v1/auth/login)
+            const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email.trim().toLowerCase(),
+                    password,
+                }),
+            })
+
+            const result = await response.json()
+
+            if (!response.ok || !result.success) {
+                // Tangani error dari API (401, 400, 429, dll)
+                if (response.status === 429) {
+                    setErrorMessage('Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.')
+                } else {
+                    setErrorMessage(result?.error?.message || 'Email atau password yang Anda masukkan salah.')
+                }
+                setIsLoading(false)
+                return
+            }
+
+            // Login berhasil: simpan token di localStorage
+            const { token, user } = result.data
+            localStorage.setItem('auth_token', token)
+            localStorage.setItem('user_email', user.email)
+
             setIsLoading(false)
             setLoginSuccess(true)
+
+            // Arahkan ke dashboard setelah animasi sukses
             setTimeout(() => {
                 if (onLoginSuccess) {
-                    onLoginSuccess({ email })
+                    onLoginSuccess({ email: user.email, token })
                 }
             }, 500)
-        }, 500)
+
+        } catch (err) {
+            // Error jaringan / server tidak bisa dijangkau
+            setIsLoading(false)
+            setErrorMessage('Tidak dapat terhubung ke server. Pastikan backend berjalan di port 5000.')
+        }
     }
 
     return (

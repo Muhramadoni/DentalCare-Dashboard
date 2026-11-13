@@ -1,0 +1,17 @@
+# Node.js
+node_modules/
+
+# Environment variables (RAHASIA - jangan commit!)
+.env
+
+# Prisma generated client
+# node_modules/@prisma/client di-generate saat runtime
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+

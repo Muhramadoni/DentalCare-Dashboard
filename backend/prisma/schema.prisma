@@ -1,0 +1,85 @@
+// backend/prisma/schema.prisma
+// Skema Prisma ORM untuk IN DENTAL CARE Admin Dashboard
+// Seluruh nama tabel menggunakan Bahasa Indonesia sesuai database.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Tabel user (untuk autentikasi admin)
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamp
+
+  @@map("user")
+}
+
+// 2. Tabel dokter
+model Dokter {
+  id           Int           @id @default(autoincrement())
+  nama         String        @db.VarChar(255)
+  spesialisasi String?       @db.VarChar(255)
+  cabang       String?       @db.VarChar(255)
+  jadwal_json  Json?         @db.JsonB
+  status       String?       @default("Aktif") @db.VarChar(50)
+
+  reservasi    Reservasi[]
+  rekam_medis  RekamMedis[]
+
+  @@map("dokter")
+}
+
+// 3. Tabel pasien
+model Pasien {
+  id          Int           @id @default(autoincrement())
+  nama        String        @db.VarChar(255)
+  created_at  DateTime      @default(now()) @db.Timestamp
+
+  reservasi   Reservasi[]
+  rekam_medis RekamMedis[]
+
+  @@map("pasien")
+}
+
+// 4. Tabel reservasi
+model Reservasi {
+  id                Int      @id @default(autoincrement())
+  pasien_id         Int
+  dokter_id         Int
+  tanggal_reservasi DateTime @db.Date
+  waktu_reservasi   String   @db.VarChar(100)
+  status            String   @default("Appointment") @db.VarChar(50)
+
+  pasien            Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
+  dokter            Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
+
+  @@index([tanggal_reservasi], map: "idx_reservasi_tanggal")
+  @@map("reservasi")
+}
+
+// 5. Tabel rekam_medis
+model RekamMedis {
+  id            Int      @id @default(autoincrement())
+  pasien_id     Int
+  dokter_id     Int
+  tanggal_rekam DateTime @default(now()) @db.Date
+  regio         String?  @db.VarChar(100)
+  anamnesa      String?  @db.Text
+  tindakan      String?  @db.Text
+  resep         String?  @db.Text
+  terapi        String?  @db.Text
+
+  pasien        Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
+  dokter        Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
+
+  @@index([pasien_id], map: "idx_rekam_medis_pasien")
+  @@map("rekam_medis")
+}
+

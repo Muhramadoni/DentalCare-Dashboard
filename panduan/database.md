@@ -148,8 +148,23 @@ module.exports = prisma;
 
 Variabel lingkungan koneksi diatur pada `.env`:
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/indentalcare_db?schema=public&connection_limit=10"
+DATABASE_URL="postgresql://dental_admin:dentalcare123@localhost:5432/indentalcare_db?schema=public"
 ```
+
+> **Catatan Setup Pengguna Basis Data Khusus (Dedicated User):**
+> Untuk standardisasi antar-kontributor dan keamanan, gunakan user khusus `dental_admin` dengan password `dentalcare123`.
+> Perintah SQL inisialisasi pada PostgreSQL:
+> ```sql
+> CREATE USER dental_admin WITH PASSWORD 'dentalcare123';
+> GRANT ALL PRIVILEGES ON DATABASE indentalcare_db TO dental_admin;
+> ALTER DATABASE indentalcare_db OWNER TO dental_admin;
+> \c indentalcare_db
+> GRANT ALL ON SCHEMA public TO dental_admin;
+> GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO dental_admin;
+> GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO dental_admin;
+> ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO dental_admin;
+> ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO dental_admin;
+> ```
 
 ---
 
