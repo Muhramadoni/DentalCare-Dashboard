@@ -10,6 +10,8 @@ Dokumen ini mengikat seluruh komponen arsitektur sistem:
 
 Dasar penyusunan dokumen ini mengacu langsung pada [Product Requirements Document (PRD)](file:///c:/Users/ASUS/OneDrive/Documents/GitHub/DentalCare-Dashboard/panduan/prd_in_dental_care_admin_dashboard.md), khususnya **FR-1** (Keamanan Password & Autentikasi), **FR-4** (Penyimpanan Data Terstruktur & Log Aktivitas), **FR-7** (Keamanan Modul EMR), **NFR-2** (Keamanan Enkripsi TLS 1.3 & Hashing), serta skenario pengguna (**US-1** hingga **US-7**).
 
+**Peran pengguna website ini hanya Admin.** Dokter dan pasien adalah data yang dikelola admin, bukan akun yang bisa login. Tidak ada portal dokter, portal pemilik klinik, atau portal pasien.
+
 ---
 
 ## 1. Filosofi & Prinsip Dasar Keamanan
@@ -17,14 +19,14 @@ Dasar penyusunan dokumen ini mengacu langsung pada [Product Requirements Documen
 Pengembangan sistem **IN DENTAL CARE Admin Dashboard** wajib mematuhi 3 prinsip utama keamanan informasi medis:
 
 * **Zero Trust Architecture:** Jangan pernah percaya pada input apa pun yang datang dari sisi klien (ReactJS, HTTP request, URL parameter, maupun query string). Seluruh input wajib divalidasi dan diotorisasi ulang di backend Express.js.
-* **Principle of Least Privilege (PoLP):** Setiap persona pengguna (Admin, Dokter, Pemilik Klinik) dan proses komputasi (seperti modul analitik data Python) hanya diberikan izin akses minimum mutlak yang dibutuhkan untuk menjalankan tugasnya.
+* **Principle of Least Privilege (PoLP):** Satu-satunya akun yang boleh masuk ke dashboard adalah Admin. Akun itu hanya boleh melakukan tugas operasional klinik: melihat ringkasan, mengubah dan menghapus data dokter, mengubah dan menghapus data reservasi, serta melihat, mengisi, dan mengubah EMR. Proses lain (misalnya skrip analitik, jika nanti dibuat) tidak memakai akun admin dan tidak mendapat hak menulis data.
 * **Defense in Depth (Pertahanan Berlapis):** Keamanan tidak boleh hanya bergantung pada satu mekanisme pertahanan tunggal. Jika satu lapisan pertahanan gagal (misalnya penyembunyian menu UI di frontend), lapisan backend dan database tetap wajib mencegah akses ilegal.
 
 ---
 
 ## 2. Autentikasi & Manajemen Sesi (Authentication & Session)
 
-Sesuai dengan **FR-1** dan **US-1**, sistem wajib menjamin kerahasiaan identitas pengguna klinik saat masuk ke dalam dashboard.
+Sesuai dengan **FR-1** dan **US-1**, sistem wajib menjamin kerahasiaan akun admin saat masuk ke dalam dashboard.
 
 ### 2.1. Password Hashing & Penyimpanan Kredensial
 * **Algoritma Kriptografi Wajib:** Kata sandi pengguna wajib di-hash menggunakan **bcrypt** dengan faktor biaya (*salt rounds*) minimal **12**, atau menggunakan **Argon2id**.
@@ -37,11 +39,11 @@ Sesuai dengan **FR-1** dan **US-1**, sistem wajib menjamin kerahasiaan identitas
 * **Access Token:**
   * Gunakan JWT yang ditandatangani menggunakan algoritma berkekuatan tinggi (HMAC-SHA256 / `HS256` dengan kunci rahasia minimal 256-bit atau RSA-SHA256 / `RS256`).
   * Masa berlaku token (*expiration time*) harus singkat (maksimal **15 menit hingga 1 jam**).
-  * Payload JWT hanya boleh memuat identitas non-sensitif (misal: `userId`, `email`, dan `role`). Dilarang keras memasukkan data rahasia seperti hash password, data rekam medis, atau nomor identitas pribadi ke dalam payload token.
+  * Payload JWT hanya boleh memuat identitas non-sensitif (misal: `userId` dan `email`). Jika field `role` ikut disimpan, nilainya hanya `ADMIN`. Dilarang keras memasukkan data rahasia seperti hash password, data rekam medis, atau nomor identitas pribadi ke dalam payload token.
 * **Penyimpanan Sesi Klien:**
   * Disimpan menggunakan **HttpOnly, Secure, SameSite Cookie** untuk memitigasi risiko pencurian token melalui serangan *Cross-Site Scripting* (XSS).
 * **Penanganan Logout & Invalidasi:**
-  * Saat admin/dokter melakukan logout, token harus dihapus dari cookie browser dan dicatat pada mekanisme daftar pencabutan (*token blacklist/revocation*) jika diperlukan pemutusan sesi seketika.
+  * Saat admin melakukan logout, token harus dihapus dari cookie browser dan dicatat pada mekanisme daftar pencabutan (*token blacklist/revocation*) jika diperlukan pemutusan sesi seketika.
 
 ### 2.3. Sliding Session & Idle Timeout
 
@@ -85,44 +87,46 @@ Endpoint ini bersifat stateless — tidak memerlukan tabel tambahan di database.
 
 ---
 
-## 3. Otorisasi & Kontrol Akses (Role-Based Access Control / RBAC)
+## 3. Otorisasi & Kontrol Akses
 
-Sistem melayani tiga persona pengguna utama sesuai dengan **SECTION 3 PRD**:
+Website ini hanya punya **satu peran yang boleh login: Admin**. Tidak ada akun dokter, pemilik klinik, atau pasien di dashboard.
 
-### 3.1. Matriks Hak Akses Berdasarkan Persona
+Dokter, pasien, reservasi, dan rekam medis tetap ada sebagai data klinik. Yang membuka, mengubah, dan menghapus data itu adalah admin.
 
-| Fitur / Modul | Admin Klinik (Front Office) | Dokter Gigi (Pemeriksa) | Pemilik Klinik / Manajer | Data Analyst (Python) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Login Dashboard** | Ya | Ya | Ya | Akses DB Khusus |
-| **Kelola Reservasi (CRUD)** | Penuh | Hanya Lihat | Hanya Lihat | - |
-| **Kelola Jadwal Dokter** | Penuh | Lihat Jadwal Sendiri | Hanya Lihat | - |
-| **Entri EMR (Anamnesa, Tindakan, Resep)** | Terbatas / Input Awal | Penuh (Input & Edit) | Hanya Lihat | - |
-| **Pencarian Riwayat Pasien** | Ya | Ya | Ya | - |
-| **Ringkasan Operasional & Metrik Bisnis** | Ringkasan Harian | - | Penuh (Semua Cabang) | Baca Data Agregat |
-| **Akses Log Audit Aktivitas** | Tidak | Tidak | Ya | - |
-| **Pipeline Analitik Database (FR-5)** | Tidak | Tidak | Lihat Hasil Laporan | Akses Read-Only SQL |
+### 3.1. Hak akses Admin
 
-### 3.2. Server-Side Access Enforcement
-* **Larangan UI-Only Security:** Jangan pernah mengandalkan penyembunyian tombol, tab, atau modal di ReactJS sebagai pengaman fitur. Seluruh pembatasan akses **wajib ditegakkan di sisi server** Express.js menggunakan *authorization middleware*:
+| Modul | Yang boleh dilakukan Admin |
+| :--- | :--- |
+| **Ringkasan dashboard** | Melihat rekap operasional (jumlah reservasi, dokter aktif, dan ringkasan hari ini). |
+| **Data dokter** | Melihat, mengubah, dan menghapus data dokter beserta jadwalnya. |
+| **Data reservasi** | Melihat, mengubah, dan menghapus data reservasi pasien. |
+| **EMR** | Melihat, mengisi, dan mengubah catatan rekam medis (regio gigi, anamnesa, tindakan, resep, dan terapi). |
+
+Di luar tabel ini, tidak ada peran lain yang mendapat akses. Pengunjung yang belum login tidak boleh melihat atau mengubah satupun data di atas.
+
+### 3.2. Penegakan di server
+* **Larangan UI-Only Security:** Menyembunyikan menu di ReactJS tidak cukup. Setiap endpoint selain login wajib menolak permintaan yang tidak membawa token admin yang masih berlaku.
   ```javascript
-  // Contoh implementasi middleware otorisasi berbasis peran di Express.js
-  const authorizeRoles = (...allowedRoles) => {
-    return (req, res, next) => {
-      if (!req.user || !allowedRoles.includes(req.user.role)) {
-        return res.status(403).json({
-          success: false,
-          message: 'Akses ditolak: Anda tidak memiliki izin untuk tindakan ini.'
-        });
-      }
-      next();
-    };
+  // Semua rute data klinik wajib lewat authenticateToken.
+  // Peran yang diterima hanya ADMIN. Tidak ada peran DOCTOR atau OWNER.
+  const requireAdmin = (req, res, next) => {
+    if (!req.user || (req.user.role && req.user.role !== 'ADMIN')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak: hanya admin yang boleh melakukan tindakan ini.'
+      });
+    }
+    next();
   };
 
-  // Contoh rute: Hanya dokter yang boleh menyimpan/mengubah EMR
-  router.post('/api/v1/emr', authenticateToken, authorizeRoles('DOCTOR'), emrController.createRecord);
+  // Contoh: mengubah EMR hanya untuk admin yang sudah login
+  router.put('/api/v1/emr/:id', authenticateToken, requireAdmin, emrController.updateRecord);
+
+  // Contoh: menghapus dokter dan reservasi juga hanya untuk admin
+  router.delete('/api/v1/doctors/:id', authenticateToken, requireAdmin, doctorController.deleteDoctor);
+  router.delete('/api/v1/reservations/:id', authenticateToken, requireAdmin, reservationController.deleteReservation);
   ```
-* **Pencegahan IDOR (Insecure Direct Object References):**
-  * Setiap endpoint yang menerima parameter ID data pasien atau rekam medis EMR (misal: `/api/v1/emr/:recordId`) wajib memvalidasi apakah pengguna yang meminta memiliki keterkaitan kerja yang sah terhadap data tersebut sebelum data dikembalikan.
+* **Pencegahan akses tanpa login:** Karena hanya ada satu admin dan admin boleh melihat seluruh data klinik, pembatasan bukan “dokter A tidak boleh membuka pasien dokter B”. Pembatasannya adalah: tanpa token admin yang valid, server mengembalikan `401` atau `403` dan tidak mengirim data dokter, reservasi, maupun EMR. ID yang dikirim tetap divalidasi (harus ada di database) sebelum data diubah atau dihapus.
 
 ---
 
@@ -231,7 +235,7 @@ Sesuai dengan **NFR-2**, seluruh transmisi data wajib dienkripsi selama transit 
 
 ## 9. Keamanan Khusus Pipeline Data Analytics (Python & Jupyter Notebook)
 
-Berdasarkan **US-7** dan **FR-5**, modul analitik Python dan Jupyter Notebook terhubung langsung ke database PostgreSQL untuk mengekstrak tren kunjungan dan performa klinik. Penerapan keamanan pada modul ini meliputi:
+Modul analitik Python **bukan akun website** dan **bukan peran login**. Yang masuk ke dashboard tetap hanya admin. Jika modul ini dibuat nanti, skripnya memakai akun database terpisah, bukan email dan password admin. Aturan akun itu:
 
 * **Akun Database Read-Only Khusus Analisis:**
   * Skrip analitik Python wajib menggunakan kredensial koneksi database tersendiri yang **hanya memiliki hak akses `SELECT` (Read-Only)**.
@@ -245,14 +249,14 @@ Berdasarkan **US-7** dan **FR-5**, modul analitik Python dan Jupyter Notebook te
 
 ## 10. Audit Logging, Monitoring & Penanganan Error yang Aman
 
-Sesuai dengan **FR-4** dan kebutuhan manajer klinik (**Persona 3**):
+Sesuai dengan **FR-4**. Jejak ini untuk mengetahui apa yang dilakukan akun admin. Tidak ada peran manajer terpisah yang login hanya untuk membaca log.
 
 ### 10.1. Pencatatan Jejak Audit (Audit Logging)
-* Sistem mencatat aktivitas kritis ke dalam tabel `audit_logs` di PostgreSQL, meliputi:
+* Sistem mencatat aktivitas kritis admin ke dalam tabel `audit_logs` di PostgreSQL, meliputi:
   * Percobaan autentikasi (login berhasil maupun login gagal).
-  * Pembuatan, perubahan, dan pembatalan reservasi pasien.
-  * Pembuatan dan modifikasi catatan Rekam Medis Elektronik (EMR).
-  * Perubahan status atau kuota jadwal dokter antarcabang.
+  * Perubahan dan penghapusan data reservasi.
+  * Perubahan dan penghapusan data dokter.
+  * Pengisian dan perubahan catatan Rekam Medis Elektronik (EMR).
 * Data yang dicatat mencakup: `timestamp`, `user_id`, `action`, `resource_type`, `resource_id`, dan `ip_address`.
 * **Sanitasi Log:** Dilarang keras mencatat kata sandi, token otorisasi, atau nomor kartu identitas ke dalam file log aplikasi maupun konsol server (*console.log*).
 
@@ -266,7 +270,7 @@ Sesuai dengan **FR-4** dan kebutuhan manajer klinik (**Persona 3**):
 
 Seluruh pengembang wajib menguji implementasi kode terhadap daftar risiko keamanan standar **OWASP Top 10**:
 
-1. **A01: Broken Access Control:** Diverifikasi dengan pengujian endpoint IDOR dan penegakan middleware RBAC.
+1. **A01: Broken Access Control:** Diverifikasi bahwa endpoint dokter, reservasi, ringkasan, dan EMR menolak permintaan tanpa token admin, dan tidak membuka peran login lain.
 2. **A02: Cryptographic Failures:** Diverifikasi dengan implementasi TLS 1.3 dan hashing password via bcrypt/Argon2.
 3. **A03: Injection:** Diverifikasi melalui penggunaan 100% Parameterized Queries PostgreSQL dan sanitasi input.
 4. **A04: Insecure Design:** Diverifikasi melalui penerapan rate limiting pada rute autentikasi dan alur bisnis reservasi.
