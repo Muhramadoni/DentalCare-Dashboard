@@ -1,5 +1,6 @@
 // backend/prisma/seed.js
-// Seed admin account: admindental@gmail.com / admindental123
+// Seeding HANYA untuk akun Admin (Autentikasi Login)
+// Data pasien, dokter, dan reservasi dibiarkan kosong sesuai instruksi
 
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
@@ -9,10 +10,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Memulai proses seeding database...');
 
-  // Hash password dengan bcrypt salt rounds 12 (sesuai security.md)
+  // 1. Seed Admin Account
   const passwordHash = await bcrypt.hash('admindental123', 12);
-
-  // Upsert: buat jika belum ada, skip jika sudah ada
   const adminUser = await prisma.user.upsert({
     where: { email: 'admindental@gmail.com' },
     update: {},
@@ -22,13 +21,9 @@ async function main() {
     },
   });
 
-  console.log(`Admin berhasil di-seed: ${adminUser.email}`);
-  console.log(`ID: ${adminUser.id}`);
-  console.log(`Created At: ${adminUser.created_at}`);
-  console.log('');
-  console.log('Seeding selesai! Gunakan kredensial berikut untuk login:');
-  console.log('Email    : admindental@gmail.com');
-  console.log('Password : admindental123');
+  console.log(`Admin terdaftar: ${adminUser.email}`);
+  console.log('Tabel dokter, pasien, dan reservasi tetap kosong (siap untuk integrasi modul masing-masing).');
+  console.log('\n🎉 Seeding selesai dengan sukses!');
 }
 
 main()
@@ -39,4 +34,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

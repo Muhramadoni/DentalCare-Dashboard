@@ -11,6 +11,7 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Import routes
 const authRoutes = require('./routes/auth-routes');
+const dashboardRoutes = require('./routes/dashboard-routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -72,6 +73,7 @@ app.get('/health', (req, res) => {
 // ROUTES API (Base: /api/v1 sesuai apiguide.md Section 2.1)
 // ============================================================
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 // ============================================================
 // ERROR HANDLERS (harus di akhir, setelah semua route)
