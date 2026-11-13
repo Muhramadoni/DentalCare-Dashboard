@@ -176,24 +176,54 @@ import '../styles/dashboard.css';
 
 ---
 
-## 7. Database Query Conventions (PostgreSQL)
+## 7. Database & ORM Conventions (Prisma ORM)
 
-* **Penulisan Kata Kunci SQL:** Tulis seluruh kata kunci SQL dalam huruf kapital (**UPPERCASE**) untuk membedakannya secara jelas dari nama tabel atau kolom:
-  ```sql
-  -- Baik: Kata kunci huruf besar dan pemilihan kolom spesifik
-  SELECT 
-    r.id, 
-    r.patient_name, 
-    r.appointment_date, 
-    d.doctor_name, 
-    r.status
-  FROM reservations r
-  INNER JOIN doctors d ON r.doctor_id = d.id
-  WHERE r.appointment_date = $1 AND r.status = $2
-  ORDER BY r.appointment_date ASC;
+Pengembangan backend menggunakan **Prisma ORM** untuk interaksi dengan PostgreSQL. Terapkan konvensi penulisan query berikut:
+
+* **Inisialisasi Terpusat:** Selalu impor instance Prisma Client dari modul konfigurasi tunggal (`backend/config/prisma.js`), dilarang membuat instance `new PrismaClient()` berulang di dalam controller atau service.
+* **Pemilihan Kolom Spesifik (`select`):** Hindari mengambil seluruh kolom jika hanya membutuhkan sebagian data. Gunakan properti `select` secara eksplisit demi efisiensi memori dan performa respon API:
+  ```javascript
+  // Baik: Mengambil kolom spesifik dan relasi terarah
+  const daftarReservasi = await prisma.reservasi.findMany({
+    where: {
+      tanggal_reservasi: new Date(targetDate),
+      status: 'Appointment'
+    },
+    select: {
+      id: true,
+      waktu_reservasi: true,
+      status: true,
+      pasien: {
+        select: {
+          id: true,
+          nama: true
+        }
+      },
+      dokter: {
+        select: {
+          id: true,
+          nama: true,
+          cabang: true
+        }
+      }
+    },
+    orderBy: {
+      waktu_reservasi: 'asc'
+    }
+  });
   ```
-* **Hindari `SELECT *`:** Selalu tentukan kolom yang diperlukan secara eksplisit. Pemilihan kolom spesifik meningkatkan keterbacaan, mencegah kebocoran data, dan mengoptimalkan performa query.
-* **Pemisahan Parameter Query:** Selalu gunakan placeholder parameter ($1, $2, ...) saat membangun query dinamis untuk keterbacaan struktur query dan kerapian pemisahan data.
+* **Pemanfaatan Relasi (`include` vs `select`):** Gunakan `include` hanya ketika seluruh data relasi memang dibutuhkan oleh antarmuka. Jika hanya butuh sebagian kolom dari tabel relasi, selalu prioritaskan `select` bersarang (*nested select*).
+* **Penanganan Transaksi Database:** Jika melakukan mutasi yang melibatkan lebih dari satu tabel (misal: mencatat EMR sekaligus mengubah status reservasi), wajib gunakan transaksi Prisma:
+  ```javascript
+  await prisma.$transaction([
+    prisma.rekamMedis.create({ data: payloadEmr }),
+    prisma.reservasi.update({
+      where: { id: reservationId },
+      data: { status: 'Selesai' }
+    })
+  ]);
+  ```
+* **Penanganan Error Prisma:** Tangkap error Prisma dengan baik pada blok `catch`. Kenali kode error umum seperti `P2002` (pelanggaran *unique constraint*, misal email duplikat) dan kembalikan pesan error yang jelas bagi pengguna.
 
 ---
 

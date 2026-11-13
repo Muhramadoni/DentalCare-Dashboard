@@ -51,7 +51,7 @@ Dalam setiap interaksi dan generasi kode, AI Agent wajib mematuhi aturan berikut
 AI Agent wajib menghasilkan kode yang bersih, terstruktur, dan menggunakan ekosistem alat yang telah ditetapkan dalam proyek ini:
 
 ### 4.1. Tools & Ekosistem Standar
-* **Backend & API:** Express.js, `pg` (node-postgres) / ORM terkonfigurasi, `bcrypt` (password hashing), `jsonwebtoken` (JWT), `zod` atau `joi` (validasi skema), `helmet`, `cors`, dan `express-rate-limit`.
+* **Backend & API:** Express.js, Prisma ORM (`@prisma/client` & `prisma`), `bcrypt` (password hashing), `jsonwebtoken` (JWT), `zod` atau `joi` (validasi skema), `helmet`, `cors`, dan `express-rate-limit`.
 * **Frontend:** ReactJS, Axios / Fetch API (dengan *interceptor* terpusat sesuai `apiguide.md`), Tailwind CSS / CSS modular proyek.
 * **Analytics:** Python 3, `pandas`, `sqlalchemy` / `psycopg2` (koneksi *read-only* ke PostgreSQL), dan Jupyter Notebook (`.ipynb`).
 * **Linter & Formatter:** Selalu ikuti aturan **ESLint** dan **Prettier** (untuk JS/JSX) serta **PEP 8** (untuk Python).
@@ -70,7 +70,7 @@ AI Agent wajib menghasilkan kode yang bersih, terstruktur, dan menggunakan ekosi
 Karena aplikasi ini mengelola data sensitif pasien (**EMR**), AI Agent **dilarang keras** menghasilkan kode yang melanggar standar keamanan pada `security.md`:
 
 1. **Zero Hardcoded Secrets:** Jangan pernah menuliskan password database, `JWT_SECRET`, API Key, atau kredensial nyata di dalam kode atau contoh respons. Selalu gunakan `process.env.NAMA_VARIABEL`.
-2. **Parameterized Queries Wajib:** Saat menulis query PostgreSQL di Node.js atau Python, selalu gunakan *parameterized queries* (`$1, $2, ...`). Dilarang keras menggunakan *string concatenation* atau *template literals* langsung untuk nilai input user guna mencegah **SQL Injection**.
+2. **Prisma ORM & Parameterized Queries:** Saat berinteraksi dengan database PostgreSQL di Node.js, selalu gunakan metode bawaan Prisma Client (seperti `prisma.user`, `prisma.dokter`, `prisma.reservasi`). Dilarang keras menggunakan query mentah yang menggabungkan string (*string concatenation* atau `$queryRawUnsafe`) guna mencegah **SQL Injection**.
 3. **Validasi Input di Sisi Server:** Setiap endpoint `POST`, `PUT`, atau `PATCH` yang dibuat oleh AI wajib dilengkapi skema validasi dan sanitasi input di backend untuk mencegah **XSS** dan data korup.
 4. **Proteksi Endpoint & RBAC:** Setiap endpoint baru (selain `/auth/login`) wajib menyertakan middleware verifikasi JWT dan pengecekan hak akses (*Role-Based Access Control*).
 5. **Konfigurasi Aman:** Jangan pernah menyarankan `cors({ origin: '*' })` atau menonaktifkan verifikasi SSL/TLS di lingkungan *production*.

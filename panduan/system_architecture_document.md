@@ -16,8 +16,9 @@ Arsitektur sistem **IN DENTAL CARE Admin Dashboard** dirancang menggunakan pende
   * **Framework:** Express.js (REST API Architecture)
   * **Security & Auth:** Password Hashing (`bcrypt`), CORS, Helmet, JWT (JSON Web Tokens) untuk manajemen sesi admin
 
-* **Database:**
-  * **Relational Database:** PostgreSQL (mengelola tabel admin, dokter, pasien, reservasi, dan rekam_medis)
+* **Database & ORM:**
+  * **Relational Database:** PostgreSQL (mengelola tabel `user`, `dokter`, `pasien`, `reservasi`, dan `rekam_medis`)
+  * **ORM (Object-Relational Mapping):** Prisma ORM (`@prisma/client` & Prisma Migrate)
 
 * **Analytics & Data Science:**
   * **Language:** Python 3.x
@@ -42,10 +43,10 @@ in-dental-care-admin/
 │   ├── package.json
 │   └── tailwind.config.js
 ├── backend/
-│   ├── config/             # Konfigurasi database PostgreSQL & env
+│   ├── config/             # Konfigurasi Prisma Client & environment
 │   ├── controllers/        # Business logic (authController, reservationController, doctorController, emrController)
 │   ├── middleware/         # Auth verification middleware & error handler
-│   ├── models/             # Database queries & schema definitions
+│   ├── prisma/             # Skema Prisma (schema.prisma) & file migrasi database
 │   ├── routes/             # REST API routes endpoints (/api/auth, /api/reservations, etc.)
 │   ├── server.js           # Express app entry point
 │   └── package.json
@@ -78,7 +79,7 @@ in-dental-care-admin/
 
 Seluruh rancangan skema relasional tabel, Entity Relationship Diagram (ERD), kamus data, strategi indexing, konfigurasi connection pooling, serta skrip DDL migrasi SQL lengkap dikelola secara terpusat pada dokumen tersendiri:
 
-👉 **[database.md](file:///c:/Users/ASUS/OneDrive/Documents/GitHub/DentalCare-Dashboard/panduan/database.md)**
+**[database.md](file:///c:/Users/ASUS/OneDrive/Documents/GitHub/DentalCare-Dashboard/panduan/database.md)**
 
 Ringkasan 5 tabel utama yang dikelola pada basis data PostgreSQL:
 * **`user`:** Akun login email dan password terenkripsi (`password_hash`).
@@ -89,8 +90,8 @@ Ringkasan 5 tabel utama yang dikelola pada basis data PostgreSQL:
 
 ## 6. Skalabilitas & Performance (Scalability)
 
-* **Database Connection Pooling:** Menggunakan `pg-pool` di Node.js untuk mengelola koneksi database secara efisien, mencegah lonjakan koneksi saat beban tinggi (menjamin respon API <200ms).
-* **Indexed Queries:** Pembuatan indeks pada kolom pencarian sering (seperti `pasien_id`, `tanggal_rekam`, dan `status`) di PostgreSQL untuk memastikan pencarian data EMR dan reservasi instan.
+* **Database Connection Pooling:** Menggunakan mekanisme connection pooling bawaan **Prisma Client** (dikonfigurasi dengan parameter `connection_limit` pada `DATABASE_URL`) untuk mengelola koneksi PostgreSQL secara optimal dan mencegah lonjakan beban (menjamin respon API <200ms).
+* **Indexed Queries:** Pembuatan indeks melalui Prisma (`@@index`) pada kolom pencarian sering (seperti `tanggal_reservasi` dan `pasien_id`) di PostgreSQL untuk memastikan pencarian data EMR dan reservasi instan.
 * **Modular Analytics:** Pemrosesan data analitik dipisahkan ke lingkungan Python/Jupyter terisolasi agar tidak membebani performa operasional server Express.js utama.
 
 ## 7. Feature Considerations & Future Roadmap

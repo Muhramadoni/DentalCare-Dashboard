@@ -131,35 +131,133 @@ Menyimpan catatan medis pemeriksaan gigi (EMR).
 
 ---
 
-## 4. Konfigurasi Koneksi Database (Node.js & Express.js)
+## 4. Konfigurasi Koneksi Database Menggunakan Prisma ORM
 
-Koneksi database PostgreSQL di backend diatur menggunakan `pg` pool sederhana di file `backend/config/db.js`:
+Aplikasi backend menggunakan **Prisma ORM** (`@prisma/client`) untuk berinteraksi dengan database PostgreSQL. Inisialisasi koneksi dikelola secara tunggal (*singleton instance*) di file `backend/config/prisma.js` (atau `backend/config/db.js`):
 
 ```javascript
-// backend/config/db.js
-const { Pool } = require('pg');
+// backend/config/prisma.js
+const { PrismaClient } = require('@prisma/client');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
 });
 
-module.exports = {
-  query: (text, params) => pool.query(text, params),
-  pool
-};
+module.exports = prisma;
+```
+
+Variabel lingkungan koneksi diatur pada `.env`:
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/indentalcare_db?schema=public&connection_limit=10"
 ```
 
 ---
 
-## 5. Skrip SQL (DDL) Pembuatan Tabel
+## 5. Skema Prisma (`schema.prisma`) & Migrasi
 
-Skrip SQL berikut dapat langsung dijalankan di PostgreSQL untuk membuat ke-5 tabel proyek:
+Seluruh model tabel didefinisikan pada file `backend/prisma/schema.prisma` yang dipetakan langsung ke 5 nama tabel PostgreSQL dalam bahasa Indonesia:
 
+```prisma
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Tabel user (untuk autentikasi)
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamp
+
+  @@map("user")
+}
+
+// 2. Tabel dokter
+model Dokter {
+  id           Int           @id @default(autoincrement())
+  nama         String        @db.VarChar(255)
+  spesialisasi String?       @db.VarChar(255)
+  cabang       String?       @db.VarChar(255)
+  jadwal_json  Json?         @db.JsonB
+  status       String?       @default("Aktif") @db.VarChar(50)
+  
+  reservasi    Reservasi[]
+  rekam_medis  RekamMedis[]
+
+  @@map("dokter")
+}
+
+// 3. Tabel pasien
+model Pasien {
+  id          Int           @id @default(autoincrement())
+  nama        String        @db.VarChar(255)
+  created_at  DateTime      @default(now()) @db.Timestamp
+
+  reservasi   Reservasi[]
+  rekam_medis RekamMedis[]
+
+  @@map("pasien")
+}
+
+// 4. Tabel reservasi
+model Reservasi {
+  id                Int      @id @default(autoincrement())
+  pasien_id         Int
+  dokter_id         Int
+  tanggal_reservasi DateTime @db.Date
+  waktu_reservasi   String   @db.VarChar(100)
+  status            String   @default("Appointment") @db.VarChar(50)
+
+  pasien            Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
+  dokter            Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
+
+  @@index([tanggal_reservasi], map: "idx_reservasi_tanggal")
+  @@map("reservasi")
+}
+
+// 5. Tabel rekam_medis
+model RekamMedis {
+  id            Int      @id @default(autoincrement())
+  pasien_id     Int
+  dokter_id     Int
+  tanggal_rekam DateTime @default(now()) @db.Date
+  regio         String?  @db.VarChar(100)
+  anamnesa      String?  @db.Text
+  tindakan      String?  @db.Text
+  resep         String?  @db.Text
+  terapi        String?  @db.Text
+
+  pasien        Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
+  dokter        Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
+
+  @@index([pasien_id], map: "idx_rekam_medis_pasien")
+  @@map("rekam_medis")
+}
+```
+
+### 5.1. Perintah Migrasi Prisma CLI
+Jalankan perintah berikut di folder `backend/` untuk menghasilkan tabel dan Prisma Client:
+```bash
+# 1. Inisialisasi skema dan terapkan migrasi ke database PostgreSQL
+npx prisma migrate dev --name init
+
+# 2. Generate Prisma Client setelah ada perubahan skema
+npx prisma generate
+
+# 3. (Opsional) Buka GUI Prisma Studio untuk mengecek isi database
+npx prisma studio
+```
+
+### 5.2. Skrip SQL Murni (DDL Manual jika diperlukan)
+Jika ingin menginisialisasi tabel secara manual di PostgreSQL tanpa migrasi CLI:
 ```sql
--- 1. Tabel user
 CREATE TABLE IF NOT EXISTS "user" (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -167,7 +265,6 @@ CREATE TABLE IF NOT EXISTS "user" (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Tabel dokter
 CREATE TABLE IF NOT EXISTS dokter (
     id SERIAL PRIMARY KEY,
     nama VARCHAR(255) NOT NULL,
@@ -177,14 +274,12 @@ CREATE TABLE IF NOT EXISTS dokter (
     status VARCHAR(50) DEFAULT 'Aktif'
 );
 
--- 3. Tabel pasien
 CREATE TABLE IF NOT EXISTS pasien (
     id SERIAL PRIMARY KEY,
     nama VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Tabel reservasi
 CREATE TABLE IF NOT EXISTS reservasi (
     id SERIAL PRIMARY KEY,
     pasien_id INT NOT NULL REFERENCES pasien(id) ON DELETE CASCADE,
@@ -194,7 +289,6 @@ CREATE TABLE IF NOT EXISTS reservasi (
     status VARCHAR(50) DEFAULT 'Appointment'
 );
 
--- 5. Tabel rekam_medis
 CREATE TABLE IF NOT EXISTS rekam_medis (
     id SERIAL PRIMARY KEY,
     pasien_id INT NOT NULL REFERENCES pasien(id) ON DELETE CASCADE,
@@ -207,7 +301,6 @@ CREATE TABLE IF NOT EXISTS rekam_medis (
     terapi TEXT
 );
 
--- Indeks untuk mempercepat pencarian data
 CREATE INDEX IF NOT EXISTS idx_reservasi_tanggal ON reservasi (tanggal_reservasi);
 CREATE INDEX IF NOT EXISTS idx_rekam_medis_pasien ON rekam_medis (pasien_id);
 ```

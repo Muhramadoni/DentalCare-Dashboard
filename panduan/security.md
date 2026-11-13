@@ -110,19 +110,18 @@ Data medis EMR (anamnesa, regio gigi, tindakan, dan resep obat) merupakan data t
 * Tolak request dengan pesan HTTP `400 Bad Request` jika tipe data tidak sesuai (misal: format tanggal reservasi salah, ID bukan UUID/integer valid, atau status reservasi di luar daftar enum).
 
 ### 5.2. Pencegahan SQL Injection (SQLi)
-* **Wajib Parameterized Queries:** Seluruh interaksi dengan database PostgreSQL wajib menggunakan *Parameterized Queries* atau *Prepared Statements* (menggunakan placeholder `$1`, `$2`, dll. melalui driver `pg` atau ORM resmi).
+* **Penggunaan Prisma ORM:** Seluruh interaksi dengan database PostgreSQL wajib menggunakan metode bawaan **Prisma ORM** (`prisma.user`, `prisma.dokter`, `prisma.reservasi`, dll.) yang secara otomatis mengonversi input pengguna menjadi *Parameterized Queries* / *Prepared Statements*, sehingga kebal terhadap serangan SQL Injection.
   ```javascript
-  // AMAN: Parameterized Query
-  const query = `
-    SELECT id, patient_name, appointment_date, status 
-    FROM reservations 
-    WHERE doctor_id = $1 AND appointment_date = $2;
-  `;
-  const values = [doctorId, appointmentDate];
-  const result = await db.query(query, values);
+  // AMAN: Menggunakan Prisma ORM Client (Otomatis Parameterized)
+  const reservasi = await prisma.reservasi.findMany({
+    where: {
+      dokter_id: doctorId,
+      tanggal_reservasi: new Date(appointmentDate)
+    }
+  });
 
-  // DILARANG KERAS: String Concatenation / Template Literals Langsung ke Query
-  // const badQuery = `SELECT * FROM reservations WHERE doctor_id = '${doctorId}'`; // SANGAT RENTAN!
+  // DILARANG KERAS: Menggunakan $queryRawUnsafe dengan string concatenation
+  // const badQuery = await prisma.$queryRawUnsafe(`SELECT * FROM reservasi WHERE dokter_id = ${doctorId}`); // SANGAT RENTAN!
   ```
 
 ### 5.3. Pencegahan Cross-Site Scripting (XSS)
