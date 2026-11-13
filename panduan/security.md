@@ -43,6 +43,46 @@ Sesuai dengan **FR-1** dan **US-1**, sistem wajib menjamin kerahasiaan identitas
 * **Penanganan Logout & Invalidasi:**
   * Saat admin/dokter melakukan logout, token harus dihapus dari cookie browser dan dicatat pada mekanisme daftar pencabutan (*token blacklist/revocation*) jika diperlukan pemutusan sesi seketika.
 
+### 2.3. Sliding Session & Idle Timeout
+
+Sistem menerapkan mekanisme sesi dinamis (*sliding session*) untuk menjaga keseimbangan antara kenyamanan pengguna dan keamanan sesi. Implementasi terdiri dari dua komponen yang bekerja bersama.
+
+**Komponen 1 — Idle Timeout (Frontend: `src/App.jsx`)**
+
+Frontend memantau aktivitas admin secara pasif melalui event listener pada `window` (`mousemove`, `mousedown`, `keydown`, `scroll`, `touchstart`). Setiap ada aktivitas, waktu aktivitas terakhir diperbarui. Sistem memeriksa kondisi idle setiap 1 menit:
+
+* Jika admin tidak melakukan aktivitas apapun selama **60 menit berturut-turut**, sistem melakukan logout otomatis.
+* Jika admin masih aktif, timer 60 menit terus direset dan sesi tidak terputus.
+
+**Komponen 2 — Token Refresh Otomatis (Frontend: `src/App.jsx` + Backend: `POST /api/v1/auth/refresh`)**
+
+Karena token JWT memiliki masa berlaku tetap 1 jam sejak diterbitkan, sistem melakukan perpanjangan token secara otomatis sebelum token kadaluarsa:
+
+* Setiap **55 menit**, frontend memeriksa apakah admin masih aktif dalam rentang waktu tersebut.
+* Jika admin aktif, frontend mengirimkan request ke endpoint `POST /api/v1/auth/refresh` dengan menyertakan token yang masih berlaku sebagai bukti identitas.
+* Backend memvalidasi token melalui middleware `authenticateToken`. Jika valid, backend menerbitkan token baru yang berlaku **1 jam penuh** dari waktu permintaan.
+* Token baru disimpan menggantikan token lama di sisi klien. Sesi admin berlanjut tanpa terputus.
+* Jika admin tidak aktif selama 55 menit lebih, refresh dilewati dan idle timeout akan menangani logout pada menit ke-60.
+* Jika server mengembalikan respons selain `200 OK` (misalnya token sudah tidak valid), sistem langsung melakukan logout paksa.
+
+```javascript
+// Konstanta sliding session di src/App.jsx
+const IDLE_TIMEOUT_MS     = 60 * 60 * 1000  // 60 menit tidak aktif → auto logout
+const REFRESH_INTERVAL_MS = 55 * 60 * 1000  // Refresh token tiap 55 menit jika aktif
+const IDLE_CHECK_MS       =      60 * 1000  // Cek idle tiap 1 menit
+```
+
+**Endpoint Refresh Token (Backend: `backend/controllers/auth-controller.js`)**
+
+```javascript
+// POST /api/v1/auth/refresh
+// Memperbarui JWT token jika token masih valid (Sliding Session)
+// Dilindungi oleh middleware: globalRateLimiter → authenticateToken
+router.post('/refresh', globalRateLimiter, authenticateToken, refresh);
+```
+
+Endpoint ini bersifat stateless — tidak memerlukan tabel tambahan di database. Token lama yang masih valid digunakan sebagai satu-satunya bukti otorisasi untuk mendapatkan token baru.
+
 ---
 
 ## 3. Otorisasi & Kontrol Akses (Role-Based Access Control / RBAC)
@@ -96,6 +136,7 @@ Untuk mencegah eksploitasi serangan *Brute Force*, *Credential Stuffing*, dan se
   * Jika kuota terlampaui, server mengembalikan status HTTP `429 Too Many Requests` disertai header `Retry-After`.
 * **Rate Limiting Global REST API:**
   * Terapkan batas umum pada seluruh endpoint publik/operasional (misalnya maksimal **100 - 300 permintaan per 15 menit per IP**) untuk mencegah kelebihan beban pada connection pool PostgreSQL.
+  * `globalRateLimiter` telah diterapkan pada endpoint `POST /api/v1/auth/logout` dan `POST /api/v1/auth/refresh` dengan batas **100 permintaan per menit per IP**. Middleware ini diletakkan sebelum `authenticateToken` agar request berlebih ditolak di lapisan pertama sebelum validasi token diproses, sesuai prinsip *Defense in Depth* (Section 1).
 * **Perlindungan Terhadap DoS di Database:**
   * Terapkan *timeout* query pada PostgreSQL (`statement_timeout = 5000`) untuk mencegah query analitik atau query pencarian EMR yang tidak terindeks membebani CPU database secara berkepanjangan.
 
