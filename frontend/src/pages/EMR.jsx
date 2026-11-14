@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Sidebar from '../components/sidebar'
 import Pagination from '../components/pagination'
 import {
@@ -8,8 +8,14 @@ import {
     ClearIcon,
     FilterResetIcon,
     SearchIcon,
+    SpinnerIcon,
+    ErrorIcon,
+    TrashIcon,
 } from '../components/icon'
 import { toDateInputValue, toDisplayDate } from '../utils/date'
+
+const API_BASE_URL = 'http://localhost:5000/api/v1/rekam-medis'
+const DOKTER_API_URL = 'http://localhost:5000/api/v1/dokter'
 
 export default function EMR({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('emr')
@@ -19,6 +25,8 @@ export default function EMR({ onNavigate, onLogout }) {
     const [inputTanggal, setInputTanggal] = useState('')
     const [inputRegio, setInputRegio] = useState('')
     const [inputDokter, setInputDokter] = useState('')
+    // Kunci field tanggal & dokter setelah pasien dipilih dari dropdown
+    const [isPatientLocked, setIsPatientLocked] = useState(false)
     const [inputAnamnesa, setInputAnamnesa] = useState('')
     const [inputTindakan, setInputTindakan] = useState('')
     const [inputResep, setInputResep] = useState('')
@@ -33,86 +41,17 @@ export default function EMR({ onNavigate, onLogout }) {
     const [formSuccess, setFormSuccess] = useState('')
     const [formError, setFormError] = useState('')
 
-    // State Riwayat Rekam Medis (EMR)
-    const [emrList, setEmrList] = useState([
-        {
-            id: 1,
-            namaPasien: 'Pasien 1',
-            tanggal: '20-05-2026',
-            regio: '16',
-            anamnesa: 'Karies Profunda (Gigi Geraham Kanan)',
-            tindakan: 'Penambalan Komposit Light-Curing',
-            resep: 'Asam Mefenamat 500mg (3x1)',
-            terapi: 'Evaluasi Oklusi & Polis Tambalan',
-            dokter: 'drg. Indira Nugrahani',
-        },
-        {
-            id: 2,
-            namaPasien: 'Budi Santoso',
-            tanggal: '21-05-2026',
-            regio: '21',
-            anamnesa: 'Fraktur Mahkota Email-Dentin',
-            tindakan: 'Restorasi Direct Veneer Komposit',
-            resep: 'Paracetamol 500mg (prn)',
-            terapi: 'Kontrol 1 Minggu Post-Restorasi',
-            dokter: 'drg. Adria Permana Putra, Sp.BM',
-        },
-        {
-            id: 3,
-            namaPasien: 'Siti Rahma',
-            tanggal: '21-05-2026',
-            regio: 'Full Arch',
-            anamnesa: 'Gingivitis Marginalis Kronis & Kalkulus',
-            tindakan: 'Scaling & Root Planing Ultrasonic',
-            resep: 'Chlorhexidine Gluconate 0.2% Gargle',
-            terapi: 'DHE (Dental Health Education) & Flossing',
-            dokter: 'drg. Mhay Chyntha Harlyana',
-        },
-        {
-            id: 4,
-            namaPasien: 'Ahmad Dani',
-            tanggal: '22-05-2026',
-            regio: '48',
-            anamnesa: 'Impaksi M3 Mesioangular Kelas IIA',
-            tindakan: 'Odontektomi / Bedah Minor M3',
-            resep: 'Amoxicillin 500mg, Cataflam 50mg',
-            terapi: 'Aff Hecting Hari ke-7',
-            dokter: 'drg. Adria Permana Putra, Sp.BM',
-        },
-        {
-            id: 5,
-            namaPasien: 'Citra Dewi',
-            tanggal: '22-05-2026',
-            regio: '11, 21',
-            anamnesa: 'Diskolorisasi Gigi Anterior Pasca Trauma',
-            tindakan: 'Bleaching Eksterna In-Office (3 Siklus)',
-            resep: 'Pasta Gigi Sensitif Potassium Nitrate',
-            terapi: 'Evaluasi Shade Guide Pasca Bleaching',
-            dokter: 'drg. Indira Nugrahani',
-        },
-        {
-            id: 6,
-            namaPasien: 'Hendra Wijaya',
-            tanggal: '23-05-2026',
-            regio: '36',
-            anamnesa: 'Pulpitis Ireversibel Simtomatik',
-            tindakan: 'Pulpektomi & Ekstirpasi Saluran Akar',
-            resep: 'Ibuprofen 400mg (3x1)',
-            terapi: 'Perawatan Saluran Akar (PSA) Kunjungan 2',
-            dokter: 'drg. Fajar Pratama',
-        },
-        {
-            id: 7,
-            namaPasien: 'Maya Putri',
-            tanggal: '23-05-2026',
-            regio: '14, 15',
-            anamnesa: 'Karies Oklusal Superfisialis',
-            tindakan: 'Fissure Sealant & Tambalan Komposit',
-            resep: '-',
-            terapi: 'Fluoride Varnish Topical Application',
-            dokter: 'drg. Sarah Melati',
-        },
-    ])
+    // State Konfirmasi Sebelum Simpan & Loading
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [pendingPayload, setPendingPayload] = useState(null)
+
+    // State Riwayat Rekam Medis (EMR) - Bersih dari data dummy, siap input manual
+    const [emrList, setEmrList] = useState([])
+    const [dbPatients, setDbPatients] = useState([])
+    const [dokterOptions, setDokterOptions] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [apiError, setApiError] = useState(null)
 
     // State Filter Bagian Bawah
     const [searchQuery, setSearchQuery] = useState('')
@@ -129,54 +68,194 @@ export default function EMR({ onNavigate, onLogout }) {
     const pasienFilterRef = useRef(null)
     const filterSearchInputRef = useRef(null)
 
-    const defaultPasienOptions = [
-        'Ahmad Dani',
-        'Budi Santoso',
-        'Citra Dewi',
-        'Dewi Lestari',
-        'Eko Prasetyo',
-        'Fajar Nugraha',
-        'Hendra Wijaya',
-        'Maya Putri',
-        'Pasien 1',
-        'Pasien 2',
-        'Rian Hidayat',
-        'Siti Rahma',
-        'Yusuf Maulana',
-    ]
+    // Helper: Ambil token JWT dari sessionStorage (atau localStorage)
+    const getAuthToken = useCallback(() => {
+        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')
+        if (!token && onLogout) {
+            onLogout()
+            return null
+        }
+        return token
+    }, [onLogout])
 
-    // Daftar semua pasien unik (menggabungkan opsi default dan riwayat EMR yang ada)
+    // Ambil data EMR dari Backend REST API (GET /api/v1/rekam-medis)
+    const fetchEmr = useCallback(async () => {
+        setIsLoading(true)
+        setApiError(null)
+
+        try {
+            const token = getAuthToken()
+            if (!token) return
+
+            const response = await fetch(API_BASE_URL, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const result = await response.json()
+
+            if (!response.ok || !result.success) {
+                if (response.status === 401 && onLogout) {
+                    onLogout()
+                    return
+                }
+                throw new Error(result?.error?.message || 'Gagal memuat riwayat rekam medis.')
+            }
+
+            setEmrList(result.data || [])
+        } catch (err) {
+            console.error('Error saat fetch EMR:', err)
+            setApiError(err.message || 'Tidak dapat terhubung ke server backend.')
+        } finally {
+            setIsLoading(false)
+        }
+    }, [getAuthToken, onLogout])
+
+    // Ambil daftar dokter dari Backend REST API (GET /api/v1/dokter)
+    const fetchDokterList = useCallback(async () => {
+        try {
+            const token = getAuthToken()
+            if (!token) return
+
+            const response = await fetch(DOKTER_API_URL, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const result = await response.json()
+            if (response.ok && result.success && Array.isArray(result.data)) {
+                setDokterOptions(result.data.map((d) => d.nama))
+            }
+        } catch (err) {
+            console.error('Error saat fetch dokter options:', err)
+        }
+    }, [getAuthToken])
+
+    // Ambil daftar pasien dari Backend REST API (GET /api/v1/rekam-medis/patients)
+    const fetchPatients = useCallback(async () => {
+        try {
+            const token = getAuthToken()
+            if (!token) return
+
+            const response = await fetch(`${API_BASE_URL}/patients`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const result = await response.json()
+            if (response.ok && result.success && Array.isArray(result.data)) {
+                setDbPatients(result.data)
+            }
+        } catch (err) {
+            console.error('Error saat fetch patients list:', err)
+        }
+    }, [getAuthToken])
+
+    useEffect(() => {
+        fetchEmr()
+        fetchDokterList()
+        fetchPatients()
+    }, [fetchEmr, fetchDokterList, fetchPatients])
+
+    // Daftar semua pasien unik beserta status reservasi, tanggal, dan dokter pemeriksa
     const allPasienList = useMemo(() => {
-        const set = new Set(defaultPasienOptions)
-        emrList.forEach((item) => {
-            if (item.namaPasien && item.namaPasien.trim()) {
-                set.add(item.namaPasien.trim())
+        const patientMap = new Map()
+
+        // 1. Masukkan pasien dari database (dbPatients)
+        dbPatients.forEach((p) => {
+            const name = typeof p === 'object' ? p.nama : p
+            const isRescheduled = typeof p === 'object' ? Boolean(p.isRescheduled) : false
+            const status = typeof p === 'object' ? p.status : 'Appointment'
+            const tanggal = typeof p === 'object' ? (p.tanggal || '') : ''
+            const dokter = typeof p === 'object' ? (p.dokter || '') : ''
+
+            if (name && name.trim()) {
+                patientMap.set(name.trim().toLowerCase(), {
+                    id: typeof p === 'object' ? p.id : undefined,
+                    nama: name.trim(),
+                    isRescheduled,
+                    status,
+                    tanggal,
+                    dokter,
+                })
             }
         })
-        return Array.from(set).sort((a, b) => a.localeCompare(b, 'id'))
-    }, [emrList])
+
+        // 2. Gabungkan riwayat EMR jika ada pasien yang belum terdaftar di map atau melengkapi data
+        emrList.forEach((item) => {
+            if (item.namaPasien && item.namaPasien.trim()) {
+                const key = item.namaPasien.trim().toLowerCase()
+                const existing = patientMap.get(key)
+                if (!existing) {
+                    patientMap.set(key, {
+                        id: item.pasien_id,
+                        nama: item.namaPasien.trim(),
+                        isRescheduled: false,
+                        status: 'Appointment',
+                        tanggal: item.tanggalIso || '',
+                        dokter: item.dokter || '',
+                    })
+                } else {
+                    if (!existing.tanggal && item.tanggalIso) {
+                        existing.tanggal = item.tanggalIso
+                    }
+                    if (!existing.dokter && item.dokter) {
+                        existing.dokter = item.dokter
+                    }
+                }
+            }
+        })
+
+        return Array.from(patientMap.values()).sort((a, b) => a.nama.localeCompare(b.nama, 'id'))
+    }, [dbPatients, emrList])
+
+    // Handler ketika admin memilih nama pasien dari autocomplete / dropdown
+    const handleSelectPatient = useCallback((patientObj) => {
+        if (!patientObj) return
+
+        if (patientObj.isRescheduled) {
+            setFormError(`Pasien "${patientObj.nama}" sedang berstatus Reschedule dan belum dapat mengisi rekam medis.`)
+            return
+        }
+
+        setInputPasien(patientObj.nama)
+        setIsPasienFormOpen(false)
+
+        // Otomatis terisi tanggal dan dokter pemeriksa berdasarkan data pasien tersebut
+        if (patientObj.tanggal) {
+            setInputTanggal(patientObj.tanggal)
+        }
+        if (patientObj.dokter) {
+            setDokterOptions((prev) => (prev.includes(patientObj.dokter) ? prev : [...prev, patientObj.dokter]))
+            setInputDokter(patientObj.dokter)
+        }
+        // Kunci field tanggal & dokter agar tidak bisa diubah manual
+        setIsPatientLocked(true)
+        setFormError('')
+    }, [])
 
     // Daftar pasien yang terfilter untuk Form Input (Atas)
     const filteredPasienForm = useMemo(() => {
         if (!inputPasien.trim()) return allPasienList
         const q = inputPasien.trim().toLowerCase()
-        return allPasienList.filter((p) => p.toLowerCase().includes(q))
+        return allPasienList.filter((p) => p.nama.toLowerCase().includes(q))
     }, [allPasienList, inputPasien])
 
     // Daftar pasien yang terfilter untuk Filter Riwayat (Bawah)
     const filteredPasienFilter = useMemo(() => {
         if (!pasienFilterSearch.trim()) return allPasienList
         const q = pasienFilterSearch.trim().toLowerCase()
-        return allPasienList.filter((p) => p.toLowerCase().includes(q))
+        return allPasienList.filter((p) => p.nama.toLowerCase().includes(q))
     }, [allPasienList, pasienFilterSearch])
-
-    const dokterOptions = [
-        'drg. Indira Nugrahani',
-        'drg. Adria Permana Putra, Sp.BM',
-        'drg. Mhay Chyntha Harlyana',
-        'drg. Fajar Pratama',
-        'drg. Sarah Melati',
-    ]
 
     // Tutup dropdown saat klik di luar area
     useEffect(() => {
@@ -204,6 +283,13 @@ export default function EMR({ onNavigate, onLogout }) {
         setCurrentPage(1)
     }, [searchQuery, startDate, endDate, selectedPasienFilter, selectedDokterFilter])
 
+    // Toast notifikasi hilang otomatis setelah 4 detik
+    useEffect(() => {
+        if (!formSuccess) return
+        const timer = setTimeout(() => setFormSuccess(''), 4000)
+        return () => clearTimeout(timer)
+    }, [formSuccess])
+
     const handleTabChange = (tabId) => {
         setActiveTab(tabId)
         if (onNavigate) {
@@ -216,7 +302,7 @@ export default function EMR({ onNavigate, onLogout }) {
         setEditingId(item.id)
         setInputPasien(item.namaPasien)
         setIsPasienFormOpen(false)
-        setInputTanggal(toDateInputValue(item.tanggal))
+        setInputTanggal(item.tanggalIso || toDateInputValue(item.tanggal))
         setInputRegio(item.regio === '-' ? '' : item.regio)
         setInputDokter(item.dokter)
         setInputAnamnesa(item.anamnesa === '-' ? '' : item.anamnesa)
@@ -225,6 +311,8 @@ export default function EMR({ onNavigate, onLogout }) {
         setInputTerapi(item.terapi === '-' ? '' : item.terapi)
         setFormError('')
         setFormSuccess('')
+        // Saat edit data lama, field tanggal & dokter bisa diubah bebas
+        setIsPatientLocked(false)
 
         // Scroll halus ke atas menuju form
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -243,16 +331,27 @@ export default function EMR({ onNavigate, onLogout }) {
         setInputResep('')
         setInputTerapi('')
         setFormError('')
+        // Buka kunci field tanggal & dokter saat form direset
+        setIsPatientLocked(false)
     }
 
-    // Simpan data dari Form (Tambah Baru atau Update data yang dipilih)
-    const handleSaveFromForm = (e) => {
+    // Validasi dan Buka Dialog Konfirmasi sebelum Simpan
+    const handlePreSubmit = (e) => {
         e.preventDefault()
         setFormError('')
         setFormSuccess('')
 
         if (!inputPasien.trim()) {
             setFormError('Silakan pilih atau ketik nama pasien terlebih dahulu.')
+            return
+        }
+
+        // Validasi: Pasien berstatus Reschedule tidak boleh dibuatkan EMR
+        const chosenPatient = allPasienList.find(
+            (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
+        )
+        if (chosenPatient && chosenPatient.isRescheduled) {
+            setFormError(`Pasien "${chosenPatient.nama}" sedang berstatus Reschedule dan belum dapat mengisi rekam medis. Silakan sesuaikan reservasi terlebih dahulu.`)
             return
         }
         if (!inputTanggal.trim()) {
@@ -264,76 +363,145 @@ export default function EMR({ onNavigate, onLogout }) {
             return
         }
 
-        const displayDate = toDisplayDate(inputTanggal.trim())
-
-        if (editingId) {
-            // Mode Update langsung pada form atas
-            setEmrList((prev) =>
-                prev.map((item) =>
-                    item.id === editingId
-                        ? {
-                            ...item,
-                            namaPasien: inputPasien.trim(),
-                            tanggal: displayDate,
-                            regio: inputRegio.trim() || '-',
-                            dokter: inputDokter,
-                            anamnesa: inputAnamnesa.trim() || '-',
-                            tindakan: inputTindakan.trim() || '-',
-                            resep: inputResep.trim() || '-',
-                            terapi: inputTerapi.trim() || '-',
-                        }
-                        : item
-                )
-            )
-            setFormSuccess('Rekam medis berhasil diperbarui!')
-        } else {
-            // Mode Tambah Baru
-            const newRecord = {
-                id: Date.now(),
-                namaPasien: inputPasien.trim(),
-                tanggal: displayDate,
-                regio: inputRegio.trim() || '-',
-                dokter: inputDokter,
-                anamnesa: inputAnamnesa.trim() || '-',
-                tindakan: inputTindakan.trim() || '-',
-                resep: inputResep.trim() || '-',
-                terapi: inputTerapi.trim() || '-',
-            }
-            setEmrList((prev) => [newRecord, ...prev])
-            setFormSuccess('Rekam medis baru berhasil disimpan!')
+        const payload = {
+            namaPasien: inputPasien.trim(),
+            tanggal: inputTanggal.trim(),
+            regio: inputRegio.trim(),
+            dokter: inputDokter,
+            anamnesa: inputAnamnesa.trim(),
+            tindakan: inputTindakan.trim(),
+            resep: inputResep.trim(),
+            terapi: inputTerapi.trim(),
         }
 
-        handleResetForm()
-        setTimeout(() => setFormSuccess(''), 3000)
+        setPendingPayload(payload)
+        setShowConfirmModal(true)
     }
 
-    // Filter data tabel riwayat EMR
-    const filteredEmrList = emrList.filter((item) => {
-        const query = searchQuery.toLowerCase()
-        const matchesSearch =
-            item.namaPasien.toLowerCase().includes(query) ||
-            item.anamnesa.toLowerCase().includes(query) ||
-            item.tindakan.toLowerCase().includes(query) ||
-            item.dokter.toLowerCase().includes(query)
+    // Eksekusi Simpan Data ke Backend setelah dikonfirmasi
+    const handleConfirmSave = async () => {
+        if (!pendingPayload) return
 
-        const matchesPasien =
-            selectedPasienFilter === 'Semua Pasien' ||
-            item.namaPasien.trim().toLowerCase() === selectedPasienFilter.trim().toLowerCase()
+        setIsSubmitting(true)
+        setFormError('')
 
-        const matchesDokter =
-            selectedDokterFilter === 'Semua Dokter' || item.dokter === selectedDokterFilter
+        try {
+            const token = getAuthToken()
+            if (!token) return
 
-        // Konversi tanggal item (DD-MM-YYYY) → Date untuk perbandingan
-        let matchesDate = true
-        if (startDate || endDate) {
-            const [d, m, y] = item.tanggal.split('-')
-            const itemDate = new Date(`${y}-${m}-${d}`)
-            if (startDate) matchesDate = matchesDate && itemDate >= new Date(startDate)
-            if (endDate) matchesDate = matchesDate && itemDate <= new Date(endDate)
+            const isEdit = Boolean(editingId)
+            const url = isEdit ? `${API_BASE_URL}/${editingId}` : API_BASE_URL
+            const method = isEdit ? 'PUT' : 'POST'
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(pendingPayload),
+            })
+
+            const result = await response.json()
+
+            if (!response.ok || !result.success) {
+                if (response.status === 401 && onLogout) {
+                    onLogout()
+                    return
+                }
+                throw new Error(result?.error?.message || 'Gagal menyimpan rekam medis.')
+            }
+
+            setFormSuccess(
+                isEdit
+                    ? 'Rekam medis berhasil diperbarui!'
+                    : 'Rekam medis baru berhasil disimpan!'
+            )
+
+            setShowConfirmModal(false)
+            setPendingPayload(null)
+            handleResetForm()
+            fetchEmr()
+            fetchPatients()
+        } catch (err) {
+            console.error('Error saat simpan EMR:', err)
+            setFormError(err.message || 'Terjadi kesalahan saat menyimpan rekam medis.')
+            setShowConfirmModal(false)
+        } finally {
+            setIsSubmitting(false)
         }
+    }
 
-        return matchesSearch && matchesPasien && matchesDokter && matchesDate
-    })
+    // Hapus Rekam Medis (DELETE /api/v1/rekam-medis/:id)
+    const handleDeleteEmr = async (id, nama) => {
+        if (!window.confirm(`Hapus rekam medis untuk ${nama}?`)) return
+
+        try {
+            const token = getAuthToken()
+            if (!token) return
+
+            const response = await fetch(`${API_BASE_URL}/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const result = await response.json()
+            if (!response.ok || !result.success) {
+                if (response.status === 401 && onLogout) {
+                    onLogout()
+                    return
+                }
+                throw new Error(result?.error?.message || 'Gagal menghapus rekam medis.')
+            }
+
+            setEmrList((prev) => prev.filter((item) => item.id !== id))
+            setFormSuccess(`Rekam medis untuk ${nama} berhasil dihapus.`)
+
+            // Jika sedang mengedit item yang baru dihapus, reset form
+            if (editingId === id) {
+                handleResetForm()
+            }
+        } catch (err) {
+            console.error('Error saat menghapus rekam medis:', err)
+            alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+        }
+    }
+
+    // Filter data tabel riwayat EMR secara instan (<10 detik sesuai Target G3)
+    const filteredEmrList = useMemo(() => {
+        return emrList.filter((item) => {
+            const query = searchQuery.toLowerCase().trim()
+            const matchesSearch =
+                !query ||
+                item.namaPasien.toLowerCase().includes(query) ||
+                item.anamnesa.toLowerCase().includes(query) ||
+                item.tindakan.toLowerCase().includes(query) ||
+                item.regio.toLowerCase().includes(query) ||
+                item.dokter.toLowerCase().includes(query)
+
+            const matchesPasien =
+                selectedPasienFilter === 'Semua Pasien' ||
+                item.namaPasien.trim().toLowerCase() === selectedPasienFilter.trim().toLowerCase()
+
+            const matchesDokter =
+                selectedDokterFilter === 'Semua Dokter' || item.dokter === selectedDokterFilter
+
+            // Bandingkan tanggal menggunakan format ISO (YYYY-MM-DD) → string comparison aman tanpa timezone issue
+            let matchesDate = true
+            if (startDate || endDate) {
+                const itemIso = item.tanggalIso || ''
+                if (itemIso) {
+                    if (startDate) matchesDate = matchesDate && itemIso >= startDate
+                    if (endDate) matchesDate = matchesDate && itemIso <= endDate
+                }
+            }
+
+            return matchesSearch && matchesPasien && matchesDokter && matchesDate
+        })
+    }, [emrList, searchQuery, selectedPasienFilter, selectedDokterFilter, startDate, endDate])
 
     return (
         <div className="flex h-screen w-full bg-[#f9f8ff] font-['Poppins'] select-none overflow-hidden">
@@ -361,19 +529,41 @@ export default function EMR({ onNavigate, onLogout }) {
 
                     {/* Card Form Input Langsung */}
                     <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col">
-                        {/* Alert Notifikasi */}
+                        {/* Alert Notifikasi Sukses */}
                         {formSuccess && (
-                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium">
-                                {formSuccess}
+                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn">
+                                <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>{formSuccess}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormSuccess('')}
+                                    className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
+                                >
+                                    <ClearIcon className="w-3.5 h-3.5" />
+                                </button>
                             </div>
                         )}
+
+                        {/* Alert Notifikasi Error */}
                         {formError && (
-                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-medium">
-                                {formError}
+                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
+                                <div className="flex items-center gap-2">
+                                    <ErrorIcon className="w-4 h-4 text-red-500 shrink-0" />
+                                    <span>{formError}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormError('')}
+                                    className="text-red-400 hover:text-red-600 p-0.5"
+                                >
+                                    <ClearIcon className="w-3.5 h-3.5" />
+                                </button>
                             </div>
                         )}
+
+                        {/* Banner Mode Edit */}
                         {editingId && (
-                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium flex items-center justify-between">
+                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
                                 <span>Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik "Simpan EMR +".</span>
                                 <button
                                     type="button"
@@ -385,7 +575,7 @@ export default function EMR({ onNavigate, onLogout }) {
                             </div>
                         )}
 
-                        <form onSubmit={handleSaveFromForm} className="space-y-4">
+                        <form onSubmit={handlePreSubmit} className="space-y-4">
                             {/* Baris 1: Pilih Pasien, Tanggal, Regio (Gigi) (3 Kolom) */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                                 {/* Pilih Pasien (Bisa Ketik / Search) */}
@@ -410,11 +600,29 @@ export default function EMR({ onNavigate, onLogout }) {
                                                     setIsPasienFormOpen(false)
                                                 } else if (e.key === 'Enter') {
                                                     if (isPasienFormOpen && filteredPasienForm.length > 0) {
-                                                        e.preventDefault()
-                                                        setInputPasien(filteredPasienForm[0])
-                                                        setIsPasienFormOpen(false)
+                                                        const firstAvailable = filteredPasienForm.find((p) => !p.isRescheduled)
+                                                        if (firstAvailable) {
+                                                            e.preventDefault()
+                                                            handleSelectPatient(firstAvailable)
+                                                        }
                                                     }
                                                 }
+                                            }}
+                                            onBlur={() => {
+                                                setTimeout(() => {
+                                                    const exactMatch = allPasienList.find(
+                                                        (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
+                                                    )
+                                                    if (exactMatch && !exactMatch.isRescheduled) {
+                                                        if (exactMatch.tanggal && !inputTanggal) {
+                                                            setInputTanggal(exactMatch.tanggal)
+                                                        }
+                                                        if (exactMatch.dokter && !inputDokter) {
+                                                            setDokterOptions((prev) => (prev.includes(exactMatch.dokter) ? prev : [...prev, exactMatch.dokter]))
+                                                            setInputDokter(exactMatch.dokter)
+                                                        }
+                                                    }
+                                                }, 200)
                                             }}
                                             placeholder="Ketik atau pilih nama pasien..."
                                             className="w-full pl-4 pr-16 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
@@ -428,6 +636,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                                     onClick={() => {
                                                         setInputPasien('')
                                                         setIsPasienFormOpen(true)
+                                                        // Buka kunci field tanggal & dokter saat pasien di-clear
+                                                        setIsPatientLocked(false)
+                                                        setInputTanggal('')
+                                                        setInputDokter('')
                                                     }}
                                                     title="Hapus nama pasien"
                                                     className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -464,23 +676,34 @@ export default function EMR({ onNavigate, onLogout }) {
                                                 {filteredPasienForm.length > 0 ? (
                                                     filteredPasienForm.map((p, idx) => {
                                                         const isSelected =
-                                                            inputPasien.trim().toLowerCase() === p.toLowerCase()
+                                                            inputPasien.trim().toLowerCase() === p.nama.toLowerCase()
+                                                        const isRescheduled = Boolean(p.isRescheduled)
+
                                                         return (
                                                             <button
                                                                 key={idx}
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    setInputPasien(p)
-                                                                    setIsPasienFormOpen(false)
-                                                                }}
-                                                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${isSelected
-                                                                    ? 'bg-blue-50 text-[#1e88e5] font-semibold'
-                                                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                                                disabled={isRescheduled}
+                                                                onClick={() => handleSelectPatient(p)}
+                                                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors ${isRescheduled
+                                                                    ? 'bg-gray-50/80 text-gray-400 cursor-not-allowed opacity-75'
+                                                                    : isSelected
+                                                                        ? 'bg-blue-50 text-[#1e88e5] font-semibold cursor-pointer'
+                                                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
                                                                     }`}
                                                             >
-                                                                <span>{p}</span>
-                                                                {isSelected && (
-                                                                    <CheckIcon className="w-4 h-4 text-[#1e88e5]" />
+                                                                <div className="flex items-center gap-2 min-w-0">
+                                                                    <span className={isRescheduled ? 'text-gray-400' : ''}>
+                                                                        {p.nama}
+                                                                    </span>
+                                                                    {isRescheduled && (
+                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                                                                            Reschedule
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {isSelected && !isRescheduled && (
+                                                                    <CheckIcon className="w-4 h-4 text-[#1e88e5] shrink-0" />
                                                                 )}
                                                             </button>
                                                         )
@@ -513,8 +736,13 @@ export default function EMR({ onNavigate, onLogout }) {
                                         type="date"
                                         value={inputTanggal}
                                         onChange={(e) => setInputTanggal(e.target.value)}
-                                        onClick={(e) => e.target.showPicker?.()}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer"
+                                        onClick={(e) => !isPatientLocked && e.target.showPicker?.()}
+                                        readOnly={isPatientLocked}
+                                        className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${
+                                            isPatientLocked
+                                                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed pointer-events-none'
+                                                : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
+                                        }`}
                                     />
                                 </div>
 
@@ -542,7 +770,12 @@ export default function EMR({ onNavigate, onLogout }) {
                                     <select
                                         value={inputDokter}
                                         onChange={(e) => setInputDokter(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none appearance-none cursor-pointer pr-10"
+                                        disabled={isPatientLocked}
+                                        className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm appearance-none pr-10 transition-all ${
+                                            isPatientLocked
+                                                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
+                                                : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
+                                        }`}
                                     >
                                         <option value="" disabled>Pilih Dokter</option>
                                         {dokterOptions.map((doc, idx) => (
@@ -632,6 +865,23 @@ export default function EMR({ onNavigate, onLogout }) {
                         </form>
                     </div>
                 </div>
+
+                {/* Banner Error jika API gagal */}
+                {apiError && (
+                    <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-center gap-2.5">
+                            <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
+                            <span>{apiError}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={fetchEmr}
+                            className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
+                        >
+                            Coba Lagi
+                        </button>
+                    </div>
+                )}
 
                 {/* ====================================================
                     2. BAGIAN BAWAH: RIWAYAT REKAM MEDIS (EMR)
@@ -748,7 +998,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                 setIsPasienFilterOpen(false)
                                                             } else if (e.key === 'Enter') {
                                                                 if (filteredPasienFilter.length > 0) {
-                                                                    setSelectedPasienFilter(filteredPasienFilter[0])
+                                                                    setSelectedPasienFilter(filteredPasienFilter[0].nama)
                                                                     setIsPasienFilterOpen(false)
                                                                     setPasienFilterSearch('')
                                                                 }
@@ -795,13 +1045,13 @@ export default function EMR({ onNavigate, onLogout }) {
                                                 {filteredPasienFilter.length > 0 ? (
                                                     filteredPasienFilter.map((p, idx) => {
                                                         const isSelected =
-                                                            selectedPasienFilter.trim().toLowerCase() === p.trim().toLowerCase()
+                                                            selectedPasienFilter.trim().toLowerCase() === p.nama.trim().toLowerCase()
                                                         return (
                                                             <button
                                                                 key={idx}
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    setSelectedPasienFilter(p)
+                                                                    setSelectedPasienFilter(p.nama)
                                                                     setIsPasienFilterOpen(false)
                                                                     setPasienFilterSearch('')
                                                                 }}
@@ -810,7 +1060,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                                                                     }`}
                                                             >
-                                                                <span className="truncate">{p}</span>
+                                                                <span className="truncate">{p.nama}</span>
                                                                 {isSelected && (
                                                                     <CheckIcon className="w-3.5 h-3.5 text-[#1e88e5] shrink-0" />
                                                                 )}
@@ -865,91 +1115,167 @@ export default function EMR({ onNavigate, onLogout }) {
                             </div>
                         </div>
 
-                        {/* Tabel Riwayat EMR (Persis 8 Kolom Sesuai Desain Kelola-EMR.png) */}
-                        <div className="rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
-                                            <th className="px-5 py-3.5 whitespace-nowrap">Nama Pasien</th>
-                                            <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal</th>
-                                            <th className="px-5 py-3.5 whitespace-nowrap text-center">Regio</th>
-                                            <th className="px-5 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
-                                            <th className="px-5 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
-                                            <th className="px-5 py-3.5 min-w-[160px]">PF (Resep)</th>
-                                            <th className="px-5 py-3.5 min-w-[160px]">Terapi (Prosedur)</th>
-                                            <th className="px-5 py-3.5 whitespace-nowrap">Dokter</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
-                                        {filteredEmrList.length > 0 ? (
-                                            filteredEmrList
-                                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                                                .map((item) => {
-                                                    const isSelected = editingId === item.id
-
-                                                    return (
-                                                        <tr
-                                                            key={item.id}
-                                                            onClick={() => handleSelectRowToUpdate(item)}
-                                                            className={`transition-colors cursor-pointer ${isSelected
-                                                                ? 'bg-blue-50/80 text-blue-900 font-semibold'
-                                                                : 'hover:bg-gray-50/80'
-                                                                }`}
-                                                            title="Klik untuk mengedit data ini di form atas"
-                                                        >
-                                                            <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
-                                                                {item.namaPasien}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
-                                                                {item.tanggal}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
-                                                                {item.regio}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-slate-700">
-                                                                {item.anamnesa}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-slate-700">
-                                                                {item.tindakan}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-slate-700">
-                                                                {item.resep}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-slate-700">
-                                                                {item.terapi}
-                                                            </td>
-                                                            <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap font-normal">
-                                                                {item.dokter}
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                })
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan="8"
-                                                    className="px-4 py-8 text-center text-gray-400 text-xs font-normal"
-                                                >
-                                                    Tidak ada rekam medis yang sesuai dengan kriteria filter.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                        {/* Status Loading */}
+                        {isLoading && (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3">
+                                <SpinnerIcon className="w-8 h-8 text-[#49baff] animate-spin" />
+                                <span className="text-sm text-gray-500">Memuat riwayat rekam medis pasien...</span>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Pagination jika data lebih dari 5 */}
-                        <Pagination
-                            currentPage={currentPage}
-                            totalItems={filteredEmrList.length}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setCurrentPage}
-                        />
+                        {/* Tabel Riwayat EMR (Persis 8 Kolom Sesuai Desain Kelola-EMR.png) */}
+                        {!isLoading && (
+                            <div className="rounded-xl border border-gray-200 overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
+                                                <th className="px-5 py-3.5 whitespace-nowrap">Nama Pasien</th>
+                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal</th>
+                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Regio</th>
+                                                <th className="px-5 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
+                                                <th className="px-5 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
+                                                <th className="px-5 py-3.5 min-w-[160px]">PF (Resep)</th>
+                                                <th className="px-5 py-3.5 min-w-[160px]">Terapi (Prosedur)</th>
+                                                <th className="px-5 py-3.5 whitespace-nowrap">Dokter</th>
+                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
+                                            {filteredEmrList.length > 0 ? (
+                                                filteredEmrList
+                                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                    .map((item) => {
+                                                        const isSelected = editingId === item.id
+
+                                                        return (
+                                                            <tr
+                                                                key={item.id}
+                                                                onClick={() => handleSelectRowToUpdate(item)}
+                                                                className={`transition-colors cursor-pointer ${isSelected
+                                                                    ? 'bg-blue-50/80 text-blue-900 font-semibold'
+                                                                    : 'hover:bg-gray-50/80'
+                                                                    }`}
+                                                                title="Klik untuk mengedit data ini di form atas"
+                                                            >
+                                                                <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
+                                                                    {item.namaPasien}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
+                                                                    {item.tanggal}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
+                                                                    {item.regio}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-slate-700">
+                                                                    {item.anamnesa}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-slate-700">
+                                                                    {item.tindakan}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-slate-700">
+                                                                    {item.resep}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-slate-700">
+                                                                    {item.terapi}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap font-normal">
+                                                                    {item.dokter}
+                                                                </td>
+                                                                {/* Kolom 9: Aksi (Hapus Saja) */}
+                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                                                                    <div className="flex items-center justify-center">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                handleDeleteEmr(item.id, item.namaPasien)
+                                                                            }}
+                                                                            className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                            title="Hapus Rekam Medis"
+                                                                            aria-label="Hapus Rekam Medis"
+                                                                        >
+                                                                            <TrashIcon className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        )
+                                                    })
+                                            ) : (
+                                                <tr>
+                                                    <td
+                                                        colSpan="9"
+                                                        className="px-4 py-12 text-center text-gray-400 text-xs sm:text-sm font-normal"
+                                                    >
+                                                        {emrList.length === 0
+                                                            ? 'Belum ada data rekam medis. Silakan masukkan data rekam medis pasien melalui formulir di atas.'
+                                                            : 'Tidak ada rekam medis yang sesuai dengan kriteria filter atau pencarian.'}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Pagination jika data lebih dari itemsPerPage */}
+                        {filteredEmrList.length > 0 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={filteredEmrList.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                            />
+                        )}
                     </div>
                 </div>
             </main>
+
+            {/* Dialog Konfirmasi Sebelum Simpan EMR (sesuai FR-7 & security.md) */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn">
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 flex flex-col p-6 sm:p-7">
+                        <h3 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
+                            {editingId ? 'Konfirmasi Pembaruan EMR' : 'Konfirmasi Simpan EMR'}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
+                            {editingId
+                                ? `Apakah Anda yakin ingin memperbarui data rekam medis untuk pasien "${pendingPayload?.namaPasien}"?`
+                                : `Apakah Anda yakin ingin menyimpan rekam medis baru untuk pasien "${pendingPayload?.namaPasien}"?`}
+                        </p>
+                        <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={() => {
+                                    setShowConfirmModal(false)
+                                    setPendingPayload(null)
+                                }}
+                                className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={handleConfirmSave}
+                                className="px-6 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#49baff]/30 transition-all cursor-pointer flex items-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <SpinnerIcon className="w-4 h-4 animate-spin text-white" />
+                                        <span>Menyimpan...</span>
+                                    </>
+                                ) : (
+                                    <span>Ya, Simpan</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

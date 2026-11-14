@@ -40,7 +40,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
         setError(null)
 
         try {
-            const token = localStorage.getItem('auth_token')
+            const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')
             if (!token) {
                 if (onLogout) onLogout()
                 return
@@ -152,11 +152,11 @@ export default function Dashboard({ onNavigate, onLogout }) {
                         )}
                     </div>
 
-                    {/* Stat Card 2: Dokter Praktik */}
+                    {/* Stat Card 2: Dokter Praktik Hari Ini */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-600">
-                                Dokter Praktik
+                                Dokter Praktik Hari Ini
                             </span>
                             <div className="w-10 h-10 rounded-full bg-[#49baff] text-white flex items-center justify-center shadow-xs">
                                 <DoctorIcon className="w-5 h-5" />
@@ -167,7 +167,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                 <div className="h-9 w-16 bg-slate-100 animate-pulse rounded-md"></div>
                             ) : (
                                 <span className="text-3xl sm:text-4xl font-bold text-[#49baff] tracking-tight">
-                                    {summary.totalDokterAktif}
+                                    {summary.totalDokterPraktikHariIni ?? summary.totalDokterAktif ?? 0}
                                 </span>
                             )}
                             <span className="bg-[#adc91f] text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-xs">
@@ -176,10 +176,10 @@ export default function Dashboard({ onNavigate, onLogout }) {
                         </div>
                         {!isLoading && (
                             <div className="mt-3 pt-3 border-t border-slate-50 text-xs text-slate-500 font-normal">
-                                {summary.totalDokterAktif > 0 ? (
-                                    <span className="text-emerald-600 font-medium">● Dokter aktif bertugas</span>
+                                {(summary.totalDokterPraktikHariIni ?? summary.totalDokterAktif) > 0 ? (
+                                    <span className="text-emerald-600 font-medium">● Dokter memiliki jadwal praktik hari ini</span>
                                 ) : (
-                                    <span>Belum ada dokter terdaftar</span>
+                                    <span>Tidak ada jadwal praktik dokter hari ini</span>
                                 )}
                             </div>
                         )}

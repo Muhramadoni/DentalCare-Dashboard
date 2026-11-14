@@ -8,7 +8,138 @@ import {
     ClockOutlineIcon,
     ChevronDownIcon,
 } from './icon'
-import { toDateInputValue, toDisplayDate } from '../utils/date'
+import { toDateInputValue, toDisplayDate, getTodayDateString } from '../utils/date'
+
+/**
+ * Helper: Dapatkan nama hari dalam Bahasa Indonesia dari format tanggal YYYY-MM-DD
+ */
+export function getDayNameFromDate(dateStr) {
+    if (!dateStr) return null
+    const clean = String(dateStr).trim()
+    const parts = clean.split('-')
+    if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+        return days[d.getDay()]
+    }
+    const d = new Date(clean)
+    if (isNaN(d.getTime())) return null
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+    return days[d.getDay()]
+}
+
+/**
+ * Helper: Ubah string jam ("15.00", "20:00 WIB", "09.42", dsb) menjadi total menit sejak tengah malam
+ */
+export function parseTimeToMinutes(timeStr) {
+    if (!timeStr) return null
+    const clean = String(timeStr).trim()
+    const match = clean.match(/(\d{1,2})[:.](\d{2})/)
+    if (match) {
+        const h = parseInt(match[1], 10)
+        const m = parseInt(match[2], 10)
+        return h * 60 + m
+    }
+    const singleMatch = clean.match(/^(\d{1,2})$/)
+    if (singleMatch) {
+        return parseInt(singleMatch[1], 10) * 60
+    }
+    return null
+}
+
+/**
+ * Helper: Ambil seluruh daftar jadwal praktik dokter tanpa data dummy
+ */
+export function getDoctorScheduleList(doctor) {
+    if (!doctor || typeof doctor !== 'object') return []
+
+    // 1. Array langsung dari doctor.jadwal
+    if (Array.isArray(doctor.jadwal) && doctor.jadwal.length > 0) {
+        return doctor.jadwal
+    }
+
+    // 2. Gabungan dari jadwalGaruda dan jadwalMuchtar jika ada
+    const combinedBranches = [
+        ...(Array.isArray(doctor.jadwalGaruda) ? doctor.jadwalGaruda : []),
+        ...(Array.isArray(doctor.jadwalMuchtar) ? doctor.jadwalMuchtar : []),
+    ]
+    if (combinedBranches.length > 0) {
+        return combinedBranches
+    }
+
+    // 3. Dari objek jadwal_json
+    if (doctor.jadwal_json) {
+        if (Array.isArray(doctor.jadwal_json)) {
+            return doctor.jadwal_json
+        }
+        if (typeof doctor.jadwal_json === 'object') {
+            if (Array.isArray(doctor.jadwal_json.jadwal) && doctor.jadwal_json.jadwal.length > 0) {
+                return doctor.jadwal_json.jadwal
+            }
+            const jsonBranches = [
+                ...(Array.isArray(doctor.jadwal_json.jadwalGaruda) ? doctor.jadwal_json.jadwalGaruda : []),
+                ...(Array.isArray(doctor.jadwal_json.jadwalMuchtar) ? doctor.jadwal_json.jadwalMuchtar : []),
+            ]
+            if (jsonBranches.length > 0) {
+                return jsonBranches
+            }
+        }
+    }
+
+    return []
+}
+
+/**
+ * Helper: Cek ketersediaan dokter berdasarkan hari praktik
+ * Menghasilkan { isAvailable: boolean, reason: string }
+ * Jika dokter tidak memiliki jadwal praktik pada hari yang bersangkutan,
+ * dokter dinonaktifkan (disabled) dan label menunjukkan alasan.
+ */
+export function checkDoctorAvailability(doctor, tanggal) {
+    if (!doctor) return { isAvailable: false, reason: 'Data dokter tidak valid' }
+
+    // 1. Cek status dasar dokter
+    if (doctor.status && doctor.status.toLowerCase() !== 'aktif') {
+        return { isAvailable: false, reason: 'Tidak Aktif' }
+    }
+
+    const schedules = getDoctorScheduleList(doctor)
+
+    // Jika dokter belum memiliki konfigurasi jadwal sama sekali
+    if (!schedules || schedules.length === 0) {
+        return {
+            isAvailable: false,
+            reason: 'Tidak Praktik',
+        }
+    }
+
+    // Tentukan hari dan apakah sedang mengecek hari ini
+    const todayStr = getTodayDateString()
+    const targetDate = tanggal || todayStr
+    const dayName = getDayNameFromDate(targetDate)
+    const isTodayCheck = !tanggal || tanggal === todayStr
+
+    if (!dayName) {
+        return { isAvailable: true, reason: '' }
+    }
+
+    // Cari jadwal praktik dokter pada hari yang bersangkutan
+    const daySchedules = schedules.filter((s) => {
+        if (!s || !s.hari) return false
+        const cleanDay = s.hari.replace(':', '').trim().toLowerCase()
+        return cleanDay === dayName.toLowerCase()
+    })
+
+    // Jika dokter tidak memiliki jadwal praktik sama sekali pada hari tersebut
+    if (daySchedules.length === 0) {
+        return {
+            isAvailable: false,
+            reason: isTodayCheck ? 'Tidak Praktik Hari Ini' : `Tidak Praktik Hari ${dayName}`,
+        }
+    }
+
+    return { isAvailable: true, reason: '' }
+}
 
 /**
  * Modal Tambah / Update Reservasi Pasien
@@ -18,6 +149,7 @@ export function ReservationModal({
     onClose,
     onSubmit,
     initialData = null,
+    doctors = [],
 }) {
     const isEdit = Boolean(initialData)
 
@@ -28,26 +160,22 @@ export function ReservationModal({
     const [status, setStatus] = useState('Appointment')
     const [error, setError] = useState('')
 
-    // Daftar dokter aktif sesuai klinik
-    const dokterList = [
-        'drg. Indira Nugrahani',
-        'drg. Fajar Pratama',
-        'drg. Sarah Melati',
-        'drg. Budi Santoso',
-    ]
+    // Daftar dokter aktif dari backend (tanpa data dummy, siap input manual)
+    const activeDoctorList = doctors || []
 
     useEffect(() => {
         if (initialData) {
             setNamaPasien(initialData.namaPasien || '')
-            if (initialData.jadwal) {
+            if (initialData.tanggalIso) {
+                setTanggal(initialData.tanggalIso)
+            } else if (initialData.jadwal) {
                 const parts = initialData.jadwal.split(' ')
                 setTanggal(toDateInputValue(parts[0] || ''))
-                setWaktu(parts.slice(1).join(' ') || '')
             } else {
                 setTanggal(toDateInputValue(initialData.tanggal || ''))
-                setWaktu(initialData.waktu || '')
             }
-            setDokter(initialData.dokter || '')
+            setWaktu(initialData.waktu || initialData.waktu_reservasi || '')
+            setDokter(initialData.dokter || initialData.dokterDetail?.nama || '')
             setStatus(initialData.status || 'Appointment')
         } else {
             setNamaPasien('')
@@ -86,16 +214,30 @@ export function ReservationModal({
             return
         }
 
+        const selectedDocObj = activeDoctorList.find((d) =>
+            (typeof d === 'object' ? d.nama === dokter : d === dokter)
+        )
+
+        if (!selectedDocObj) {
+            setError('Silakan pilih dokter yang valid.')
+            return
+        }
+
         const displayDate = toDisplayDate(tanggal.trim())
         const payload = {
-            id: initialData?.id || Date.now(),
+            id: initialData?.id,
             namaPasien: namaPasien.trim(),
+            tanggal: tanggal.trim(),
+            waktu: waktu.trim(),
             jadwal: waktu.trim() ? `${displayDate} ${waktu.trim()}` : displayDate,
-            dokter,
+            dokter: typeof selectedDocObj === 'object' ? selectedDocObj.nama : dokter,
+            dokter_id: typeof selectedDocObj === 'object' ? selectedDocObj.id : undefined,
             status,
         }
 
-        onSubmit(payload)
+        if (onSubmit) {
+            onSubmit(payload)
+        }
         onClose()
     }
 
@@ -206,11 +348,14 @@ export function ReservationModal({
                                     <option value="" disabled>
                                         Pilih Dokter
                                     </option>
-                                    {dokterList.map((doc, idx) => (
-                                        <option key={idx} value={doc}>
-                                            {doc}
-                                        </option>
-                                    ))}
+                                    {activeDoctorList.map((doc, idx) => {
+                                        const name = typeof doc === 'object' ? doc.nama : doc
+                                        return (
+                                            <option key={idx} value={name}>
+                                                {name}
+                                            </option>
+                                        )
+                                    })}
                                 </select>
                                 <div className="absolute right-3 text-gray-400 pointer-events-none">
                                     <ChevronDownIcon className="w-4 h-4" />
@@ -412,20 +557,20 @@ export function DoctorModal({
 
         const activeGaruda = cabangGaruda
             ? garudaDays
-                  .filter((d) => d.active)
-                  .map((d) => ({
-                      hari: `${d.key}:`,
-                      jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
-                  }))
+                .filter((d) => d.active)
+                .map((d) => ({
+                    hari: `${d.key}:`,
+                    jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
+                }))
             : []
 
         const activeMuchtar = cabangMuchtar
             ? muchtarDays
-                  .filter((d) => d.active)
-                  .map((d) => ({
-                      hari: `${d.key}:`,
-                      jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
-                  }))
+                .filter((d) => d.active)
+                .map((d) => ({
+                    hari: `${d.key}:`,
+                    jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
+                }))
             : []
 
         const activeJadwal = [...activeGaruda, ...activeMuchtar]
@@ -444,9 +589,9 @@ export function DoctorModal({
                 activeJadwal.length > 0
                     ? activeJadwal
                     : [
-                          { hari: 'Rabu:', jam: '15.00 - 20.00' },
-                          { hari: 'Kamis:', jam: '08.00 - 20.00' },
-                      ],
+                        { hari: 'Rabu:', jam: '15.00 - 20.00' },
+                        { hari: 'Kamis:', jam: '08.00 - 20.00' },
+                    ],
             jadwalGaruda: activeGaruda,
             jadwalMuchtar: activeMuchtar,
         }
@@ -559,11 +704,10 @@ export function DoctorModal({
                                     {garudaDays.map((day, idx) => (
                                         <div
                                             key={day.key}
-                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${
-                                                day.active
+                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${day.active
                                                     ? 'border-gray-300 bg-white shadow-2xs gap-2'
                                                     : 'border-gray-200 bg-gray-50/60'
-                                            }`}
+                                                }`}
                                         >
                                             <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
                                                 <input
@@ -621,11 +765,10 @@ export function DoctorModal({
                                     {muchtarDays.map((day, idx) => (
                                         <div
                                             key={day.key}
-                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${
-                                                day.active
+                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${day.active
                                                     ? 'border-gray-300 bg-white shadow-2xs gap-2'
                                                     : 'border-gray-200 bg-gray-50/60'
-                                            }`}
+                                                }`}
                                         >
                                             <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
                                                 <input

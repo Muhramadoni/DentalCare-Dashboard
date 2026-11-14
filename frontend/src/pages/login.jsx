@@ -58,10 +58,10 @@ export default function Login({ onLoginSuccess }) {
                 return
             }
 
-            // Login berhasil: simpan token di localStorage
+            // Login berhasil: simpan token di sessionStorage (auto-reset saat tab/browser ditutup)
             const { token, user } = result.data
-            localStorage.setItem('auth_token', token)
-            localStorage.setItem('user_email', user.email)
+            sessionStorage.setItem('auth_token', token)
+            sessionStorage.setItem('user_email', user.email)
 
             setIsLoading(false)
             setLoginSuccess(true)

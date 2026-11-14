@@ -12,6 +12,9 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 // Import routes
 const authRoutes = require('./routes/auth-routes');
 const dashboardRoutes = require('./routes/dashboard-routes');
+const reservasiRoutes = require('./routes/reservasi-routes');
+const dokterRoutes = require('./routes/dokter-routes');
+const rekamMedisRoutes = require('./routes/rekam-medis-routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -74,6 +77,9 @@ app.get('/health', (req, res) => {
 // ============================================================
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/reservasi', reservasiRoutes);
+app.use('/api/v1/dokter', dokterRoutes);
+app.use('/api/v1/rekam-medis', rekamMedisRoutes);
 
 // ============================================================
 // ERROR HANDLERS (harus di akhir, setelah semua route)

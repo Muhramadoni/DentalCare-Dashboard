@@ -14,28 +14,33 @@ const prisma = require('../config/prisma');
  */
 const getSummary = async (req, res, next) => {
   try {
-    // 1. Tentukan tanggal hari ini (jam 00:00:00:000)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // 1. Tentukan tanggal hari ini (format YYYY-MM-DD sesuai waktu lokal)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayDateStr = `${year}-${month}-${day}`;
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Gunakan tanggal UTC 00:00:00 agar cocok sempurna dengan kolom PostgreSQL @db.Date
+    const todayUtc = new Date(`${todayDateStr}T00:00:00.000Z`);
+    const tomorrowUtc = new Date(todayUtc);
+    tomorrowUtc.setUTCDate(tomorrowUtc.getUTCDate() + 1);
 
     // 2. Jalankan query agregasi secara paralel (efisiensi respon <300ms sesuai Target G4 & NFR-1)
     const [
       totalReservasiHariIni,
       totalAppointment,
       totalReschedule,
-      totalDokterAktif,
+      dokterAktifList,
       daftarReservasi,
       dokterTerbaru
     ] = await Promise.all([
-      // Total reservasi hari ini (sesuai instruksi prompt: prisma.reservasi.count)
+      // Total reservasi hari ini: hanya menghitung reservasi dengan tanggal_reservasi hari ini (otomatis reset = 0 besoknya)
       prisma.reservasi.count({
         where: {
           tanggal_reservasi: {
-            gte: today,
-            lt: tomorrow,
+            gte: todayUtc,
+            lt: tomorrowUtc,
           },
         },
       }),
@@ -54,10 +59,15 @@ const getSummary = async (req, res, next) => {
         },
       }),
 
-      // Jumlah dokter aktif (sesuai instruksi prompt: prisma.dokter.count)
-      prisma.dokter.count({
+      // Ambil daftar dokter aktif beserta jadwal untuk memfilter dokter yang praktik pada hari ini
+      prisma.dokter.findMany({
         where: {
           status: 'Aktif',
+        },
+        select: {
+          id: true,
+          nama: true,
+          jadwal_json: true,
         },
       }),
 
@@ -121,7 +131,38 @@ const getSummary = async (req, res, next) => {
       };
     });
 
-    // 4. Susun riwayat aktivitas dinamis dari data transaksional terkini
+    // 4. Hitung dokter yang memiliki jadwal praktik pada hari ini
+    const daysIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const todayName = daysIndo[now.getDay()].toLowerCase();
+
+    const dokterPraktikHariIni = dokterAktifList.filter((doc) => {
+      let schedules = [];
+      if (doc.jadwal_json && typeof doc.jadwal_json === 'object') {
+        if (Array.isArray(doc.jadwal_json)) {
+          schedules = doc.jadwal_json;
+        } else {
+          const garuda = Array.isArray(doc.jadwal_json.jadwalGaruda) ? doc.jadwal_json.jadwalGaruda : [];
+          const muchtar = Array.isArray(doc.jadwal_json.jadwalMuchtar) ? doc.jadwal_json.jadwalMuchtar : [];
+          if (Array.isArray(doc.jadwal_json.jadwal) && doc.jadwal_json.jadwal.length > 0) {
+            schedules = doc.jadwal_json.jadwal;
+          } else {
+            schedules = [...garuda, ...muchtar];
+          }
+        }
+      }
+
+      if (schedules.length === 0) return false;
+
+      return schedules.some((s) => {
+        if (!s || !s.hari) return false;
+        const cleanDay = String(s.hari).replace(':', '').trim().toLowerCase();
+        return cleanDay === todayName;
+      });
+    });
+
+    const totalDokterPraktikHariIni = dokterPraktikHariIni.length;
+
+    // 5. Susun riwayat aktivitas dinamis dari data transaksional terkini
     const riwayatAktivitas = [];
 
     // Aktivitas dari reservasi
@@ -134,23 +175,25 @@ const getSummary = async (req, res, next) => {
       });
     });
 
-    // Aktivitas dari dokter
-    dokterTerbaru.slice(0, 3).forEach((item) => {
+    // Aktivitas dari dokter yang berpraktik hari ini (atau dokter terbaru)
+    const dokterAktivitasSource = dokterPraktikHariIni.length > 0 ? dokterPraktikHariIni : dokterTerbaru;
+    dokterAktivitasSource.slice(0, 3).forEach((item) => {
       riwayatAktivitas.push({
         id: `doc-${item.id}`,
         type: 'dokter',
         deskripsi: `Jadwal Praktik Dokter: ${item.nama} (${item.cabang || 'Klinik'})`,
-        waktu: 'Aktif',
+        waktu: 'Aktif Praktik Hari Ini',
       });
     });
 
-    // 5. Kembalikan respons terstandarisasi sesuai apiguide.md
+    // 6. Kembalikan respons terstandarisasi sesuai apiguide.md
     return res.status(200).json({
       success: true,
       message: 'Data ringkasan operasional dashboard berhasil diambil.',
       data: {
         totalReservasiHariIni,
-        totalDokterAktif,
+        totalDokterAktif: totalDokterPraktikHariIni,
+        totalDokterPraktikHariIni,
         rekapStatus: {
           appointment: totalAppointment,
           reschedule: totalReschedule,
