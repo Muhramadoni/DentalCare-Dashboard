@@ -3,7 +3,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { login, logout } = require('../controllers/auth-controller');
+const { login, logout, refresh } = require('../controllers/auth-controller');
 const { loginRateLimiter, globalRateLimiter } = require('../middleware/rateLimiter');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -15,6 +15,10 @@ router.post('/login', loginRateLimiter, login);
 // Memerlukan token valid untuk logout (mencegah spam)
 // globalRateLimiter: maks 100 request/menit per IP (sesuai security.md Section 4)
 router.post('/logout', globalRateLimiter, authenticateToken, logout);
+
+// POST /api/v1/auth/refresh
+// Memperbarui token (sliding session) - hanya bisa jika token masih valid
+router.post('/refresh', globalRateLimiter, authenticateToken, refresh);
 
 module.exports = router;
 

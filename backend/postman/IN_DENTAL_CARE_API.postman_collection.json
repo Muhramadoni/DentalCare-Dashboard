@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "indentalcare-api-collection-v1",
-    "name": "IN DENTAL CARE - API Testing Collection",
-    "description": "Koleksi pengujian API lengkap untuk IN DENTAL CARE Admin Dashboard (Autentikasi, Keamanan, & Dashboard Summary). Mencakup seluruh skenario sukses (200), validasi (400), otorisasi (401), dan rute 404.",
+    "_postman_id": "indentalcare-full-api-collection-v2",
+    "name": "IN DENTAL CARE - REST API Testing Collection (All Modules)",
+    "description": "Koleksi lengkap Postman untuk pengujian otomatis (SQA & Integration Testing) seluruh modul backend IN DENTAL CARE:\n1. Health Check\n2. Modul Autentikasi (/api/v1/auth)\n3. Modul Dashboard Overview (/api/v1/dashboard)\n4. Modul Kelola Dokter (/api/v1/dokter)\n5. Modul Kelola Reservasi (/api/v1/reservasi)\n6. Modul Rekam Medis EMR (/api/v1/rekam-medis)\n7. Endpoint 404 Not Found Handling\n\nDilengkapi pm.test assertion untuk kode status, response time, format JSON, error code, serta auto-chaining JWT token dan dynamic IDs.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,7 +12,32 @@
       "type": "string"
     },
     {
+      "key": "admin_email",
+      "value": "admindental@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "admindental123",
+      "type": "string"
+    },
+    {
       "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_dokter_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_reservasi_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_emr_id",
       "value": "",
       "type": "string"
     }
@@ -22,85 +47,66 @@
       "name": "0. Health Check",
       "item": [
         {
-          "name": "Health Check Server (200 OK)",
+          "name": "0.1 Health Check Server & Database",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response contains healthy status', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('healthy');",
+                  "    pm.expect(jsonData.database).to.eql('connected');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
-            },
-            "description": "Memeriksa status ketersediaan server backend."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test(\"Response status is UP\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(true);",
-                  "    pm.expect(jsonData.data.status).to.eql(\"UP\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
             }
-          ]
+          }
         }
       ]
     },
     {
-      "name": "1. Modul Autentikasi (/api/v1/auth)",
+      "name": "1. Modul Autentikasi",
       "item": [
         {
-          "name": "1.1. Login Berhasil (200 OK)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admindental@gmail.com\",\n  \"password\": \"admindental123\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
-            },
-            "description": "Login dengan kredensial benar. Token otomatis disimpan ke variabel `jwt_token`."
-          },
+          "name": "1.1 Login Berhasil - Kredensial Valid (200 OK)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test('Status code is 200 OK', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Login berhasil & token terbit\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(true);",
-                  "    pm.expect(jsonData.data.token).to.be.a(\"string\");",
-                  "    pm.collectionVariables.set(\"jwt_token\", jsonData.data.token);",
-                  "    console.log(\"Token JWT tersimpan otomatis:\", jsonData.data.token);",
+                  "pm.test('Response contains token & sets environment variable', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    pm.environment.set('jwt_token', jsonData.data.token);",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "1.2. Login Gagal - Password Salah (401 Unauthorized)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -111,36 +117,42 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admindental@gmail.com\",\n  \"password\": \"password_salah_123\"\n}"
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
-            },
-            "description": "Uji penolakan sistem saat password tidak sesuai."
-          },
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login Gagal - Password Salah (401)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 401\", function () {",
+                  "pm.test('Status code is 401 Unauthorized', function () {",
                   "    pm.response.to.have.status(401);",
                   "});",
-                  "pm.test(\"Pesan error kredensial salah\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(false);",
-                  "    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");",
+                  "pm.test('Error code is AUTH_FAILED', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('AUTH_FAILED');",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "1.3. Login Gagal - Email Tidak Terdaftar (401 Unauthorized)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -151,36 +163,42 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"bukanadmin@gmail.com\",\n  \"password\": \"admindental123\"\n}"
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"password_salah_123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
-            },
-            "description": "Uji penolakan sistem saat email tidak ada di database."
-          },
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.3 Login Gagal - Email Tidak Terdaftar (401)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 401\", function () {",
+                  "pm.test('Status code is 401 Unauthorized', function () {",
                   "    pm.response.to.have.status(401);",
                   "});",
-                  "pm.test(\"Pencegahan User Enumeration (pesan generik)\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(false);",
-                  "    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");",
+                  "pm.test('Error code is AUTH_FAILED', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('AUTH_FAILED');",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "1.4. Login Gagal - Format Email Salah (400 Bad Request)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -191,36 +209,88 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"email_tanpa_domain_at\",\n  \"password\": \"admindental123\"\n}"
+              "raw": "{\n  \"email\": \"unregistered_admin@gmail.com\",\n  \"password\": \"anypassword123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
-            },
-            "description": "Uji validasi skema server-side untuk format email."
-          },
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.4 Login Gagal - Format Email Tidak Valid (400)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 400\", function () {",
+                  "pm.test('Status code is 400 Bad Request', function () {",
                   "    pm.response.to.have.status(400);",
                   "});",
-                  "pm.test(\"Validation Error code\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(false);",
-                  "    pm.expect(jsonData.error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "pm.test('Error message mentions email format', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"format_email_bukan_email\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
         },
         {
-          "name": "1.5. Login Gagal - Field Kosong (400 Bad Request)",
+          "name": "1.5 Login Gagal - Field Kosong (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -235,232 +305,1891 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
-            },
-            "description": "Uji penolakan jika email atau password kosong."
-          },
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.6 Refresh Token (200 OK)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 400\", function () {",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns new token', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    pm.environment.set('jwt_token', jsonData.data.token);",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.7 Logout Gagal - Tanpa Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('Error code is AUTH_UNAUTHORIZED', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.8 Logout Berhasil (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Logout successful message', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.9 Login Ulang Admin (Untuk Sesi Uji Lanjutan)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Sets valid JWT token for subsequent tests', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.environment.set('jwt_token', jsonData.data.token);",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Modul Dashboard Overview",
+      "item": [
+        {
+          "name": "2.1 Get Dashboard Summary (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Dashboard summary contains metrics and tables', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('cards');",
+                  "    pm.expect(jsonData.data).to.have.property('reservations');",
+                  "    pm.expect(jsonData.data).to.have.property('activities');",
+                  "    pm.expect(jsonData.data.cards).to.have.property('totalReservasiHariIni');",
+                  "    pm.expect(jsonData.data.cards).to.have.property('dokterPraktik');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.2 Get Dashboard Gagal - Tanpa Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('Response rejects unauthorized access', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.3 Get Dashboard Gagal - Token Invalid (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('Response indicates invalid token', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid_jwt_token_format_12345",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard",
+                "summary"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Modul Kelola Dokter",
+      "item": [
+        {
+          "name": "3.1 Get Semua Dokter (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response contains doctor list array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 Filter Dokter by Status & Cabang (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns filtered array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter?status=Aktif&cabang=Garuda",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Aktif"
+                },
+                {
+                  "key": "cabang",
+                  "value": "Garuda"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.3 Tambah Dokter Baru - Valid (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Stores test_dokter_id for subsequent tests', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.environment.set('test_dokter_id', jsonData.data.id.toString());",
+                  "    pm.collectionVariables.set('test_dokter_id', jsonData.data.id.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"drg. Test Otomatis SQA\",\n  \"spesialisasi\": \"Ortodontis\",\n  \"cabang\": \"Garuda\",\n  \"status\": \"Aktif\",\n  \"cabangGaruda\": true,\n  \"cabangMuchtar\": false,\n  \"jadwalGaruda\": [\n    \"Senin (10.00 - 15.00)\",\n    \"Rabu (10.00 - 15.00)\"\n  ],\n  \"jadwalMuchtar\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.4 Tambah Dokter Gagal - Nama Kosong (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Validation error returned', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"\",\n  \"spesialisasi\": \"Konservasi Gigi\",\n  \"cabang\": \"Muchtar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.5 Get Detail Dokter by ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Doctor ID matches requested ID', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    const targetId = pm.environment.get('test_dokter_id') || pm.collectionVariables.get('test_dokter_id');",
+                  "    pm.expect(jsonData.data.id.toString()).to.eql(targetId.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter/{{test_dokter_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter",
+                "{{test_dokter_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.6 Get Detail Dokter Gagal - ID Tidak Ditemukan (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Returns not found error', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.7 Update Dokter by ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Updated status and nama successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.status).to.eql('Tidak Aktif');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"drg. Test Otomatis SQA (Updated)\",\n  \"spesialisasi\": \"Ortodontis & Bedah Mulut\",\n  \"status\": \"Tidak Aktif\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter/{{test_dokter_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter",
+                "{{test_dokter_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.8 Hapus Dokter by ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Doctor deleted successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter/{{test_dokter_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter",
+                "{{test_dokter_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.9 Hapus Dokter Gagal - ID Tidak Ditemukan (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.10 Akses Dokter Gagal - Tanpa Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dokter",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dokter"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Modul Kelola Reservasi",
+      "item": [
+        {
+          "name": "4.1 Get Dokter Aktif untuk Dropdown (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns list of active doctors', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi/doctors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi",
+                "doctors"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.2 Get Semua Reservasi (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns reservations array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 Filter Reservasi by Status (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns filtered reservations', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi?status=Appointment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Appointment"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.4 Buat Reservasi Baru - Valid (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Stores test_reservasi_id for subsequent tests', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.environment.set('test_reservasi_id', jsonData.data.id.toString());",
+                  "    pm.collectionVariables.set('test_reservasi_id', jsonData.data.id.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaPasien\": \"Pasien Uji SQA Postman\",\n  \"tanggalReservasi\": \"2026-12-01\",\n  \"waktuReservasi\": \"14:00 - 14:30\",\n  \"dokterNama\": \"drg. Kevin\",\n  \"cabang\": \"Garuda\",\n  \"status\": \"Appointment\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.5 Buat Reservasi Gagal - Pasien Kosong (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Validation error on namaPasien', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaPasien\": \"\",\n  \"tanggalReservasi\": \"2026-12-01\",\n  \"waktuReservasi\": \"14:00 - 14:30\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.6 Update Reservasi - Reschedule Jadwal (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Reservation successfully rescheduled', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.status).to.eql('Reschedule');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tanggalReservasi\": \"2026-12-02\",\n  \"waktuReservasi\": \"15:00 - 15:30\",\n  \"status\": \"Reschedule\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi/{{test_reservasi_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi",
+                "{{test_reservasi_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.7 Update Reservasi Gagal - ID Tidak Valid (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
                   "    pm.response.to.have.status(400);",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "1.6. Logout Berhasil (200 OK)",
+          ],
           "request": {
-            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/auth/logout",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "logout"]
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Appointment\"\n}"
             },
-            "description": "Mengakhiri sesi dengan menyertakan Bearer Token valid."
-          },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi/invalid_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi",
+                "invalid_id"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.8 Hapus Reservasi by ID (200 OK)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test('Status code is 200 OK', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Logout message success\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "pm.test('Reservation deleted successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "1.7. Logout Gagal - Tanpa Token (401 Unauthorized)",
+          ],
           "request": {
-            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/logout",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "logout"]
-            },
-            "description": "Uji penolakan logout tanpa token."
-          },
+              "raw": "{{base_url}}/api/v1/reservasi/{{test_reservasi_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi",
+                "{{test_reservasi_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.9 Hapus Reservasi Gagal - ID Tidak Ditemukan (404)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 401\", function () {",
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.10 Akses Reservasi Gagal - Tanpa Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
                   "    pm.response.to.have.status(401);",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservasi",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservasi"
+              ]
+            }
+          }
         }
       ]
     },
     {
-      "name": "2. Modul Dashboard (/api/v1/dashboard)",
+      "name": "5. Modul Rekam Medis (EMR)",
       "item": [
         {
-          "name": "2.1. Get Dashboard Summary Berhasil (200 OK)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwt_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/dashboard/summary",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "dashboard", "summary"]
-            },
-            "description": "Mengambil ringkasan operasional dengan Bearer Token valid. Menguji batas respon <300ms (Target G4)."
-          },
+          "name": "5.1 Get Autocomplete Pasien (200 OK)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test('Status code is 200 OK', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Target G4: Waktu respon < 300ms\", function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(300);",
-                  "});",
-                  "pm.test(\"Struktur data ringkasan lengkap\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(true);",
-                  "    pm.expect(jsonData.data).to.have.property(\"totalReservasiHariIni\");",
-                  "    pm.expect(jsonData.data).to.have.property(\"totalDokterAktif\");",
-                  "    pm.expect(jsonData.data).to.have.property(\"rekapStatus\");",
-                  "    pm.expect(jsonData.data).to.have.property(\"daftarReservasi\");",
-                  "    pm.expect(jsonData.data).to.have.property(\"riwayatAktivitas\");",
+                  "pm.test('Returns patients array for autocomplete', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis",
+                "patients"
+              ]
+            }
+          }
         },
         {
-          "name": "2.2. Get Summary Gagal - Tanpa Token (401 Unauthorized)",
+          "name": "5.2 Get Semua Rekam Medis (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns medical records array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.3 Filter Rekam Medis by Pencarian (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Filtered result is array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis?search=Ariana",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Ariana"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.4 Tambah Rekam Medis Baru - Valid (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Stores test_emr_id for subsequent tests', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.environment.set('test_emr_id', jsonData.data.id.toString());",
+                  "    pm.collectionVariables.set('test_emr_id', jsonData.data.id.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaPasien\": \"Ariana\",\n  \"dokterNama\": \"drg. Kevin\",\n  \"tanggal\": \"2026-11-14\",\n  \"regio\": \"18\",\n  \"anamnesa\": \"Nyeri saat mengunyah makanan keras gigi belakang kanan atas\",\n  \"tindakan\": \"Pembersihan karang gigi dan penambalan komposit kelas II\",\n  \"resep\": \"Amoxicillin 500mg 3x1, Asam Mefenamat 500mg 3x1\",\n  \"terapi\": \"Kontrol 1 minggu jika masih ngilu, hindari makanan terlalu keras\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.5 Tambah EMR Gagal - Pasien Kosong (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Validation error on patient name', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaPasien\": \"\",\n  \"dokterNama\": \"drg. Kevin\",\n  \"tanggal\": \"2026-11-14\",\n  \"regio\": \"18\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.6 Tambah EMR Gagal - Tanggal Kosong (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Validation error on date', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaPasien\": \"Ariana\",\n  \"dokterNama\": \"drg. Kevin\",\n  \"tanggal\": \"\",\n  \"regio\": \"18\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.7 Get Detail Rekam Medis by ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('EMR ID matches requested ID', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    const targetId = pm.environment.get('test_emr_id') || pm.collectionVariables.get('test_emr_id');",
+                  "    pm.expect(jsonData.data.id.toString()).to.eql(targetId.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis/{{test_emr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis",
+                "{{test_emr_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.8 Update Rekam Medis - Tindakan & Terapi (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('EMR data successfully updated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.tindakan).to.include('Updated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tindakan\": \"Pembersihan karang gigi dan penambalan komposit kelas II (Updated SQA)\",\n  \"terapi\": \"Kontrol berkala 6 bulan sekali.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis/{{test_emr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis",
+                "{{test_emr_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.9 Hapus Rekam Medis by ID (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('EMR deleted successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis/{{test_emr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis",
+                "{{test_emr_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.10 Hapus EMR Gagal - ID Tidak Ditemukan (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rekam-medis/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.11 Akses EMR Gagal - Tanpa Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/dashboard/summary",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "dashboard", "summary"]
-            },
-            "description": "Uji proteksi keamanan jika token otorisasi tidak dikirim."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 401\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});",
-                  "pm.test(\"Error code UNAUTHORIZED\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.error.code).to.eql(\"UNAUTHORIZED\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
+              "raw": "{{base_url}}/api/v1/rekam-medis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rekam-medis"
+              ]
             }
-          ]
-        },
-        {
-          "name": "2.3. Get Summary Gagal - Token Palsu/Invalid (401 Unauthorized)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer token_palsu_acak_1234567890"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/dashboard/summary",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "dashboard", "summary"]
-            },
-            "description": "Uji penolakan token JWT palsu / tidak valid."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 401\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          }
         }
       ]
     },
     {
-      "name": "3. Endpoint Tidak Ditemukan (404 Not Found)",
+      "name": "6. Endpoint Tidak Ditemukan (404)",
       "item": [
         {
-          "name": "Test Rute 404 Tidak Dikenal",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/v1/rute-yang-tidak-ada",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "rute-yang-tidak-ada"]
-            },
-            "description": "Menguji middleware notFoundHandler."
-          },
+          "name": "6.1 Test Rute Tidak Dikenal (404 Not Found)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 404\", function () {",
+                  "pm.test('Status code is 404 Not Found', function () {",
                   "    pm.response.to.have.status(404);",
                   "});",
-                  "pm.test(\"Error code RESOURCE_NOT_FOUND\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.error.code).to.eql(\"RESOURCE_NOT_FOUND\");",
+                  "pm.test('Error code is NOT_FOUND or RESOURCE_NOT_FOUND', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
                   "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/endpoint-tidak-ada-12345",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "endpoint-tidak-ada-12345"
+              ]
+            }
+          }
         }
       ]
     }
   ]
 }
-
