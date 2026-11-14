@@ -21,16 +21,7 @@ async function main() {
     },
   });
 
-  console.log(`✓ Admin terdaftar: ${adminUser.email}`);
-
-  // 2. Kosongkan data dokter jika ada data dummy sebelumnya agar user bisa input manual
-  await prisma.reservasi.deleteMany({});
-  await prisma.rekamMedis.deleteMany({});
-  await prisma.dokter.deleteMany({});
-  await prisma.pasien.deleteMany({});
-
-  console.log('Tabel dokter, pasien, dan reservasi dibiarkan kosong (siap diinput manual melalui dashboard).');
-  console.log('\nSeeding selesai dengan sukses!');
+  console.log(`Admin terdaftar: ${adminUser.email}`);
 }
 
 main()
