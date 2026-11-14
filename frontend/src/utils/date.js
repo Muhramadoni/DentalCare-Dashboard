@@ -23,14 +23,32 @@ export function toDateInputValue(dateStr) {
 }
 
 /**
- * Mengubah format tanggal YYYY-MM-DD menjadi format tampilan DD-MM-YYYY
+ * Mengubah format tanggal (YYYY-MM-DD, ISO string, dsb) menjadi format tampilan standar DD-MM-YYYY (hari-bulan-tahun)
  */
 export function toDisplayDate(dateStr) {
-    if (!dateStr) return ''
+    if (!dateStr) return '-'
     const clean = String(dateStr).trim()
-    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
-        const [y, m, d] = clean.split('-')
-        return `${d}-${m}-${y}`
+    // Format YYYY-MM-DD (misal: 2026-11-14 atau ISO string 2026-11-14T...)
+    if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
+        const [y, m, d] = clean.slice(0, 10).split('-')
+        return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`
+    }
+    // Format dengan pemisah dash: DD-MM-YYYY atau MM-DD-YYYY
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(clean)) {
+        const [p1, p2, y] = clean.split('-')
+        // Jika angka kedua > 12 dan angka pertama <= 12 (format lama MM-DD-YYYY), balik menjadi DD-MM-YYYY
+        if (Number(p1) <= 12 && Number(p2) > 12) {
+            return `${p2.padStart(2, '0')}-${p1.padStart(2, '0')}-${y}`
+        }
+        return `${p1.padStart(2, '0')}-${p2.padStart(2, '0')}-${y}`
+    }
+    // Format dengan pemisah slash: DD/MM/YYYY atau MM/DD/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(clean)) {
+        const [p1, p2, y] = clean.split('/')
+        if (Number(p1) <= 12 && Number(p2) > 12) {
+            return `${p2.padStart(2, '0')}-${p1.padStart(2, '0')}-${y}`
+        }
+        return `${p1.padStart(2, '0')}-${p2.padStart(2, '0')}-${y}`
     }
     return clean
 }

@@ -456,11 +456,44 @@ const deleteReservasi = async (req, res, next) => {
       });
     }
 
+    const patientId = existing.pasien_id;
     const patientName = existing.pasien?.nama || 'Pasien';
 
+    // 1. Cek apakah pasien memiliki riwayat rekam medis (EMR)
+    const emrCount = patientId
+      ? await prisma.rekamMedis.count({
+          where: { pasien_id: patientId },
+        })
+      : 0;
+
+    // 2. Cek apakah pasien memiliki reservasi lain selain yang sedang dihapus
+    const otherReservasiCount = patientId
+      ? await prisma.reservasi.count({
+          where: {
+            pasien_id: patientId,
+            id: { not: id },
+          },
+        })
+      : 0;
+
+    // 3. Hapus data reservasi yang bersangkutan
     await prisma.reservasi.delete({
       where: { id },
     });
+
+    // 4. Logika bisnis penghapusan:
+    // - Jika pasien SUDAH pernah mengisi form EMR (emrCount > 0):
+    //   Seluruh rekam medis di halaman EMR tetap dipertahankan (tidak dihapus).
+    // - Jika pasien BELUM pernah mengisi form EMR (emrCount === 0) dan tidak memiliki reservasi lain:
+    //   Hapus profil pasien dari tabel pasien agar nama pasien tersebut TIDAK TAMPIL
+    //   pada form input pemilihan pasien di halaman EMR.
+    let patientRemoved = false;
+    if (patientId && emrCount === 0 && otherReservasiCount === 0) {
+      await prisma.pasien.delete({
+        where: { id: patientId },
+      });
+      patientRemoved = true;
+    }
 
     // Catat riwayat aktivitas real-time: status 'Menghapus'
     recordActivity({
@@ -472,7 +505,13 @@ const deleteReservasi = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Data reservasi berhasil dihapus.',
-      data: { id },
+      data: {
+        id,
+        pasien_id: patientId,
+        namaPasien: patientName,
+        emrRetained: emrCount > 0,
+        patientRemoved,
+      },
     });
   } catch (error) {
     next(error);

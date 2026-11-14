@@ -11,6 +11,7 @@ import {
     SpinnerIcon,
     ErrorIcon,
 } from '../components/icon'
+import { calculateDoctorStatus } from '../utils/doctorStatus'
 
 export default function Dashboard({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('ringkasan')
@@ -20,7 +21,9 @@ export default function Dashboard({ onNavigate, onLogout }) {
     // State untuk data ringkasan dari backend (awal: 0 / kosong)
     const [summary, setSummary] = useState({
         totalReservasiHariIni: 0,
+        totalDokter: 0,
         totalDokterAktif: 0,
+        totalDokterPraktikHariIni: 0,
         rekapStatus: { appointment: 0, reschedule: 0 },
         daftarReservasi: [],
         riwayatAktivitas: [],
@@ -47,25 +50,53 @@ export default function Dashboard({ onNavigate, onLogout }) {
                 return
             }
 
-            const response = await fetch('http://localhost:5000/api/v1/dashboard/summary', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-            })
+            const [summaryRes, dokterRes] = await Promise.all([
+                fetch('http://localhost:5000/api/v1/dashboard/summary', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                }),
+                fetch('http://localhost:5000/api/v1/dokter', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                }).catch(() => null),
+            ])
 
-            const result = await response.json()
+            const result = await summaryRes.json()
 
-            if (!response.ok || !result.success) {
-                if (response.status === 401) {
+            if (!summaryRes.ok || !result.success) {
+                if (summaryRes.status === 401) {
                     if (onLogout) onLogout()
                     return
                 }
                 throw new Error(result?.error?.message || 'Gagal memuat data ringkasan dashboard.')
             }
 
-            setSummary(result.data)
+            let liveActiveDoctorCount = result.data?.totalDokterPraktikHariIni ?? 0
+
+            // Hitung secara real-time dokter yang berstatus AKTIF hari ini (selaras 100% dengan halaman Dokter)
+            if (dokterRes && dokterRes.ok) {
+                try {
+                    const dokterData = await dokterRes.json()
+                    if (dokterData.success && Array.isArray(dokterData.data)) {
+                        const activeList = dokterData.data.filter((doc) => calculateDoctorStatus(doc).isActive)
+                        liveActiveDoctorCount = activeList.length
+                    }
+                } catch (e) {
+                    // Fallback to backend count
+                }
+            }
+
+            setSummary({
+                ...result.data,
+                totalDokterPraktikHariIni: liveActiveDoctorCount,
+                totalDokterAktif: liveActiveDoctorCount,
+            })
         } catch (err) {
             console.error('Error saat fetch dashboard summary:', err)
             setError(err.message || 'Tidak dapat terhubung ke server backend.')
@@ -178,7 +209,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                         {!isLoading && (
                             <div className="mt-3 pt-3 border-t border-slate-50 text-xs text-slate-500 font-normal">
                                 {(summary.totalDokterPraktikHariIni ?? summary.totalDokterAktif) > 0 ? (
-                                    <span className="text-emerald-600 font-medium">● Dokter memiliki jadwal praktik hari ini</span>
+                                    <span className="text-emerald-600 font-medium">Dokter memiliki jadwal praktik aktif hari ini</span>
                                 ) : (
                                     <span>Tidak ada jadwal praktik dokter hari ini</span>
                                 )}

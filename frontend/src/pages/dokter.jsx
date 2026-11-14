@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Sidebar from '../components/sidebar'
 import { DoctorModal } from '../components/modals'
+import ConfirmModal from '../components/ConfirmModal'
 import {
     PlusIcon,
     EditIcon,
@@ -11,48 +12,9 @@ import {
     CheckIcon,
     ClearIcon,
 } from '../components/icon'
+import { getDoctorSchedule, calculateDoctorStatus } from '../utils/doctorStatus'
 
 const API_BASE_URL = 'http://localhost:5000/api/v1/dokter'
-
-// Helper untuk mendapatkan status cabang dan jadwal terpisah per cabang
-function getDoctorBranchInfo(doctor) {
-    const hasGaruda = doctor.cabangGaruda !== undefined
-        ? doctor.cabangGaruda
-        : (doctor.cabang ? doctor.cabang.toLowerCase().includes('garuda') : true)
-
-    const hasMuchtar = doctor.cabangMuchtar !== undefined
-        ? doctor.cabangMuchtar
-        : (doctor.cabang ? doctor.cabang.toLowerCase().includes('muchtar') : false)
-
-    let garudaSchedule = doctor.jadwalGaruda || []
-    let muchtarSchedule = doctor.jadwalMuchtar || []
-
-    // Jika data jadwal belum tersimpan secara terpisah:
-    if (garudaSchedule.length === 0 && muchtarSchedule.length === 0 && doctor.jadwal) {
-        if (hasGaruda && !hasMuchtar) {
-            garudaSchedule = doctor.jadwal
-        } else if (!hasGaruda && hasMuchtar) {
-            muchtarSchedule = doctor.jadwal
-        } else if (hasGaruda && hasMuchtar) {
-            garudaSchedule = doctor.jadwal.filter((j) =>
-                ['rabu', 'kamis', 'jumat'].some((h) => j.hari.toLowerCase().includes(h))
-            )
-            muchtarSchedule = doctor.jadwal.filter((j) =>
-                ['senin', 'selasa', 'sabtu', 'minggu'].some((h) => j.hari.toLowerCase().includes(h))
-            )
-            if (garudaSchedule.length === 0 && muchtarSchedule.length === 0) {
-                garudaSchedule = doctor.jadwal
-            }
-        }
-    }
-
-    return {
-        hasGaruda,
-        hasMuchtar,
-        garudaSchedule,
-        muchtarSchedule,
-    }
-}
 
 export default function Dokter({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('dokter')
@@ -66,6 +28,9 @@ export default function Dokter({ onNavigate, onLogout }) {
     // State Modal (Tambah & Edit)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingDoctor, setEditingDoctor] = useState(null)
+
+    // State Modal Konfirmasi Hapus Dokter
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
 
     // Helper: Ambil token JWT dari sessionStorage
     const getAuthToken = useCallback(() => {
@@ -217,9 +182,15 @@ export default function Dokter({ onNavigate, onLogout }) {
         }
     }
 
-    // Hapus Dokter (DELETE /api/v1/dokter/:id)
-    const handleDeleteDoctor = async (id, nama) => {
-        if (!window.confirm(`Hapus data dokter ${nama}?`)) return
+    // Trigger Buka Modal Konfirmasi Hapus Dokter
+    const handleDeleteDoctor = (id, nama) => {
+        setDeleteConfirm({ isOpen: true, id, nama })
+    }
+
+    // Eksekusi Hapus Dokter setelah Konfirmasi (DELETE /api/v1/dokter/:id)
+    const handleConfirmDeleteDoctor = async () => {
+        const { id, nama } = deleteConfirm
+        if (!id) return
 
         const token = getAuthToken()
         if (!token) return
@@ -239,10 +210,12 @@ export default function Dokter({ onNavigate, onLogout }) {
             }
 
             setDokterList((prev) => prev.filter((item) => item.id !== id))
-            setToastMessage({ type: 'success', text: `Data dokter ${nama} berhasil dihapus.` })
+            setToastMessage({ type: 'success', text: `Data dokter "${nama}" berhasil dihapus!` })
         } catch (err) {
             console.error('Error saat menghapus dokter:', err)
             alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+        } finally {
+            setDeleteConfirm({ isOpen: false, id: null, nama: '' })
         }
     }
 
@@ -324,20 +297,33 @@ export default function Dokter({ onNavigate, onLogout }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8 items-start">
                         {filteredDokterList.length > 0 ? (
                             filteredDokterList.map((doctor) => {
-                                const branchInfo = getDoctorBranchInfo(doctor)
+                                const schedules = getDoctorSchedule(doctor)
+                                const statusInfo = calculateDoctorStatus(doctor)
 
                                 return (
                                     <div
                                         key={doctor.id}
                                         className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative"
                                     >
-                                        {/* Bagian Atas Card: Info Dokter & Tombol Aksi */}
+                                        {/* Bagian Atas Card: Info Dokter, Badge Status & Tombol Aksi */}
                                         <div className="mb-3.5">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex flex-col min-w-0 pr-2">
-                                                    <h2 className="text-sm sm:text-[15px] font-semibold text-slate-800 leading-tight truncate">
-                                                        {doctor.nama}
-                                                    </h2>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h2 className="text-sm sm:text-[15px] font-semibold text-slate-800 leading-tight">
+                                                            {doctor.nama}
+                                                        </h2>
+                                                        {/* Badge Status Real-Time Berdasarkan Hari & Jam Akhir Praktik (Tanpa Titik) */}
+                                                        {statusInfo.isActive ? (
+                                                            <span className="text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e5ff8f] text-[#637704] border border-[#adc91f] shadow-2xs">
+                                                                Aktif
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                                                Tidak Aktif
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-[11.5px] sm:text-xs text-[#adc91f] font-medium mt-1 leading-none">
                                                         {doctor.spesialisasi}
                                                     </p>
@@ -370,71 +356,29 @@ export default function Dokter({ onNavigate, onLogout }) {
                                             </div>
                                         </div>
 
-                                        {/* Bagian Bawah Card: Jadwal Praktek (Dipisahkan Berdasarkan Cabang yang Dicentang) */}
-                                        <div className="border-t border-gray-100 pt-3 space-y-3">
-                                            {/* Cabang Garuda (jika dicentang) */}
-                                            {branchInfo.hasGaruda && (
-                                                <div className="space-y-1.5">
-                                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                                                        <ClockOutlineIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                                        <span>Jadwal Praktek Cabang Garuda</span>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        {branchInfo.garudaSchedule.length > 0 ? (
-                                                            branchInfo.garudaSchedule.map((j, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    className="flex items-center justify-between text-xs text-slate-600 font-normal"
-                                                                >
-                                                                    <span>{j.hari}</span>
-                                                                    <span>{j.jam}</span>
-                                                                </div>
-                                                            ))
-                                                        ) : (
-                                                            <p className="text-[11px] text-gray-400 italic">
-                                                                Belum ada jadwal operasional
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Cabang Muchtar (jika dicentang) */}
-                                            {branchInfo.hasMuchtar && (
-                                                <div
-                                                    className={`space-y-1.5 ${branchInfo.hasGaruda ? 'pt-3 border-t border-gray-100' : ''
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                                                        <ClockOutlineIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                                        <span>Jadwal Praktek Cabang Muchtar</span>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        {branchInfo.muchtarSchedule.length > 0 ? (
-                                                            branchInfo.muchtarSchedule.map((j, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    className="flex items-center justify-between text-xs text-slate-600 font-normal"
-                                                                >
-                                                                    <span>{j.hari}</span>
-                                                                    <span>{j.jam}</span>
-                                                                </div>
-                                                            ))
-                                                        ) : (
-                                                            <p className="text-[11px] text-gray-400 italic">
-                                                                Belum ada jadwal operasional
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Jika tidak ada cabang yang dicentang */}
-                                            {!branchInfo.hasGaruda && !branchInfo.hasMuchtar && (
-                                                <p className="text-xs text-gray-400 italic">
-                                                    Belum memilih cabang praktik.
-                                                </p>
-                                            )}
+                                        {/* Bagian Bawah Card: Jadwal Praktek (Hanya Cabang Muchtar) */}
+                                        <div className="border-t border-gray-100 pt-3 space-y-2">
+                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                                                <ClockOutlineIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                                <span>Jadwal Praktek Cabang Muchtar</span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {schedules.length > 0 ? (
+                                                    schedules.map((j, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="flex items-center justify-between text-xs text-slate-600 font-normal"
+                                                        >
+                                                            <span>{j.hari}</span>
+                                                            <span className="font-medium text-slate-700">{j.jam}</span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-[11px] text-gray-400 italic">
+                                                        Belum ada jadwal operasional
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )
@@ -454,6 +398,18 @@ export default function Dokter({ onNavigate, onLogout }) {
                 initialData={editingDoctor}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleSaveDoctor}
+            />
+
+            {/* Modal Konfirmasi Hapus Dokter */}
+            <ConfirmModal
+                isOpen={deleteConfirm.isOpen}
+                type="danger"
+                title="Konfirmasi Hapus Dokter"
+                message={`Apakah Anda yakin ingin menghapus data dokter "${deleteConfirm.nama}"? Tindakan ini tidak dapat dibatalkan.`}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
+                onConfirm={handleConfirmDeleteDoctor}
             />
         </div>
     )

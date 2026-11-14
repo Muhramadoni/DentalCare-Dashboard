@@ -517,7 +517,10 @@
                   "    pm.expect(jsonData.data).to.have.property('reservations');",
                   "    pm.expect(jsonData.data).to.have.property('activities');",
                   "    pm.expect(jsonData.data.cards).to.have.property('totalReservasiHariIni');",
+                  "    pm.expect(jsonData.data.cards).to.have.property('totalDokter');",
                   "    pm.expect(jsonData.data.cards).to.have.property('dokterPraktik');",
+                  "    pm.expect(jsonData.data.rekapStatus).to.have.property('appointment');",
+                  "    pm.expect(jsonData.data.rekapStatus).to.have.property('reschedule');",
                   "});"
                 ],
                 "type": "text/javascript"

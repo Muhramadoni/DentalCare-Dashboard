@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Sidebar from '../components/sidebar'
 import { ReservationModal } from '../components/modals'
+import ConfirmModal from '../components/ConfirmModal'
 import Pagination from '../components/pagination'
 import {
     SearchIcon,
@@ -37,6 +38,9 @@ export default function Reservasi({ onNavigate, onLogout }) {
     // State Modal Pop-up (Tambah & Update)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingItem, setEditingItem] = useState(null)
+
+    // State Modal Konfirmasi Hapus Reservasi
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
 
     // Helper: Ambil token JWT dari sessionStorage
     const getAuthToken = useCallback(() => {
@@ -225,9 +229,15 @@ export default function Reservasi({ onNavigate, onLogout }) {
         }
     }
 
-    // Hapus Reservasi (DELETE /api/v1/reservasi/:id)
-    const handleDeleteReservasi = async (id, nama) => {
-        if (!window.confirm(`Hapus reservasi untuk ${nama}?`)) return
+    // Trigger Buka Modal Konfirmasi Hapus Reservasi
+    const handleDeleteReservasi = (id, nama) => {
+        setDeleteConfirm({ isOpen: true, id, nama })
+    }
+
+    // Eksekusi Hapus Reservasi setelah Konfirmasi (DELETE /api/v1/reservasi/:id)
+    const handleConfirmDeleteReservasi = async () => {
+        const { id, nama } = deleteConfirm
+        if (!id) return
 
         const token = getAuthToken()
         if (!token) return
@@ -247,10 +257,15 @@ export default function Reservasi({ onNavigate, onLogout }) {
             }
 
             setReservasiList((prev) => prev.filter((item) => item.id !== id))
-            setToastMessage({ type: 'success', text: `Reservasi untuk ${nama} berhasil dihapus.` })
+            setToastMessage({
+                type: 'success',
+                text: `Reservasi pasien "${nama}" berhasil dihapus!`,
+            })
         } catch (err) {
             console.error('Error saat menghapus reservasi:', err)
             alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+        } finally {
+            setDeleteConfirm({ isOpen: false, id: null, nama: '' })
         }
     }
 
@@ -501,6 +516,18 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 doctors={doctors}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleSaveReservasi}
+            />
+
+            {/* Modal Konfirmasi Hapus Reservasi */}
+            <ConfirmModal
+                isOpen={deleteConfirm.isOpen}
+                type="danger"
+                title="Konfirmasi Hapus Reservasi"
+                message={`Apakah Anda yakin ingin menghapus reservasi untuk pasien "${deleteConfirm.nama}"? Tindakan ini tidak dapat dibatalkan.`}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
+                onConfirm={handleConfirmDeleteReservasi}
             />
         </div>
     )

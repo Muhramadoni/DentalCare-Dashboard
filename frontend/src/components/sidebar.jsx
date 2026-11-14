@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import logoImg from '../assets/image/logo-indentalcare.png'
+import ConfirmModal from './ConfirmModal'
 import {
     DashboardIcon,
     ReservationIcon,
@@ -9,6 +10,7 @@ import {
 } from './icon'
 
 export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout }) {
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const menuItems = [
         {
             id: 'ringkasan',
@@ -99,21 +101,32 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                 {/* Tombol Logout */}
                 <button
                     type="button"
-                    onClick={() => {
-                        if (onLogout) {
-                            onLogout()
-                        } else {
-                            if (window.confirm('Apakah Anda yakin ingin logout?')) {
-                                window.location.reload()
-                            }
-                        }
-                    }}
+                    onClick={() => setShowLogoutConfirm(true)}
                     className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 rounded-xl bg-[#e31e1e] hover:bg-[#cf1b1b] active:scale-[0.99] text-white text-sm font-semibold transition-all duration-200 cursor-pointer shadow-md shadow-red-950/20"
                 >
                     <span>Logout</span>
                     <LogoutIcon className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* Modal Dialog Konfirmasi Logout */}
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                type="logout"
+                title="Konfirmasi Logout"
+                message="Apakah Anda yakin ingin keluar dari sesi admin IN DENTAL CARE?"
+                confirmText="Ya, Logout"
+                cancelText="Batal"
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={() => {
+                    setShowLogoutConfirm(false)
+                    if (onLogout) {
+                        onLogout()
+                    } else {
+                        window.location.reload()
+                    }
+                }}
+            />
         </aside>
     )
 }

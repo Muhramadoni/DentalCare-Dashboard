@@ -27,38 +27,47 @@ const getSummary = async (req, res, next) => {
     const tomorrowUtc = new Date(todayUtc);
     tomorrowUtc.setUTCDate(tomorrowUtc.getUTCDate() + 1);
 
+    // Filter rentang waktu reservasi khusus hari ini (00:00 - 23:59 UTC @db.Date)
+    const filterHariIni = {
+      tanggal_reservasi: {
+        gte: todayUtc,
+        lt: tomorrowUtc,
+      },
+    };
+
     // 2. Jalankan query agregasi secara paralel (efisiensi respon <300ms sesuai Target G4 & NFR-1)
     const [
       totalReservasiHariIni,
       totalAppointment,
       totalReschedule,
+      totalDokter,
       dokterAktifList,
       daftarReservasi,
       dokterTerbaru
     ] = await Promise.all([
       // Total reservasi hari ini: hanya menghitung reservasi dengan tanggal_reservasi hari ini (otomatis reset = 0 besoknya)
       prisma.reservasi.count({
-        where: {
-          tanggal_reservasi: {
-            gte: todayUtc,
-            lt: tomorrowUtc,
-          },
-        },
+        where: filterHariIni,
       }),
 
-      // Rekap status: jumlah status 'Appointment'
+      // Rekap status: jumlah status 'Appointment' KHUSUS hari ini (tanggal yang sama)
       prisma.reservasi.count({
         where: {
+          ...filterHariIni,
           status: 'Appointment',
         },
       }),
 
-      // Rekap status: jumlah status 'Reschedule'
+      // Rekap status: jumlah status 'Reschedule' KHUSUS hari ini (tanggal yang sama)
       prisma.reservasi.count({
         where: {
+          ...filterHariIni,
           status: 'Reschedule',
         },
       }),
+
+      // Total dokter: jumlah seluruh dokter terdaftar di klinik
+      prisma.dokter.count(),
 
       // Ambil daftar dokter aktif beserta jadwal untuk memfilter dokter yang praktik pada hari ini
       prisma.dokter.findMany({
@@ -132,32 +141,56 @@ const getSummary = async (req, res, next) => {
       };
     });
 
-    // 4. Hitung dokter yang memiliki jadwal praktik pada hari ini
-    const daysIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const todayName = daysIndo[now.getDay()].toLowerCase();
+    // 4. Hitung dokter yang berstatus AKTIF secara REAL-TIME pada hari ini (memiliki jadwal hari ini & jam saat ini belum melewati jam akhir praktik)
+    const daysIndo = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+    const todayName = daysIndo[now.getDay()];
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     const dokterPraktikHariIni = dokterAktifList.filter((doc) => {
+      // Abaikan jika dokter berstatus Tidak Aktif secara manual
+      if (doc.status && doc.status.toLowerCase() === 'tidak aktif') {
+        return false;
+      }
+
       let schedules = [];
       if (doc.jadwal_json && typeof doc.jadwal_json === 'object') {
         if (Array.isArray(doc.jadwal_json)) {
           schedules = doc.jadwal_json;
-        } else {
-          const garuda = Array.isArray(doc.jadwal_json.jadwalGaruda) ? doc.jadwal_json.jadwalGaruda : [];
-          const muchtar = Array.isArray(doc.jadwal_json.jadwalMuchtar) ? doc.jadwal_json.jadwalMuchtar : [];
-          if (Array.isArray(doc.jadwal_json.jadwal) && doc.jadwal_json.jadwal.length > 0) {
-            schedules = doc.jadwal_json.jadwal;
-          } else {
-            schedules = [...garuda, ...muchtar];
-          }
+        } else if (Array.isArray(doc.jadwal_json.jadwalMuchtar) && doc.jadwal_json.jadwalMuchtar.length > 0) {
+          schedules = doc.jadwal_json.jadwalMuchtar;
+        } else if (Array.isArray(doc.jadwal_json.jadwal) && doc.jadwal_json.jadwal.length > 0) {
+          schedules = doc.jadwal_json.jadwal;
+        } else if (Array.isArray(doc.jadwal_json.jadwalGaruda)) {
+          schedules = doc.jadwal_json.jadwalGaruda;
         }
       }
 
       if (schedules.length === 0) return false;
 
-      return schedules.some((s) => {
+      // Filter jadwal khusus hari ini
+      const todaySchedules = schedules.filter((s) => {
         if (!s || !s.hari) return false;
         const cleanDay = String(s.hari).replace(':', '').trim().toLowerCase();
-        return cleanDay === todayName;
+        return cleanDay.includes(todayName) || todayName.includes(cleanDay);
+      });
+
+      if (todaySchedules.length === 0) return false;
+
+      // Realtime: Cek apakah waktu saat ini belum melewati jam akhir praktik dokter
+      return todaySchedules.some((s) => {
+        if (!s.jam) return false;
+        const parts = String(s.jam).split('-');
+        if (parts.length < 2) return false;
+
+        const endStr = parts[1].trim().replace('.', ':');
+        const timeParts = endStr.split(':');
+        const endHours = parseInt(timeParts[0], 10);
+        const endMinutes = timeParts[1] ? parseInt(timeParts[1], 10) : 0;
+
+        if (isNaN(endHours)) return false;
+
+        const totalEndMinutes = endHours * 60 + (isNaN(endMinutes) ? 0 : endMinutes);
+        return currentMinutes <= totalEndMinutes;
       });
     });
 
@@ -186,14 +219,23 @@ const getSummary = async (req, res, next) => {
       message: 'Data ringkasan operasional dashboard berhasil diambil.',
       data: {
         totalReservasiHariIni,
-        totalDokterAktif: totalDokterPraktikHariIni,
+        totalDokter,
+        totalDokterAktif: dokterAktifList.length,
         totalDokterPraktikHariIni,
         rekapStatus: {
           appointment: totalAppointment,
           reschedule: totalReschedule,
         },
+        cards: {
+          totalReservasiHariIni,
+          totalDokter,
+          dokterPraktik: totalDokterPraktikHariIni,
+          dokterAktif: dokterAktifList.length,
+        },
         daftarReservasi: formattedReservasi,
+        reservations: formattedReservasi,
         riwayatAktivitas,
+        activities: riwayatAktivitas,
       },
     });
   } catch (error) {

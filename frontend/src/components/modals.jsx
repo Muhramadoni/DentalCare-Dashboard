@@ -419,8 +419,6 @@ export function DoctorModal({
 
     const [nama, setNama] = useState('')
     const [spesialisasi, setSpesialisasi] = useState('')
-    const [cabangGaruda, setCabangGaruda] = useState(false)
-    const [cabangMuchtar, setCabangMuchtar] = useState(false)
     const [error, setError] = useState('')
 
     // Template 7 hari operasional klinik (Senin - Minggu)
@@ -434,92 +432,45 @@ export function DoctorModal({
         { key: 'Minggu', label: 'Minggu', active: false, start: '', end: '' },
     ]
 
-    const [garudaDays, setGarudaDays] = useState(createEmptyDays)
     const [muchtarDays, setMuchtarDays] = useState(createEmptyDays)
 
     useEffect(() => {
         if (initialData) {
             setNama(initialData.nama || '')
             setSpesialisasi(initialData.spesialisasi || '')
-            const hasGaruda = initialData.cabangGaruda !== undefined
-                ? initialData.cabangGaruda
-                : (initialData.cabang
-                    ? initialData.cabang.toLowerCase().includes('garuda')
-                    : true)
-            const hasMuchtar = initialData.cabangMuchtar !== undefined
-                ? initialData.cabangMuchtar
-                : (initialData.cabang
-                    ? initialData.cabang.toLowerCase().includes('muchtar')
-                    : false)
-            setCabangGaruda(hasGaruda)
-            setCabangMuchtar(hasMuchtar)
 
             const mapSchedule = (targetJadwal) =>
                 createEmptyDays().map((d) => {
-                    if (!targetJadwal) return d
+                    if (!targetJadwal || !Array.isArray(targetJadwal)) return d
                     const match = targetJadwal.find((j) =>
-                        j.hari.toLowerCase().includes(d.key.toLowerCase())
+                        j.hari && j.hari.toLowerCase().includes(d.key.toLowerCase())
                     )
-                    if (match) {
-                        const [start, end] = match.jam.split(' - ')
+                    if (match && match.jam) {
+                        const parts = match.jam.split('-')
+                        const start = parts[0] ? parts[0].trim() : ''
+                        const end = parts[1] ? parts[1].trim() : ''
                         return { ...d, active: true, start: start || '', end: end || '' }
                     }
                     return d
                 })
 
-            const rawJadwal = initialData.jadwal || []
-            let garudaSource = initialData.jadwalGaruda
-            let muchtarSource = initialData.jadwalMuchtar
+            const rawJadwal =
+                (Array.isArray(initialData.jadwalMuchtar) && initialData.jadwalMuchtar.length > 0)
+                    ? initialData.jadwalMuchtar
+                    : ((Array.isArray(initialData.jadwal) && initialData.jadwal.length > 0)
+                        ? initialData.jadwal
+                        : (initialData.jadwalGaruda || []))
 
-            if (!garudaSource && !muchtarSource) {
-                if (hasGaruda && !hasMuchtar) {
-                    garudaSource = rawJadwal
-                } else if (!hasGaruda && hasMuchtar) {
-                    muchtarSource = rawJadwal
-                } else if (hasGaruda && hasMuchtar) {
-                    garudaSource = rawJadwal.filter((j) =>
-                        ['rabu', 'kamis', 'jumat'].some((h) => j.hari.toLowerCase().includes(h))
-                    )
-                    muchtarSource = rawJadwal.filter((j) =>
-                        ['senin', 'selasa', 'sabtu', 'minggu'].some((h) => j.hari.toLowerCase().includes(h))
-                    )
-                    if (garudaSource.length === 0 && muchtarSource.length === 0) {
-                        garudaSource = rawJadwal
-                    }
-                }
-            }
-
-            setGarudaDays(mapSchedule(garudaSource || []))
-            setMuchtarDays(mapSchedule(muchtarSource || []))
+            setMuchtarDays(mapSchedule(rawJadwal))
         } else {
             setNama('')
             setSpesialisasi('')
-            setCabangGaruda(false)
-            setCabangMuchtar(false)
-            setGarudaDays(createEmptyDays())
             setMuchtarDays(createEmptyDays())
         }
         setError('')
     }, [initialData, isOpen])
 
     if (!isOpen) return null
-
-    // Handler toggle hari & input jam untuk Cabang Garuda
-    const handleToggleGarudaDay = (index) => {
-        setGarudaDays((prev) =>
-            prev.map((day, i) =>
-                i === index
-                    ? { ...day, active: !day.active }
-                    : day
-            )
-        )
-    }
-
-    const handleGarudaTimeChange = (index, field, value) => {
-        setGarudaDays((prev) =>
-            prev.map((day, i) => (i === index ? { ...day, [field]: value } : day))
-        )
-    }
 
     // Handler toggle hari & input jam untuk Cabang Muchtar
     const handleToggleMuchtarDay = (index) => {
@@ -550,49 +501,30 @@ export function DoctorModal({
             setError('Spesialisasi wajib diisi.')
             return
         }
-        if (!cabangGaruda && !cabangMuchtar) {
-            setError('Silakan pilih minimal satu cabang praktik.')
-            return
-        }
 
-        const activeGaruda = cabangGaruda
-            ? garudaDays
-                .filter((d) => d.active)
-                .map((d) => ({
-                    hari: `${d.key}:`,
-                    jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
-                }))
-            : []
-
-        const activeMuchtar = cabangMuchtar
-            ? muchtarDays
-                .filter((d) => d.active)
-                .map((d) => ({
-                    hari: `${d.key}:`,
-                    jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
-                }))
-            : []
-
-        const activeJadwal = [...activeGaruda, ...activeMuchtar]
+        const activeMuchtar = muchtarDays
+            .filter((d) => d.active)
+            .map((d) => ({
+                hari: `${d.key}:`,
+                jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
+            }))
 
         const payload = {
             id: initialData?.id || Date.now(),
             nama: nama.trim(),
             spesialisasi: spesialisasi.trim(),
             status: initialData?.status || 'Aktif',
-            cabang: [cabangGaruda ? 'Garuda' : '', cabangMuchtar ? 'Muchtar' : '']
-                .filter(Boolean)
-                .join(', '),
-            cabangGaruda: Boolean(cabangGaruda),
-            cabangMuchtar: Boolean(cabangMuchtar),
+            cabang: 'Muchtar',
+            cabangGaruda: false,
+            cabangMuchtar: true,
             jadwal:
-                activeJadwal.length > 0
-                    ? activeJadwal
+                activeMuchtar.length > 0
+                    ? activeMuchtar
                     : [
                         { hari: 'Rabu:', jam: '15.00 - 20.00' },
                         { hari: 'Kamis:', jam: '08.00 - 20.00' },
                     ],
-            jadwalGaruda: activeGaruda,
+            jadwalGaruda: [],
             jadwalMuchtar: activeMuchtar,
         }
 
@@ -683,126 +615,58 @@ export function DoctorModal({
                         </div>
                     </div>
 
-                    {/* Card Cabang Garuda */}
+                    {/* Card Jadwal Praktik Cabang Muchtar */}
                     <div className="rounded-2xl border border-gray-200 p-4 sm:p-5 bg-white">
-                        <label className="flex items-center gap-2.5 cursor-pointer font-semibold text-sm text-slate-800 select-none">
-                            <input
-                                type="checkbox"
-                                checked={cabangGaruda}
-                                onChange={(e) => setCabangGaruda(e.target.checked)}
-                                className="w-4 h-4 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
-                            />
-                            <span>Praktik di cabang garuda</span>
-                        </label>
+                        <div className="flex items-center gap-2 mb-1">
+                            <ClockOutlineIcon className="w-4 h-4 text-[#49baff]" />
+                            <span className="font-semibold text-sm text-slate-800">
+                                Jadwal Praktek Cabang Muchtar
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3.5 font-normal">
+                            Centang hari aktif dan tentukan jam mulai serta jam berakhir praktik.
+                        </p>
 
-                        {cabangGaruda && (
-                            <div className="mt-3">
-                                <p className="text-xs font-medium text-gray-700 mb-3">
-                                    Pilih hari & jam operasional
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    {garudaDays.map((day, idx) => (
-                                        <div
-                                            key={day.key}
-                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${day.active
-                                                    ? 'border-gray-300 bg-white shadow-2xs gap-2'
-                                                    : 'border-gray-200 bg-gray-50/60'
-                                                }`}
-                                        >
-                                            <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={day.active}
-                                                    onChange={() => handleToggleGarudaDay(idx)}
-                                                    className="w-3.5 h-3.5 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
-                                                />
-                                                <span>{day.label}</span>
-                                            </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {muchtarDays.map((day, idx) => (
+                                <div
+                                    key={day.key}
+                                    className={`rounded-xl border p-2.5 flex flex-col transition-all ${day.active
+                                            ? 'border-gray-300 bg-white shadow-2xs gap-2'
+                                            : 'border-gray-200 bg-gray-50/60'
+                                        }`}
+                                >
+                                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={day.active}
+                                            onChange={() => handleToggleMuchtarDay(idx)}
+                                            className="w-3.5 h-3.5 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
+                                        />
+                                        <span>{day.label}</span>
+                                    </label>
 
-                                            {day.active && (
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={day.start}
-                                                        onChange={(e) => handleGarudaTimeChange(idx, 'start', e.target.value)}
-                                                        placeholder="09.00"
-                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={day.end}
-                                                        onChange={(e) => handleGarudaTimeChange(idx, 'end', e.target.value)}
-                                                        placeholder="13.00"
-                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
-                                                    />
-                                                </div>
-                                            )}
+                                    {day.active && (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={day.start}
+                                                onChange={(e) => handleMuchtarTimeChange(idx, 'start', e.target.value)}
+                                                placeholder="09.00"
+                                                className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={day.end}
+                                                onChange={(e) => handleMuchtarTimeChange(idx, 'end', e.target.value)}
+                                                placeholder="13.00"
+                                                className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
+                                            />
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Card Cabang Muchtar */}
-                    <div className="rounded-2xl border border-gray-200 p-4 sm:p-5 bg-white">
-                        <label className="flex items-center gap-2.5 cursor-pointer font-semibold text-sm text-slate-800 select-none">
-                            <input
-                                type="checkbox"
-                                checked={cabangMuchtar}
-                                onChange={(e) => setCabangMuchtar(e.target.checked)}
-                                className="w-4 h-4 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
-                            />
-                            <span>Praktik di cabang muchtar</span>
-                        </label>
-
-                        {cabangMuchtar && (
-                            <div className="mt-3">
-                                <p className="text-xs font-medium text-gray-700 mb-3">
-                                    Pilih hari & jam operasional
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    {muchtarDays.map((day, idx) => (
-                                        <div
-                                            key={day.key}
-                                            className={`rounded-xl border p-2.5 flex flex-col transition-all ${day.active
-                                                    ? 'border-gray-300 bg-white shadow-2xs gap-2'
-                                                    : 'border-gray-200 bg-gray-50/60'
-                                                }`}
-                                        >
-                                            <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={day.active}
-                                                    onChange={() => handleToggleMuchtarDay(idx)}
-                                                    className="w-3.5 h-3.5 rounded text-[#49baff] focus:ring-[#49baff] accent-[#49baff]"
-                                                />
-                                                <span>{day.label}</span>
-                                            </label>
-
-                                            {day.active && (
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={day.start}
-                                                        onChange={(e) => handleMuchtarTimeChange(idx, 'start', e.target.value)}
-                                                        placeholder="09.00"
-                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={day.end}
-                                                        onChange={(e) => handleMuchtarTimeChange(idx, 'end', e.target.value)}
-                                                        placeholder="13.00"
-                                                        className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
                     </div>
 
                     {/* Footer Actions */}

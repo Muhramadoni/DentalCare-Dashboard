@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import XLSX from 'xlsx-js-style'
 import Sidebar from '../components/sidebar'
 import Pagination from '../components/pagination'
+import ConfirmModal from '../components/ConfirmModal'
 import {
     CalendarOutlineIcon,
     ChevronDownIcon,
@@ -47,6 +48,9 @@ export default function EMR({ onNavigate, onLogout }) {
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [pendingPayload, setPendingPayload] = useState(null)
+
+    // State Modal Konfirmasi Hapus Rekam Medis
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
 
     // State Riwayat Rekam Medis (EMR) - Bersih dari data dummy, siap input manual
     const [emrList, setEmrList] = useState([])
@@ -168,11 +172,10 @@ export default function EMR({ onNavigate, onLogout }) {
         fetchPatients()
     }, [fetchEmr, fetchDokterList, fetchPatients])
 
-    // Daftar semua pasien unik beserta status reservasi, tanggal, dan dokter pemeriksa
-    const allPasienList = useMemo(() => {
+    // 1. Daftar pasien untuk Form Input (HANYA pasien yang memiliki jadwal reservasi aktif)
+    const formPasienList = useMemo(() => {
         const patientMap = new Map()
 
-        // 1. Masukkan pasien dari database (dbPatients)
         dbPatients.forEach((p) => {
             const name = typeof p === 'object' ? p.nama : p
             const isRescheduled = typeof p === 'object' ? Boolean(p.isRescheduled) : false
@@ -192,7 +195,19 @@ export default function EMR({ onNavigate, onLogout }) {
             }
         })
 
-        // 2. Gabungkan riwayat EMR jika ada pasien yang belum terdaftar di map atau melengkapi data
+        return Array.from(patientMap.values()).sort((a, b) => a.nama.localeCompare(b.nama, 'id'))
+    }, [dbPatients])
+
+    // 2. Daftar semua pasien unik untuk Filter Riwayat (Gabungan dari reservasi + seluruh riwayat EMR)
+    const allPasienList = useMemo(() => {
+        const patientMap = new Map()
+
+        // Masukkan pasien dari formPasienList (reservasi aktif)
+        formPasienList.forEach((p) => {
+            patientMap.set(p.nama.trim().toLowerCase(), p)
+        })
+
+        // Gabungkan riwayat EMR agar semua pasien lama yang pernah berobat tetap bisa dicari/difilter
         emrList.forEach((item) => {
             if (item.namaPasien && item.namaPasien.trim()) {
                 const key = item.namaPasien.trim().toLowerCase()
@@ -218,7 +233,7 @@ export default function EMR({ onNavigate, onLogout }) {
         })
 
         return Array.from(patientMap.values()).sort((a, b) => a.nama.localeCompare(b.nama, 'id'))
-    }, [dbPatients, emrList])
+    }, [formPasienList, emrList])
 
     // Handler ketika admin memilih nama pasien dari autocomplete / dropdown
     const handleSelectPatient = useCallback((patientObj) => {
@@ -245,12 +260,12 @@ export default function EMR({ onNavigate, onLogout }) {
         setFormError('')
     }, [])
 
-    // Daftar pasien yang terfilter untuk Form Input (Atas)
+    // Daftar pasien yang terfilter untuk Form Input (Atas) - hanya pasien dengan reservasi aktif
     const filteredPasienForm = useMemo(() => {
-        if (!inputPasien.trim()) return allPasienList
+        if (!inputPasien.trim()) return formPasienList
         const q = inputPasien.trim().toLowerCase()
-        return allPasienList.filter((p) => p.nama.toLowerCase().includes(q))
-    }, [allPasienList, inputPasien])
+        return formPasienList.filter((p) => p.nama.toLowerCase().includes(q))
+    }, [formPasienList, inputPasien])
 
     // Daftar pasien yang terfilter untuk Filter Riwayat (Bawah)
     const filteredPasienFilter = useMemo(() => {
@@ -349,7 +364,7 @@ export default function EMR({ onNavigate, onLogout }) {
         }
 
         // Validasi: Pasien berstatus Reschedule tidak boleh dibuatkan EMR
-        const chosenPatient = allPasienList.find(
+        const chosenPatient = formPasienList.find(
             (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
         )
         if (chosenPatient && chosenPatient.isRescheduled) {
@@ -434,9 +449,15 @@ export default function EMR({ onNavigate, onLogout }) {
         }
     }
 
-    // Hapus Rekam Medis (DELETE /api/v1/rekam-medis/:id)
-    const handleDeleteEmr = async (id, nama) => {
-        if (!window.confirm(`Hapus rekam medis untuk ${nama}?`)) return
+    // Trigger Buka Modal Konfirmasi Hapus Rekam Medis
+    const handleDeleteEmr = (id, nama) => {
+        setDeleteConfirm({ isOpen: true, id, nama })
+    }
+
+    // Eksekusi Hapus Rekam Medis setelah Konfirmasi (DELETE /api/v1/rekam-medis/:id)
+    const handleConfirmDeleteEmr = async () => {
+        const { id, nama } = deleteConfirm
+        if (!id) return
 
         try {
             const token = getAuthToken()
@@ -469,6 +490,8 @@ export default function EMR({ onNavigate, onLogout }) {
         } catch (err) {
             console.error('Error saat menghapus rekam medis:', err)
             alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+        } finally {
+            setDeleteConfirm({ isOpen: false, id: null, nama: '' })
         }
     }
 
@@ -543,7 +566,7 @@ export default function EMR({ onNavigate, onLogout }) {
             rows.push([
                 index + 1,
                 item.namaPasien || '-',
-                item.tanggal || '-',
+                toDisplayDate(item.tanggal || item.tanggalIso),
                 item.regio || '-',
                 item.anamnesa || '-',
                 item.tindakan || '-',
@@ -808,7 +831,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                             }}
                                             onBlur={() => {
                                                 setTimeout(() => {
-                                                    const exactMatch = allPasienList.find(
+                                                    const exactMatch = formPasienList.find(
                                                         (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
                                                     )
                                                     if (exactMatch && !exactMatch.isRescheduled) {
@@ -866,7 +889,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                 <span>
                                                     {inputPasien.trim()
                                                         ? `Hasil pencarian (${filteredPasienForm.length})`
-                                                        : `Daftar Pasien (${allPasienList.length})`}
+                                                        : `Daftar Pasien (${formPasienList.length})`}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400">Klik / Enter</span>
                                             </div>
@@ -1382,7 +1405,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     {item.namaPasien}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
-                                                                    {item.tanggal}
+                                                                    {toDisplayDate(item.tanggal || item.tanggalIso)}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
                                                                     {item.regio}
@@ -1496,6 +1519,18 @@ export default function EMR({ onNavigate, onLogout }) {
                     </div>
                 </div>
             )}
+
+            {/* Modal Konfirmasi Hapus Rekam Medis */}
+            <ConfirmModal
+                isOpen={deleteConfirm.isOpen}
+                type="danger"
+                title="Konfirmasi Hapus Rekam Medis"
+                message={`Apakah Anda yakin ingin menghapus catatan rekam medis pasien "${deleteConfirm.nama}"? Tindakan ini tidak dapat dibatalkan.`}
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
+                onConfirm={handleConfirmDeleteEmr}
+            />
         </div>
     )
 }

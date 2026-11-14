@@ -42,7 +42,7 @@ const formatEmrItem = (item) => {
   const day = String(d.getUTCDate()).padStart(2, '0');
   const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   const year = d.getUTCFullYear();
-  const formattedDate = `${month}-${day}-${year}`;
+  const formattedDate = `${day}-${month}-${year}`;
   const isoDate = `${year}-${month}-${day}`;
 
   return {
@@ -559,7 +559,13 @@ const deleteRekamMedis = async (req, res, next) => {
  */
 const getPatients = async (req, res, next) => {
   try {
+    // Hanya ambil pasien yang memiliki reservasi aktif (untuk opsi form input EMR)
     const patients = await prisma.pasien.findMany({
+      where: {
+        reservasi: {
+          some: {},
+        },
+      },
       orderBy: { nama: 'asc' },
       select: {
         id: true,

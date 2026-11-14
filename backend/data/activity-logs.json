@@ -1,5 +1,165 @@
 [
   {
+    "id": "act_1794668078951_flba",
+    "type": "reservasi",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus reservasi pasien: Fina",
+    "waktu": "21:54",
+    "timestamp": "2026-11-14T14:54:38.951Z"
+  },
+  {
+    "id": "act_1794668070459_a2vu",
+    "type": "emr",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan rekam medis pasien: Fina",
+    "waktu": "21:54",
+    "timestamp": "2026-11-14T14:54:30.459Z"
+  },
+  {
+    "id": "act_1794667362271_yq57",
+    "type": "reservasi",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus reservasi pasien: sutejeo",
+    "waktu": "21:42",
+    "timestamp": "2026-11-14T14:42:42.271Z"
+  },
+  {
+    "id": "act_1794667354299_gvda",
+    "type": "emr",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan rekam medis pasien: sutejeo",
+    "waktu": "21:42",
+    "timestamp": "2026-11-14T14:42:34.299Z"
+  },
+  {
+    "id": "act_1794667337793_iim6",
+    "type": "reservasi",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan reservasi pasien: sutejeo (Appointment)",
+    "waktu": "21:42",
+    "timestamp": "2026-11-14T14:42:17.793Z"
+  },
+  {
+    "id": "act_1794666700018_l527",
+    "type": "reservasi",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus pasien beserta seluruh riwayat reservasi & rekam medis: Ariana",
+    "waktu": "21:31",
+    "timestamp": "2026-11-14T14:31:40.018Z"
+  },
+  {
+    "id": "act_1794666669302_mb71",
+    "type": "emr",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus rekam medis pasien: Jokowi",
+    "waktu": "21:31",
+    "timestamp": "2026-11-14T14:31:09.302Z"
+  },
+  {
+    "id": "act_1794666267481_fdsk",
+    "type": "reservasi",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus reservasi pasien: Jokowi",
+    "waktu": "21:24",
+    "timestamp": "2026-11-14T14:24:27.481Z"
+  },
+  {
+    "id": "act_1794665656933_zc7o",
+    "type": "reservasi",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan reservasi pasien: indira (Appointment)",
+    "waktu": "21:14",
+    "timestamp": "2026-11-14T14:14:16.932Z"
+  },
+  {
+    "id": "act_1794665606344_76j0",
+    "type": "dokter",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan data dokter: Sila (Aktif)",
+    "waktu": "21:13",
+    "timestamp": "2026-11-14T14:13:26.344Z"
+  },
+  {
+    "id": "act_1794664915990_9ja4",
+    "type": "dokter",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan data dokter: Gina (Aktif)",
+    "waktu": "21:01",
+    "timestamp": "2026-11-14T14:01:55.990Z"
+  },
+  {
+    "id": "act_1794663205741_tnbj",
+    "type": "dokter",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus dokter: drg. Kevin",
+    "waktu": "20:33",
+    "timestamp": "2026-11-14T13:33:25.741Z"
+  },
+  {
+    "id": "act_1794661844592_x69z",
+    "type": "reservasi",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus reservasi pasien: Pasien Uji SQA Postman",
+    "waktu": "20:10",
+    "timestamp": "2026-11-14T13:10:44.592Z"
+  },
+  {
+    "id": "act_1794661769928_okbb",
+    "type": "reservasi",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan reservasi pasien: Pasien Uji SQA Postman (Reschedule)",
+    "waktu": "20:09",
+    "timestamp": "2026-11-14T13:09:29.928Z"
+  },
+  {
+    "id": "act_1794661710226_v203",
+    "type": "reservasi",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan reservasi pasien: Pasien Uji SQA Postman (Appointment)",
+    "waktu": "20:08",
+    "timestamp": "2026-11-14T13:08:30.226Z"
+  },
+  {
+    "id": "act_1794661645937_p2t6",
+    "type": "dokter",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus dokter: drg. Test Otomatis SQA (Updated)",
+    "waktu": "20:07",
+    "timestamp": "2026-11-14T13:07:25.937Z"
+  },
+  {
+    "id": "act_1794661597121_p9mf",
+    "type": "dokter",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan data dokter: drg. Test Otomatis SQA (Updated) (Tidak Aktif)",
+    "waktu": "20:06",
+    "timestamp": "2026-11-14T13:06:37.120Z"
+  },
+  {
+    "id": "act_1794661582462_vfuw",
+    "type": "dokter",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan dokter baru: drg. Test Otomatis SQA (Ortodontis)",
+    "waktu": "20:06",
+    "timestamp": "2026-11-14T13:06:22.461Z"
+  },
+  {
+    "id": "act_1794661307266_djof",
+    "type": "dokter",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus dokter: drg. Test Otomatis SQA",
+    "waktu": "20:01",
+    "timestamp": "2026-11-14T13:01:47.266Z"
+  },
+  {
+    "id": "act_1794660995012_uco0",
+    "type": "dokter",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan dokter baru: drg. Test Otomatis SQA (Ortodontis)",
+    "waktu": "19:56",
+    "timestamp": "2026-11-14T12:56:35.012Z"
+  },
+  {
     "id": "act_1794653380369_cxuk",
     "type": "reservasi",
     "status": "Tambah",
