@@ -2,6 +2,7 @@
 // Controller Manajemen Reservasi Pasien (sesuai FR-3, FR-6, US-3, apiguide.md, database.md, security.md)
 
 const prisma = require('../config/prisma');
+const { recordActivity } = require('../utils/activity-logger');
 
 /**
  * Helper: Mengurai format tanggal masukan menjadi objek Date yang valid
@@ -266,6 +267,13 @@ const createReservasi = async (req, res, next) => {
 
     const formattedData = formatReservasiItem(newReservasi);
 
+    // Catat riwayat aktivitas real-time: status 'Tambah'
+    recordActivity({
+      type: 'reservasi',
+      status: 'Tambah',
+      deskripsi: `Menambahkan reservasi pasien: ${newReservasi.pasien?.nama || 'Pasien'} (${newReservasi.status})`,
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Reservasi berhasil dibuat.',
@@ -397,6 +405,13 @@ const updateReservasi = async (req, res, next) => {
 
     const formattedData = formatReservasiItem(updatedReservasi);
 
+    // Catat riwayat aktivitas real-time: status 'Pembaruan'
+    recordActivity({
+      type: 'reservasi',
+      status: 'Pembaruan',
+      deskripsi: `Pembaruan reservasi pasien: ${updatedReservasi.pasien?.nama || 'Pasien'} (${updatedReservasi.status})`,
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Data reservasi berhasil diperbarui.',
@@ -426,6 +441,9 @@ const deleteReservasi = async (req, res, next) => {
 
     const existing = await prisma.reservasi.findUnique({
       where: { id },
+      include: {
+        pasien: true,
+      },
     });
 
     if (!existing) {
@@ -438,8 +456,17 @@ const deleteReservasi = async (req, res, next) => {
       });
     }
 
+    const patientName = existing.pasien?.nama || 'Pasien';
+
     await prisma.reservasi.delete({
       where: { id },
+    });
+
+    // Catat riwayat aktivitas real-time: status 'Menghapus'
+    recordActivity({
+      type: 'reservasi',
+      status: 'Menghapus',
+      deskripsi: `Menghapus reservasi pasien: ${patientName}`,
     });
 
     return res.status(200).json({

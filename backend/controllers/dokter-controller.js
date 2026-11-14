@@ -2,6 +2,7 @@
 // Controller Manajemen Dokter & Jadwal Praktik (sesuai FR-3, FR-6, US-4, apiguide.md, database.md, security.md)
 
 const prisma = require('../config/prisma');
+const { recordActivity } = require('../utils/activity-logger');
 
 /**
  * Helper: Memformat item dokter dari Prisma untuk konsumsi frontend
@@ -174,6 +175,13 @@ const createDokter = async (req, res, next) => {
       },
     });
 
+    // Catat riwayat aktivitas real-time: status 'Tambah'
+    recordActivity({
+      type: 'dokter',
+      status: 'Tambah',
+      deskripsi: `Menambahkan dokter baru: ${newDoctor.nama} (${newDoctor.spesialisasi || 'Dokter Gigi'})`,
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Data dokter berhasil ditambahkan.',
@@ -258,6 +266,13 @@ const updateDokter = async (req, res, next) => {
       data: dataToUpdate,
     });
 
+    // Catat riwayat aktivitas real-time: status 'Pembaruan'
+    recordActivity({
+      type: 'dokter',
+      status: 'Pembaruan',
+      deskripsi: `Pembaruan data dokter: ${updatedDoctor.nama} (${updatedDoctor.status || 'Aktif'})`,
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Data dokter berhasil diperbarui.',
@@ -301,6 +316,13 @@ const deleteDokter = async (req, res, next) => {
 
     await prisma.dokter.delete({
       where: { id },
+    });
+
+    // Catat riwayat aktivitas real-time: status 'Menghapus'
+    recordActivity({
+      type: 'dokter',
+      status: 'Menghapus',
+      deskripsi: `Menghapus dokter: ${existingDoctor.nama}`,
     });
 
     return res.status(200).json({

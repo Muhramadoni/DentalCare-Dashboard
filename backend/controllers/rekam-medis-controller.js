@@ -4,6 +4,7 @@
 
 const prisma = require('../config/prisma');
 const { sanitizeText } = require('../utils/sanitizer');
+const { recordActivity } = require('../utils/activity-logger');
 
 /**
  * Helper: Mengonversi string tanggal ke format Date UTC murni (00:00:00 UTC)
@@ -365,6 +366,13 @@ const createRekamMedis = async (req, res, next) => {
       },
     });
 
+    // Catat riwayat aktivitas real-time: status 'Tambah'
+    recordActivity({
+      type: 'emr',
+      status: 'Tambah',
+      deskripsi: `Menambahkan rekam medis pasien: ${newEmr.pasien?.nama || 'Pasien'}`,
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Data rekam medis berhasil disimpan.',
@@ -473,6 +481,13 @@ const updateRekamMedis = async (req, res, next) => {
       },
     });
 
+    // Catat riwayat aktivitas real-time: status 'Pembaruan'
+    recordActivity({
+      type: 'emr',
+      status: 'Pembaruan',
+      deskripsi: `Pembaruan rekam medis pasien: ${updatedEmr.pasien?.nama || 'Pasien'}`,
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Data rekam medis berhasil diperbarui.',
@@ -500,7 +515,13 @@ const deleteRekamMedis = async (req, res, next) => {
       });
     }
 
-    const existing = await prisma.rekamMedis.findUnique({ where: { id } });
+    const existing = await prisma.rekamMedis.findUnique({
+      where: { id },
+      include: {
+        pasien: { select: { nama: true } },
+      },
+    });
+
     if (!existing) {
       return res.status(404).json({
         success: false,
@@ -511,7 +532,16 @@ const deleteRekamMedis = async (req, res, next) => {
       });
     }
 
+    const patientName = existing.pasien?.nama || 'Pasien';
+
     await prisma.rekamMedis.delete({ where: { id } });
+
+    // Catat riwayat aktivitas real-time: status 'Menghapus'
+    recordActivity({
+      type: 'emr',
+      status: 'Menghapus',
+      deskripsi: `Menghapus rekam medis pasien: ${patientName}`,
+    });
 
     return res.status(200).json({
       success: true,

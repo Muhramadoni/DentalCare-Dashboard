@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import XLSX from 'xlsx-js-style'
 import Sidebar from '../components/sidebar'
 import Pagination from '../components/pagination'
 import {
@@ -11,6 +12,7 @@ import {
     SpinnerIcon,
     ErrorIcon,
     TrashIcon,
+    ExcelIcon,
 } from '../components/icon'
 import { toDateInputValue, toDisplayDate } from '../utils/date'
 
@@ -503,6 +505,202 @@ export default function EMR({ onNavigate, onLogout }) {
         })
     }, [emrList, searchQuery, selectedPasienFilter, selectedDokterFilter, startDate, endDate])
 
+    // Fungsi unduh data rekam medis ke file Excel (.xlsx) dengan tampilan desain profesional
+    const handleExportExcel = () => {
+        if (!filteredEmrList || filteredEmrList.length === 0) {
+            alert('Tidak ada data rekam medis yang dapat diunduh.')
+            return
+        }
+
+        const dateNow = new Date()
+        const tanggalCetak = dateNow.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        })
+
+        // 1. Data baris (Judul laporan, metadata, spasi, header kolom, dan isi data)
+        const rows = [
+            ['KLINIK GIGI IN DENTAL CARE'],
+            ['LAPORAN REKAM MEDIS ELEKTRONIK (EMR) PASIEN'],
+            [`Tanggal Unduh: ${tanggalCetak}  |  Total Data: ${filteredEmrList.length} Rekam Medis  |  Dicetak oleh: Admin Dashboard`],
+            [], // Baris kosong pemisah
+            [
+                'NO',
+                'NAMA PASIEN',
+                'TANGGAL',
+                'REGIO',
+                'ANAMNESA (DIAGNOSA)',
+                'TINDAKAN PELAYANAN',
+                'PF (RESEP)',
+                'TERAPI (PROSEDUR)',
+                'DOKTER PEMERIKSA',
+            ],
+        ]
+
+        // 2. Masukkan data rekam medis
+        filteredEmrList.forEach((item, index) => {
+            rows.push([
+                index + 1,
+                item.namaPasien || '-',
+                item.tanggal || '-',
+                item.regio || '-',
+                item.anamnesa || '-',
+                item.tindakan || '-',
+                item.resep || '-',
+                item.terapi || '-',
+                item.dokter || '-',
+            ])
+        })
+
+        // Baris footer rekapitulasi data
+        const totalRowIdx = rows.length
+        rows.push([`TOTAL REKAM MEDIS: ${filteredEmrList.length} DATA`, '', '', '', '', '', '', '', ''])
+
+        // 3. Konversi array of arrays ke Worksheet
+        const ws = XLSX.utils.aoa_to_sheet(rows)
+
+        // Definisi Border Elegan
+        const borderThin = {
+            top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+            bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+            left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+            right: { style: 'thin', color: { rgb: 'CBD5E1' } },
+        }
+
+        const borderHeader = {
+            top: { style: 'medium', color: { rgb: '0F172A' } },
+            bottom: { style: 'medium', color: { rgb: '0F172A' } },
+            left: { style: 'thin', color: { rgb: '38BDF8' } },
+            right: { style: 'thin', color: { rgb: '38BDF8' } },
+        }
+
+        const colLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+
+        // Styling Baris Judul 1 (Nama Klinik)
+        ws['A1'].s = {
+            font: { name: 'Segoe UI', sz: 16, bold: true, color: { rgb: '0F172A' } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+        }
+
+        // Styling Baris Judul 2 (Nama Laporan)
+        ws['A2'].s = {
+            font: { name: 'Segoe UI', sz: 12, bold: true, color: { rgb: '0284C7' } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+        }
+
+        // Styling Baris Metadata (Tanggal Cetak)
+        ws['A3'].s = {
+            font: { name: 'Segoe UI', sz: 9, italic: true, color: { rgb: '64748B' } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+        }
+
+        // Styling Header Tabel (Baris ke-5 di Excel)
+        colLetters.forEach((col) => {
+            const cellAddr = `${col}5`
+            if (ws[cellAddr]) {
+                ws[cellAddr].s = {
+                    font: { name: 'Segoe UI', sz: 10, bold: true, color: { rgb: 'FFFFFF' } },
+                    fill: { fgColor: { rgb: '0284C7' } }, // Header warna biru medis
+                    border: borderHeader,
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                }
+            }
+        })
+
+        // Styling Baris Data (Baris ke-6 sampai sebelum footer)
+        filteredEmrList.forEach((_, idx) => {
+            const rowNumber = idx + 6
+            const isZebra = idx % 2 === 1
+            const rowBgColor = isZebra ? 'F8FAFC' : 'FFFFFF' // Zebra striping halus
+
+            colLetters.forEach((col) => {
+                const cellAddr = `${col}${rowNumber}`
+                if (ws[cellAddr]) {
+                    const isCenter = ['A', 'C', 'D'].includes(col) // NO, Tanggal, Regio di tengah
+                    const isPatientName = col === 'B'
+
+                    ws[cellAddr].s = {
+                        font: {
+                            name: 'Segoe UI',
+                            sz: 10,
+                            bold: isPatientName,
+                            color: { rgb: '1E293B' },
+                        },
+                        fill: { fgColor: { rgb: rowBgColor } },
+                        border: borderThin,
+                        alignment: {
+                            horizontal: isCenter ? 'center' : 'left',
+                            vertical: 'center',
+                            wrapText: true,
+                        },
+                    }
+                }
+            })
+        })
+
+        // Styling Footer Summary Row
+        const footerRowNumber = totalRowIdx + 1
+        colLetters.forEach((col) => {
+            const cellAddr = `${col}${footerRowNumber}`
+            if (ws[cellAddr]) {
+                ws[cellAddr].s = {
+                    font: { name: 'Segoe UI', sz: 10, bold: true, color: { rgb: '0F172A' } },
+                    fill: { fgColor: { rgb: 'E2E8F0' } },
+                    border: {
+                        top: { style: 'thin', color: { rgb: '94A3B8' } },
+                        bottom: { style: 'medium', color: { rgb: '475569' } },
+                        left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                        right: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                    },
+                    alignment: { horizontal: 'left', vertical: 'center' },
+                }
+            }
+        })
+
+        // Penggabungan Sel (Merges)
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, // Title 1 (A1:I1)
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }, // Title 2 (A2:I2)
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }, // Metadata (A3:I3)
+            { s: { r: totalRowIdx, c: 0 }, e: { r: totalRowIdx, c: 8 } }, // Footer Total (A:I)
+        ]
+
+        // Pengaturan Tinggi Baris (Row Heights)
+        const rowHeights = [
+            { hpt: 26 }, // Title 1
+            { hpt: 22 }, // Title 2
+            { hpt: 18 }, // Metadata
+            { hpt: 8 },  // Spacing
+            { hpt: 26 }, // Table Header
+        ]
+        filteredEmrList.forEach(() => {
+            rowHeights.push({ hpt: 24 })
+        })
+        rowHeights.push({ hpt: 22 }) // Footer
+        ws['!rows'] = rowHeights
+
+        // Pengaturan Lebar Kolom yang Rapi & Proporsional
+        ws['!cols'] = [
+            { wch: 6 },  // NO
+            { wch: 24 }, // NAMA PASIEN
+            { wch: 16 }, // TANGGAL
+            { wch: 12 }, // REGIO
+            { wch: 36 }, // ANAMNESA (DIAGNOSA)
+            { wch: 36 }, // TINDAKAN PELAYANAN
+            { wch: 28 }, // PF (RESEP)
+            { wch: 28 }, // TERAPI (PROSEDUR)
+            { wch: 26 }, // DOKTER PEMERIKSA
+        ]
+
+        // 4. Buat workbook dan unduh file
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Rekam Medis (EMR)')
+
+        const dateStr = dateNow.toISOString().split('T')[0]
+        XLSX.writeFile(wb, `Laporan_Rekam_Medis_EMR_${dateStr}.xlsx`)
+    }
+
     return (
         <div className="flex h-screen w-full bg-[#f9f8ff] font-['Poppins'] select-none overflow-hidden">
             {/* Sidebar Navigasi Kiri */}
@@ -887,13 +1085,35 @@ export default function EMR({ onNavigate, onLogout }) {
                     2. BAGIAN BAWAH: RIWAYAT REKAM MEDIS (EMR)
                    ==================================================== */}
                 <div className="flex flex-col gap-4">
-                    <div>
-                        <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
-                            Riwayat Rekam Medis (EMR)
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                            Rekapitulasi seluruh rekam medis pasien klinik secara terpusat.
-                        </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
+                                Riwayat Rekam Medis (EMR)
+                            </h2>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                                Rekapitulasi seluruh rekam medis pasien klinik secara terpusat.
+                            </p>
+                        </div>
+
+                        {/* Tombol Unduh Excel */}
+                        <button
+                            type="button"
+                            onClick={handleExportExcel}
+                            disabled={filteredEmrList.length === 0}
+                            className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0 shadow-sm ${
+                                filteredEmrList.length === 0
+                                    ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-emerald-600/25'
+                            }`}
+                            title={
+                                filteredEmrList.length === 0
+                                    ? 'Tidak ada data rekam medis untuk diunduh'
+                                    : 'Unduh data rekam medis ke file Excel (.xlsx)'
+                            }
+                        >
+                            <ExcelIcon className="w-4 h-4 shrink-0" />
+                            <span>Unduh Excel</span>
+                        </button>
                     </div>
 
                     {/* Card Tabel & Filter Riwayat EMR */}

@@ -4,6 +4,7 @@ import Pagination from '../components/pagination'
 import {
     ReservationIcon,
     DoctorIcon,
+    EMRIcon,
     DashboardIcon,
     ActivityIcon,
     CalendarOutlineIcon,
@@ -294,8 +295,8 @@ export default function Dashboard({ onNavigate, onLogout }) {
                             </p>
                         </div>
 
-                        {/* List Riwayat Aktivitas */}
-                        <div className="space-y-4">
+                        {/* List Riwayat Aktivitas (Scroll otomatis jika lebih dari 7 item) */}
+                        <div className="space-y-4 max-h-[405px] overflow-y-auto pr-1">
                             {isLoading ? (
                                 <div className="py-8 text-center text-gray-400 text-xs">
                                     <SpinnerIcon className="w-5 h-5 animate-spin mx-auto text-[#49baff] mb-1" />
@@ -308,28 +309,60 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                     <p className="text-gray-400 text-[11px]">Log pembaruan sistem akan muncul otomatis saat ada aktivitas.</p>
                                 </div>
                             ) : (
-                                aktivitasList.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="flex items-center gap-3 justify-between"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-8 h-8 rounded-full bg-[#49baff] text-white flex items-center justify-center shrink-0 shadow-xs">
-                                                {item.type === 'status' ? (
-                                                    <ReservationIcon className="w-4 h-4" />
-                                                ) : (
-                                                    <DoctorIcon className="w-4 h-4" />
-                                                )}
+                                aktivitasList.map((item) => {
+                                    const statusText = item.status || 'Pembaruan'
+                                    const isTambah = statusText.toLowerCase() === 'tambah'
+                                    const isHapus = statusText.toLowerCase() === 'menghapus' || statusText.toLowerCase() === 'hapus'
+
+                                    // Warna Tag/Badge dan Bg Icon sesuai panduan DESIGN.md dan warna yang sudah digunakan di sistem
+                                    const badgeColor = isTambah
+                                        ? 'bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]'
+                                        : isHapus
+                                        ? 'bg-[#fddada] text-[#e31e1e] border-2 border-[#fca5a5]'
+                                        : 'bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]'
+
+                                    const iconBg = isTambah
+                                        ? 'bg-[#49baff]'
+                                        : isHapus
+                                        ? 'bg-[#e31e1e]'
+                                        : 'bg-[#adc91f]'
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center gap-3 justify-between py-1"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div
+                                                    className={`w-8 h-8 rounded-full ${iconBg} text-white flex items-center justify-center shrink-0 shadow-xs transition-colors`}
+                                                >
+                                                    {item.type === 'dokter' ? (
+                                                        <DoctorIcon className="w-4 h-4" />
+                                                    ) : item.type === 'emr' ? (
+                                                        <EMRIcon className="w-4 h-4" />
+                                                    ) : (
+                                                        <ReservationIcon className="w-4 h-4" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col min-w-0 gap-0.5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span
+                                                            className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full border-2 leading-none shrink-0 ${badgeColor}`}
+                                                        >
+                                                            {statusText}
+                                                        </span>
+                                                        <p className="text-xs font-medium text-slate-700 leading-snug truncate">
+                                                            {item.deskripsi}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <p className="text-xs font-medium text-slate-700 leading-snug line-clamp-2">
-                                                {item.deskripsi}
-                                            </p>
+                                            <span className="text-xs text-gray-400 font-semibold ml-2 whitespace-nowrap shrink-0">
+                                                {item.waktu}
+                                            </span>
                                         </div>
-                                        <span className="text-xs text-gray-400 font-medium ml-2 whitespace-nowrap shrink-0">
-                                            {item.waktu}
-                                        </span>
-                                    </div>
-                                ))
+                                    )
+                                })
                             )}
                         </div>
                     </div>

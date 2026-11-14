@@ -2,6 +2,7 @@
 // Controller Ringkasan Utama Dashboard (sesuai FR-2, US-2, apiguide.md, database.md)
 
 const prisma = require('../config/prisma');
+const { getActivities } = require('../utils/activity-logger');
 
 /**
  * GET /api/v1/dashboard/summary
@@ -162,29 +163,22 @@ const getSummary = async (req, res, next) => {
 
     const totalDokterPraktikHariIni = dokterPraktikHariIni.length;
 
-    // 5. Susun riwayat aktivitas dinamis dari data transaksional terkini
-    const riwayatAktivitas = [];
+    // 5. Ambil riwayat aktivitas real-time yang dicatat saat admin melakukan aksi
+    let riwayatAktivitas = getActivities(20);
 
-    // Aktivitas dari reservasi
-    formattedReservasi.slice(0, 4).forEach((item, idx) => {
-      riwayatAktivitas.push({
-        id: `res-${item.id}`,
-        type: 'status',
-        deskripsi: `Pembaruan Reservasi: ${item.namaPasien} (${item.status})`,
-        waktu: item.jadwal.split(' ')[1] || 'Hari ini',
+    // Fallback: Jika belum ada log di file aktivitas (data awal),
+    // susun dari data reservasi agar tidak kosong
+    if (riwayatAktivitas.length === 0) {
+      formattedReservasi.slice(0, 4).forEach((item) => {
+        riwayatAktivitas.push({
+          id: `res-${item.id}`,
+          type: 'reservasi',
+          status: item.status === 'Reschedule' ? 'Pembaruan' : 'Tambah',
+          deskripsi: `Reservasi pasien: ${item.namaPasien} (${item.status})`,
+          waktu: item.waktu || 'Hari ini',
+        });
       });
-    });
-
-    // Aktivitas dari dokter yang berpraktik hari ini (atau dokter terbaru)
-    const dokterAktivitasSource = dokterPraktikHariIni.length > 0 ? dokterPraktikHariIni : dokterTerbaru;
-    dokterAktivitasSource.slice(0, 3).forEach((item) => {
-      riwayatAktivitas.push({
-        id: `doc-${item.id}`,
-        type: 'dokter',
-        deskripsi: `Jadwal Praktik Dokter: ${item.nama} (${item.cabang || 'Klinik'})`,
-        waktu: 'Aktif Praktik Hari Ini',
-      });
-    });
+    }
 
     // 6. Kembalikan respons terstandarisasi sesuai apiguide.md
     return res.status(200).json({

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "act_1794653380369_cxuk",
+    "type": "reservasi",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan reservasi pasien: indira (Reschedule)",
+    "waktu": "17:49",
+    "timestamp": "2026-11-14T10:49:40.369Z"
+  },
+  {
+    "id": "act_1794653360527_m0ca",
+    "type": "reservasi",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan reservasi pasien: Fina (Appointment)",
+    "waktu": "17:49",
+    "timestamp": "2026-11-14T10:49:20.527Z"
+  },
+  {
+    "id": "act_1794653343625_pwz3",
+    "type": "reservasi",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan reservasi pasien: Kiwil (Reschedule)",
+    "waktu": "17:49",
+    "timestamp": "2026-11-14T10:49:03.625Z"
+  },
+  {
+    "id": "act_1794652905136_u257",
+    "type": "reservasi",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan reservasi pasien: jiko (Reschedule)",
+    "waktu": "17:41",
+    "timestamp": "2026-11-14T10:41:45.136Z"
+  },
+  {
+    "id": "act_1794652618342_7v7n",
+    "type": "emr",
+    "status": "Menghapus",
+    "deskripsi": "Menghapus rekam medis pasien: Jokowi",
+    "waktu": "17:36",
+    "timestamp": "2026-11-14T10:36:58.342Z"
+  },
+  {
+    "id": "act_1794652609876_n0vo",
+    "type": "emr",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan rekam medis pasien: Jokowi",
+    "waktu": "17:36",
+    "timestamp": "2026-11-14T10:36:49.876Z"
+  },
+  {
+    "id": "act_1794652588523_kukp",
+    "type": "dokter",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan data dokter: Sila (Aktif)",
+    "waktu": "17:36",
+    "timestamp": "2026-11-14T10:36:28.523Z"
+  },
+  {
+    "id": "act_1794652575290_fa5g",
+    "type": "dokter",
+    "status": "Tambah",
+    "deskripsi": "Menambahkan dokter baru: Gina (gigi umum)",
+    "waktu": "17:36",
+    "timestamp": "2026-11-14T10:36:15.289Z"
+  },
+  {
+    "id": "act_1794652531388_go3q",
+    "type": "reservasi",
+    "status": "Pembaruan",
+    "deskripsi": "Pembaruan reservasi pasien: Jokowi (Appointment)",
+    "waktu": "17:35",
+    "timestamp": "2026-11-14T10:35:31.388Z"
+  }
+]

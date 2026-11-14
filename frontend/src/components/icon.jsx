@@ -451,4 +451,21 @@ export function FilterResetIcon({ className = 'w-4 h-4', ...props }) {
     )
 }
 
+/**
+ * Excel Download Icon
+ */
+export function ExcelIcon({ className = 'w-4 h-4', ...props }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            {...props}
+        >
+            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-2.5l-1.5-2.5L10.5 18H8l2.5-3.5L8 11h2.5l1.5 2.5 1.5-2.5H16l-2.5 3.5L16 18zm-3-9V3.5L18.5 9H13z" />
+        </svg>
+    )
+}
+
+
 
