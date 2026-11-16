@@ -12,9 +12,6 @@ export function getDoctorSchedule(doctor) {
     if (Array.isArray(doctor.jadwal) && doctor.jadwal.length > 0) {
         return doctor.jadwal
     }
-    if (Array.isArray(doctor.jadwalGaruda) && doctor.jadwalGaruda.length > 0) {
-        return doctor.jadwalGaruda
-    }
     if (doctor.jadwal_json) {
         if (Array.isArray(doctor.jadwal_json.jadwalMuchtar) && doctor.jadwal_json.jadwalMuchtar.length > 0) {
             return doctor.jadwal_json.jadwalMuchtar

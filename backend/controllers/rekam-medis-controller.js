@@ -329,7 +329,7 @@ const createRekamMedis = async (req, res, next) => {
           data: {
             nama: cleanDocName,
             spesialisasi: 'Dokter Gigi Umum',
-            cabang: 'Garuda',
+            cabang: 'Muchtar',
             status: 'Aktif',
           },
         });
@@ -366,7 +366,7 @@ const createRekamMedis = async (req, res, next) => {
       },
     });
 
-    // Catat riwayat aktivitas real-time: status 'Tambah'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'emr',
       status: 'Tambah',
@@ -464,7 +464,7 @@ const updateRekamMedis = async (req, res, next) => {
       });
       if (!dokter) {
         dokter = await prisma.dokter.create({
-          data: { nama: cleanDoc, spesialisasi: 'Dokter Gigi Umum', cabang: 'Garuda', status: 'Aktif' },
+          data: { nama: cleanDoc, spesialisasi: 'Dokter Gigi Umum', cabang: 'Muchtar', status: 'Aktif' },
         });
       }
       dataToUpdate.dokter_id = dokter.id;
@@ -481,7 +481,7 @@ const updateRekamMedis = async (req, res, next) => {
       },
     });
 
-    // Catat riwayat aktivitas real-time: status 'Pembaruan'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'emr',
       status: 'Pembaruan',
@@ -532,11 +532,27 @@ const deleteRekamMedis = async (req, res, next) => {
       });
     }
 
+    const patientId = existing.pasien_id;
     const patientName = existing.pasien?.nama || 'Pasien';
 
     await prisma.rekamMedis.delete({ where: { id } });
 
-    // Catat riwayat aktivitas real-time: status 'Menghapus'
+    // Bersihkan data pasien jika pasien sudah tidak memiliki reservasi maupun rekam medis lain
+    if (patientId) {
+      const remainingReservasi = await prisma.reservasi.count({
+        where: { pasien_id: patientId },
+      });
+      const remainingEmr = await prisma.rekamMedis.count({
+        where: { pasien_id: patientId },
+      });
+      if (remainingReservasi === 0 && remainingEmr === 0) {
+        await prisma.pasien.delete({
+          where: { id: patientId },
+        }).catch(() => null);
+      }
+    }
+
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'emr',
       status: 'Menghapus',

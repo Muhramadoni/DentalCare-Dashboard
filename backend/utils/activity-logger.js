@@ -1,72 +1,52 @@
 // backend/utils/activity-logger.js
-// Pencatatan Log Riwayat Aktivitas Real-Time
-// Sesuai dengan instruksi aktivitas admin dan security.md Section 10
+// Pencatatan Log Riwayat Aktivitas Harian (In-Memory)
+// Reset otomatis setiap hari jam 00:00 tanpa menulis ke harddisk/file JSON
 
-const fs = require('fs');
-const path = require('path');
-
-const LOG_FILE = path.join(__dirname, '../data/activity-logs.json');
+let dailyActivities = [];
 const MAX_LOGS = 50;
 
 /**
- * Memastikan direktori data ada sebelum membaca/menulis file
+ * Format string tanggal lokal YYYY-MM-DD
+ * @param {Date} date
+ * @returns {string}
  */
-function ensureDirectoryExistence() {
-  const dir = path.dirname(LOG_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+function getTodayDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
- * Format waktu lokal Indonesia (contoh: '17:00' atau '09:30')
+ * Format waktu lokal Indonesia (contoh: '14:35 WIB')
+ * @param {Date} date
+ * @returns {string}
  */
 function getLocalTimeString(date = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${pad(date.getHours())}:${pad(date.getMinutes())} WIB`;
 }
 
 /**
- * Mengambil daftar riwayat aktivitas
- * @param {number} limit - Jumlah maksimal aktivitas yang diambil
- * @returns {Array}
+ * Otomatis membersihkan aktivitas yang bukan berasal dari hari ini (reset jam 00:00)
  */
-function getActivities(limit = 10) {
-  try {
-    ensureDirectoryExistence();
-    if (!fs.existsSync(LOG_FILE)) {
-      return [];
-    }
-    const raw = fs.readFileSync(LOG_FILE, 'utf-8');
-    const logs = JSON.parse(raw);
-    return Array.isArray(logs) ? logs.slice(0, limit) : [];
-  } catch (error) {
-    console.error('Error saat membaca activity logs:', error);
-    return [];
-  }
+function cleanOldActivities() {
+  const today = getTodayDateString();
+  dailyActivities = dailyActivities.filter((act) => act.dateStr === today);
 }
 
 /**
- * Mencatat aktivitas baru secara real-time
+ * Mencatat aktivitas baru secara real-time ke memori
  * @param {Object} param0
- * @param {string} param0.type - Tipe aktivitas: 'reservasi' | 'dokter' | 'emr'
+ * @param {string} param0.type - Tipe: 'reservasi' | 'dokter' | 'emr'
  * @param {string} param0.status - Status: 'Tambah' | 'Pembaruan' | 'Menghapus'
  * @param {string} param0.deskripsi - Penjelasan aktivitas
- * @param {string} [param0.waktu] - Waktu aktivitas (otomatis jam real-time saat ini jika kosong)
+ * @param {string} [param0.waktu] - Waktu opsional
+ * @returns {Object}
  */
 function recordActivity({ type = 'reservasi', status = 'Pembaruan', deskripsi, waktu }) {
   try {
-    ensureDirectoryExistence();
-    let logs = [];
-    if (fs.existsSync(LOG_FILE)) {
-      try {
-        const raw = fs.readFileSync(LOG_FILE, 'utf-8');
-        logs = JSON.parse(raw);
-        if (!Array.isArray(logs)) logs = [];
-      } catch (e) {
-        logs = [];
-      }
-    }
+    cleanOldActivities();
 
     const now = new Date();
     const formattedTime = waktu || getLocalTimeString(now);
@@ -77,28 +57,37 @@ function recordActivity({ type = 'reservasi', status = 'Pembaruan', deskripsi, w
       status, // 'Tambah' | 'Pembaruan' | 'Menghapus'
       deskripsi,
       waktu: formattedTime,
-      timestamp: now.toISOString(),
+      dateStr: getTodayDateString(now),
+      timestamp: now.getTime(),
     };
 
-    // Sisipkan aktivitas terbaru ke urutan teratas
-    logs.unshift(newActivity);
+    // Sisipkan ke urutan teratas
+    dailyActivities.unshift(newActivity);
 
-    // Batasi log maksimal agar hemat memori & disk
-    if (logs.length > MAX_LOGS) {
-      logs = logs.slice(0, MAX_LOGS);
+    // Batasi jumlah maksimal log di memori
+    if (dailyActivities.length > MAX_LOGS) {
+      dailyActivities = dailyActivities.slice(0, MAX_LOGS);
     }
 
-    fs.writeFileSync(LOG_FILE, JSON.stringify(logs, null, 2), 'utf-8');
     return newActivity;
   } catch (error) {
-    console.error('Error saat mencatat aktivitas:', error);
+    console.error('Error saat mencatat aktivitas in-memory:', error);
     return null;
   }
 }
 
-module.exports = {
-  getActivities,
-  recordActivity,
-  getLocalTimeString,
-};
+/**
+ * Mengambil daftar aktivitas khusus hari ini
+ * @param {number} limit
+ * @returns {Array}
+ */
+function getTodayActivities(limit = 20) {
+  cleanOldActivities();
+  return dailyActivities.slice(0, limit);
+}
 
+module.exports = {
+  recordActivity,
+  getTodayActivities,
+  getActivities: getTodayActivities, // kompatibilitas
+};

@@ -27,9 +27,7 @@ export default function ConfirmModal({
                 <div className="flex items-start justify-between">
                     <div
                         className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs ${
-                            isLogout
-                                ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                                : isDanger
+                            isLogout || isDanger
                                 ? 'bg-red-50 text-red-600 border border-red-200'
                                 : 'bg-[#e6f7ff] text-[#49baff] border border-[#b8e5ff]'
                         }`}
