@@ -2,7 +2,7 @@
 // Controller Ringkasan Utama Dashboard (sesuai FR-2, US-2, apiguide.md, database.md)
 
 const prisma = require('../config/prisma');
-const { getActivities } = require('../utils/activity-logger');
+const { getTodayActivities } = require('../utils/activity-logger');
 
 /**
  * GET /api/v1/dashboard/summary
@@ -43,9 +43,8 @@ const getSummary = async (req, res, next) => {
       totalDokter,
       dokterAktifList,
       daftarReservasi,
-      dokterTerbaru
     ] = await Promise.all([
-      // Total reservasi hari ini: hanya menghitung reservasi dengan tanggal_reservasi hari ini (otomatis reset = 0 besoknya)
+      // Total reservasi hari ini: hanya menghitung reservasi dengan tanggal kunjungan hari ini
       prisma.reservasi.count({
         where: filterHariIni,
       }),
@@ -109,17 +108,6 @@ const getSummary = async (req, res, next) => {
           },
         },
       }),
-
-      // Ambil daftar dokter untuk menghasilkan riwayat aktivitas operasional terkini
-      prisma.dokter.findMany({
-        take: 5,
-        orderBy: { id: 'desc' },
-        select: {
-          id: true,
-          nama: true,
-          cabang: true,
-        },
-      }),
     ]);
 
     // 3. Format daftar reservasi untuk dikonsumsi frontend
@@ -160,8 +148,6 @@ const getSummary = async (req, res, next) => {
           schedules = doc.jadwal_json.jadwalMuchtar;
         } else if (Array.isArray(doc.jadwal_json.jadwal) && doc.jadwal_json.jadwal.length > 0) {
           schedules = doc.jadwal_json.jadwal;
-        } else if (Array.isArray(doc.jadwal_json.jadwalGaruda)) {
-          schedules = doc.jadwal_json.jadwalGaruda;
         }
       }
 
@@ -196,22 +182,8 @@ const getSummary = async (req, res, next) => {
 
     const totalDokterPraktikHariIni = dokterPraktikHariIni.length;
 
-    // 5. Ambil riwayat aktivitas real-time yang dicatat saat admin melakukan aksi
-    let riwayatAktivitas = getActivities(20);
-
-    // Fallback: Jika belum ada log di file aktivitas (data awal),
-    // susun dari data reservasi agar tidak kosong
-    if (riwayatAktivitas.length === 0) {
-      formattedReservasi.slice(0, 4).forEach((item) => {
-        riwayatAktivitas.push({
-          id: `res-${item.id}`,
-          type: 'reservasi',
-          status: item.status === 'Reschedule' ? 'Pembaruan' : 'Tambah',
-          deskripsi: `Reservasi pasien: ${item.namaPasien} (${item.status})`,
-          waktu: item.waktu || 'Hari ini',
-        });
-      });
-    }
+    // 5. Ambil riwayat aktivitas admin khusus HARI INI (In-Memory, otomatis reset jam 00:00)
+    const riwayatAktivitas = getTodayActivities(20);
 
     // 6. Kembalikan respons terstandarisasi sesuai apiguide.md
     return res.status(200).json({

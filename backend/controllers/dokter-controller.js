@@ -22,13 +22,9 @@ const formatDoctorItem = (item) => {
     }
   }
 
-  const hasGaruda = jadwalParsed.cabangGaruda !== undefined
-    ? jadwalParsed.cabangGaruda
-    : (item.cabang ? item.cabang.toLowerCase().includes('garuda') : true);
-
-  const hasMuchtar = jadwalParsed.cabangMuchtar !== undefined
+    const hasMuchtar = jadwalParsed.cabangMuchtar !== undefined
     ? jadwalParsed.cabangMuchtar
-    : (item.cabang ? item.cabang.toLowerCase().includes('muchtar') : false);
+    : (item.cabang ? item.cabang.toLowerCase().includes('muchtar') : true);
 
   return {
     id: item.id,
@@ -37,11 +33,9 @@ const formatDoctorItem = (item) => {
     cabang: item.cabang || '',
     status: item.status || 'Aktif',
     jadwal_json: item.jadwal_json,
-    cabangGaruda: hasGaruda,
     cabangMuchtar: hasMuchtar,
-    jadwalGaruda: jadwalParsed.jadwalGaruda || [],
-    jadwalMuchtar: jadwalParsed.jadwalMuchtar || [],
-    jadwal: jadwalParsed.jadwal || [],
+    jadwalMuchtar: jadwalParsed.jadwalMuchtar || jadwalParsed.jadwal || [],
+    jadwal: jadwalParsed.jadwal || jadwalParsed.jadwalMuchtar || [],
   };
 };
 
@@ -158,9 +152,7 @@ const createDokter = async (req, res, next) => {
     if (!jadwal_json) {
       jadwal_json = {
         jadwal: req.body.jadwal || [],
-        jadwalGaruda: req.body.jadwalGaruda || [],
         jadwalMuchtar: req.body.jadwalMuchtar || [],
-        cabangGaruda: Boolean(req.body.cabangGaruda),
         cabangMuchtar: Boolean(req.body.cabangMuchtar),
       };
     }
@@ -169,13 +161,13 @@ const createDokter = async (req, res, next) => {
       data: {
         nama: nama.trim(),
         spesialisasi: (spesialisasi || 'Dokter Gigi Umum').trim(),
-        cabang: (cabang || 'Garuda').trim(),
+        cabang: (cabang || 'Muchtar').trim(),
         jadwal_json,
         status: status || 'Aktif',
       },
     });
 
-    // Catat riwayat aktivitas real-time: status 'Tambah'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'dokter',
       status: 'Tambah',
@@ -242,9 +234,7 @@ const updateDokter = async (req, res, next) => {
       dataToUpdate.jadwal_json = req.body.jadwal_json;
     } else if (
       req.body.jadwal ||
-      req.body.jadwalGaruda ||
       req.body.jadwalMuchtar ||
-      req.body.cabangGaruda !== undefined ||
       req.body.cabangMuchtar !== undefined
     ) {
       const currentJson = existingDoctor.jadwal_json && typeof existingDoctor.jadwal_json === 'object'
@@ -254,9 +244,7 @@ const updateDokter = async (req, res, next) => {
       dataToUpdate.jadwal_json = {
         ...currentJson,
         jadwal: req.body.jadwal !== undefined ? req.body.jadwal : currentJson.jadwal || [],
-        jadwalGaruda: req.body.jadwalGaruda !== undefined ? req.body.jadwalGaruda : currentJson.jadwalGaruda || [],
         jadwalMuchtar: req.body.jadwalMuchtar !== undefined ? req.body.jadwalMuchtar : currentJson.jadwalMuchtar || [],
-        cabangGaruda: req.body.cabangGaruda !== undefined ? Boolean(req.body.cabangGaruda) : currentJson.cabangGaruda,
         cabangMuchtar: req.body.cabangMuchtar !== undefined ? Boolean(req.body.cabangMuchtar) : currentJson.cabangMuchtar,
       };
     }
@@ -266,7 +254,7 @@ const updateDokter = async (req, res, next) => {
       data: dataToUpdate,
     });
 
-    // Catat riwayat aktivitas real-time: status 'Pembaruan'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'dokter',
       status: 'Pembaruan',
@@ -314,11 +302,45 @@ const deleteDokter = async (req, res, next) => {
       });
     }
 
+    // Ambil daftar ID pasien yang terhubung dengan dokter ini
+    const relatedReservasis = await prisma.reservasi.findMany({
+      where: { dokter_id: id },
+      select: { pasien_id: true },
+    });
+    const relatedEmrs = await prisma.rekamMedis.findMany({
+      where: { dokter_id: id },
+      select: { pasien_id: true },
+    });
+
+    const candidatePatientIds = [
+      ...new Set([
+        ...relatedReservasis.map((r) => r.pasien_id),
+        ...relatedEmrs.map((e) => e.pasien_id),
+      ]),
+    ];
+
+    // Hapus data dokter (PostgreSQL CASCADE otomatis menghapus reservasi & rekam_medis dokter ini)
     await prisma.dokter.delete({
       where: { id },
     });
 
-    // Catat riwayat aktivitas real-time: status 'Menghapus'
+    // Bersihkan data pasien di tabel pasien jika pasien tersebut sudah tidak memiliki
+    // reservasi maupun rekam medis lain (mencegah orphan record)
+    for (const pId of candidatePatientIds) {
+      const remainingReservasi = await prisma.reservasi.count({
+        where: { pasien_id: pId },
+      });
+      const remainingEmr = await prisma.rekamMedis.count({
+        where: { pasien_id: pId },
+      });
+      if (remainingReservasi === 0 && remainingEmr === 0) {
+        await prisma.pasien.delete({
+          where: { id: pId },
+        }).catch(() => null);
+      }
+    }
+
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'dokter',
       status: 'Menghapus',

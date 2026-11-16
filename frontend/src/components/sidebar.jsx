@@ -11,6 +11,10 @@ import {
 
 export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout }) {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+    const adminEmail =
+        (typeof window !== 'undefined' &&
+            (sessionStorage.getItem('user_email') || localStorage.getItem('user_email'))) ||
+        'admindental@gmail.com'
     const menuItems = [
         {
             id: 'ringkasan',
@@ -85,15 +89,12 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
             <div className="pt-5 border-t border-slate-800/80 space-y-4">
                 {/* Info Admin */}
                 <div className="flex items-center gap-3 px-2">
-                    <div className="w-10 h-10 rounded-full bg-[#49baff] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                    <div className="w-9 h-9 rounded-full bg-[#49baff] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                         A
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-white leading-tight">
-                            Admin
-                        </span>
-                        <span className="text-xs font-normal text-slate-400 truncate mt-0.5">
-                            admin@gmail.com
+                        <span className="text-xs sm:text-[13px] font-medium text-slate-200 truncate" title={adminEmail}>
+                            {adminEmail}
                         </span>
                     </div>
                 </div>

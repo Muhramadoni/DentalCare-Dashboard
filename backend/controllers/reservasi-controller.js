@@ -222,7 +222,7 @@ const createReservasi = async (req, res, next) => {
           data: {
             nama: cleanDoctorName,
             spesialisasi: 'Dokter Gigi Umum',
-            cabang: cabang || 'Garuda',
+            cabang: cabang || 'Muchtar',
             status: 'Aktif',
           },
         });
@@ -240,7 +240,7 @@ const createReservasi = async (req, res, next) => {
           data: {
             nama: 'drg. Indira Nugrahani',
             spesialisasi: 'Konservasi Gigi (Sp.KG)',
-            cabang: cabang || 'Garuda',
+            cabang: cabang || 'Muchtar',
             status: 'Aktif',
           },
         });
@@ -267,7 +267,7 @@ const createReservasi = async (req, res, next) => {
 
     const formattedData = formatReservasiItem(newReservasi);
 
-    // Catat riwayat aktivitas real-time: status 'Tambah'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'reservasi',
       status: 'Tambah',
@@ -363,7 +363,7 @@ const updateReservasi = async (req, res, next) => {
           data: {
             nama: cleanDoctorName,
             spesialisasi: 'Dokter Gigi Umum',
-            cabang: req.body.cabang || 'Garuda',
+            cabang: req.body.cabang || 'Muchtar',
             status: 'Aktif',
           },
         });
@@ -405,7 +405,7 @@ const updateReservasi = async (req, res, next) => {
 
     const formattedData = formatReservasiItem(updatedReservasi);
 
-    // Catat riwayat aktivitas real-time: status 'Pembaruan'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'reservasi',
       status: 'Pembaruan',
@@ -495,7 +495,7 @@ const deleteReservasi = async (req, res, next) => {
       patientRemoved = true;
     }
 
-    // Catat riwayat aktivitas real-time: status 'Menghapus'
+    // Catat riwayat aktivitas admin hari ini (In-Memory)
     recordActivity({
       type: 'reservasi',
       status: 'Menghapus',
@@ -540,19 +540,16 @@ const getDoctors = async (req, res, next) => {
 
     const formattedDoctors = doctors.map((doc) => {
       let jadwalList = [];
-      let garudaList = [];
-      let muchtarList = [];
 
       if (doc.jadwal_json && typeof doc.jadwal_json === 'object') {
         if (Array.isArray(doc.jadwal_json)) {
           jadwalList = doc.jadwal_json;
         } else {
-          garudaList = Array.isArray(doc.jadwal_json.jadwalGaruda) ? doc.jadwal_json.jadwalGaruda : [];
-          muchtarList = Array.isArray(doc.jadwal_json.jadwalMuchtar) ? doc.jadwal_json.jadwalMuchtar : [];
+          const muchtarList = Array.isArray(doc.jadwal_json.jadwalMuchtar) ? doc.jadwal_json.jadwalMuchtar : [];
           if (Array.isArray(doc.jadwal_json.jadwal) && doc.jadwal_json.jadwal.length > 0) {
             jadwalList = doc.jadwal_json.jadwal;
           } else {
-            jadwalList = [...garudaList, ...muchtarList];
+            jadwalList = muchtarList;
           }
         }
       }
@@ -565,8 +562,7 @@ const getDoctors = async (req, res, next) => {
         status: doc.status || 'Aktif',
         jadwal_json: doc.jadwal_json,
         jadwal: jadwalList,
-        jadwalGaruda: garudaList,
-        jadwalMuchtar: muchtarList,
+        jadwalMuchtar: Array.isArray(doc.jadwal_json?.jadwalMuchtar) ? doc.jadwal_json.jadwalMuchtar : [],
       };
     });
 

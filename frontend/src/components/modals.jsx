@@ -58,9 +58,8 @@ export function getDoctorScheduleList(doctor) {
         return doctor.jadwal
     }
 
-    // 2. Gabungan dari jadwalGaruda dan jadwalMuchtar jika ada
+    // 2. Hanya dari jadwalMuchtar jika ada
     const combinedBranches = [
-        ...(Array.isArray(doctor.jadwalGaruda) ? doctor.jadwalGaruda : []),
         ...(Array.isArray(doctor.jadwalMuchtar) ? doctor.jadwalMuchtar : []),
     ]
     if (combinedBranches.length > 0) {
@@ -77,7 +76,6 @@ export function getDoctorScheduleList(doctor) {
                 return doctor.jadwal_json.jadwal
             }
             const jsonBranches = [
-                ...(Array.isArray(doctor.jadwal_json.jadwalGaruda) ? doctor.jadwal_json.jadwalGaruda : []),
                 ...(Array.isArray(doctor.jadwal_json.jadwalMuchtar) ? doctor.jadwal_json.jadwalMuchtar : []),
             ]
             if (jsonBranches.length > 0) {
@@ -273,18 +271,30 @@ export function ReservationModal({
                 <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                     {/* Input: Nama Pasien */}
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                            Nama Pasien
-                        </label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-800">
+                                Nama Pasien
+                            </label>
+                            {isEdit && (
+                                <span className="text-[10px] text-gray-400 font-normal">
+                                    (Tidak dapat diubah)
+                                </span>
+                            )}
+                        </div>
                         <div className="relative flex items-center">
                             <input
                                 type="text"
                                 value={namaPasien}
                                 onChange={(e) => setNamaPasien(e.target.value)}
                                 placeholder="Nama Lengkap Pasien"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
+                                disabled={isEdit}
+                                className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all pr-10 ${
+                                    isEdit
+                                        ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed select-none'
+                                        : 'bg-white text-gray-800 placeholder-gray-400 border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none'
+                                }`}
                             />
-                            {namaPasien && (
+                            {!isEdit && namaPasien && (
                                 <button
                                     type="button"
                                     onClick={() => setNamaPasien('')}
@@ -459,7 +469,7 @@ export function DoctorModal({
                     ? initialData.jadwalMuchtar
                     : ((Array.isArray(initialData.jadwal) && initialData.jadwal.length > 0)
                         ? initialData.jadwal
-                        : (initialData.jadwalGaruda || []))
+                        : [])
 
             setMuchtarDays(mapSchedule(rawJadwal))
         } else {
@@ -515,7 +525,6 @@ export function DoctorModal({
             spesialisasi: spesialisasi.trim(),
             status: initialData?.status || 'Aktif',
             cabang: 'Muchtar',
-            cabangGaruda: false,
             cabangMuchtar: true,
             jadwal:
                 activeMuchtar.length > 0
@@ -524,7 +533,6 @@ export function DoctorModal({
                         { hari: 'Rabu:', jam: '15.00 - 20.00' },
                         { hari: 'Kamis:', jam: '08.00 - 20.00' },
                     ],
-            jadwalGaruda: [],
             jadwalMuchtar: activeMuchtar,
         }
 
@@ -617,8 +625,7 @@ export function DoctorModal({
 
                     {/* Card Jadwal Praktik Cabang Muchtar */}
                     <div className="rounded-2xl border border-gray-200 p-4 sm:p-5 bg-white">
-                        <div className="flex items-center gap-2 mb-1">
-                            <ClockOutlineIcon className="w-4 h-4 text-[#49baff]" />
+                        <div className="mb-1">
                             <span className="font-semibold text-sm text-slate-800">
                                 Jadwal Praktek Cabang Muchtar
                             </span>
