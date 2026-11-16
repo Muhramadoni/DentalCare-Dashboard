@@ -214,11 +214,11 @@ const getRekamMedisById = async (req, res, next) => {
  */
 const createRekamMedis = async (req, res, next) => {
   try {
-    const namaPasien = req.body.namaPasien || req.body.pasien_nama || req.body.pasien;
+    const namaPasien = req.body.namaPasien || req.body.nama_pasien || req.body.pasien_nama || req.body.pasien;
     const pasienId = req.body.pasien_id || req.body.pasienId;
-    const dokterNama = req.body.dokter_nama || req.body.dokter || req.body.doctorName;
+    const dokterNama = req.body.dokter_nama || req.body.dokterNama || req.body.dokter || req.body.doctorName;
     const dokterId = req.body.dokter_id || req.body.dokterId;
-    const tanggalRekam = req.body.tanggal_rekam || req.body.tanggal || req.body.visitDate;
+    const tanggalRekam = req.body.tanggal_rekam || req.body.tanggalReservasi || req.body.tanggal || req.body.visitDate;
 
     // 1. Validasi input wajib
     if ((!namaPasien || !namaPasien.trim()) && !pasienId) {
@@ -456,7 +456,7 @@ const updateRekamMedis = async (req, res, next) => {
     }
 
     // 4. Perbarui dokter jika diganti
-    const dokterNama = req.body.dokter_nama || req.body.dokter;
+    const dokterNama = req.body.dokter_nama || req.body.dokterNama || req.body.dokter;
     if (dokterNama && dokterNama.trim() && dokterNama.trim() !== existingEmr.dokter?.nama) {
       const cleanDoc = dokterNama.trim();
       let dokter = await prisma.dokter.findFirst({
