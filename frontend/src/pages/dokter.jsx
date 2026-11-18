@@ -228,167 +228,167 @@ export default function Dokter({ onNavigate, onLogout }) {
             />
 
             <div className="flex-1 min-w-0 h-screen flex flex-col">
-            <PageHeader
-                title="Kelola Dokter & Jadwal Praktik"
-                subtitle="Daftar dokter spesialis, ketersediaan, dan jadwal praktik harian."
-                actions={
-                    <button
-                        type="button"
-                        onClick={handleOpenAddModal}
-                        className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
-                    >
-                        <span>Tambah Dokter</span>
-                        <PlusIcon className="w-4 h-4" />
-                    </button>
-                }
-            />
-
-            {/* Area Konten Utama Kelola Dokter */}
-            <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
-
-                {/* Toast Alert Notifikasi */}
-                {toastMessage && (
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs">
-                        <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{toastMessage.text}</span>
+                <PageHeader
+                    title="Kelola Dokter & Jadwal Praktik"
+                    subtitle="Daftar dokter spesialis, ketersediaan, dan jadwal praktik harian."
+                    actions={
                         <button
                             type="button"
-                            onClick={() => setToastMessage(null)}
-                            className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
+                            onClick={handleOpenAddModal}
+                            className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
                         >
-                            <ClearIcon className="w-3.5 h-3.5" />
+                            <span>Tambah Dokter</span>
+                            <PlusIcon className="w-4 h-4" />
                         </button>
-                    </div>
-                )}
+                    }
+                />
 
-                {/* Banner Error jika API gagal */}
-                {apiError && (
-                    <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
-                        <div className="flex items-center gap-2.5">
-                            <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
-                            <span>{apiError}</span>
+                {/* Area Konten Utama Kelola Dokter */}
+                <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
+
+                    {/* Toast Alert Notifikasi */}
+                    {toastMessage && (
+                        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs">
+                            <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>{toastMessage.text}</span>
+                            <button
+                                type="button"
+                                onClick={() => setToastMessage(null)}
+                                className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
+                            >
+                                <ClearIcon className="w-3.5 h-3.5" />
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            onClick={fetchDokter}
-                            className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
-                        >
-                            Coba Lagi
-                        </button>
-                    </div>
-                )}
+                    )}
 
-                {/* Status Loading */}
-                {isLoading && (
-                    <div className="flex flex-col items-center justify-center py-20 gap-3">
-                        <SpinnerIcon className="w-8 h-8 text-[#49baff] animate-spin" />
-                        <span className="text-sm text-gray-500">Memuat data dokter & jadwal praktik...</span>
-                    </div>
-                )}
-
-                {/* 2. Grid Card Dokter (3 Kolom sesuai DESIGN.md) */}
-                {!isLoading && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8 items-start">
-                        {filteredDokterList.length > 0 ? (
-                            filteredDokterList.map((doctor) => {
-                                const schedules = getDoctorSchedule(doctor)
-                                const statusInfo = calculateDoctorStatus(doctor)
-
-                                return (
-                                    <div
-                                        key={doctor.id}
-                                        className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative"
-                                    >
-                                        {/* Bagian Atas Card: Info Dokter, Badge Status & Tombol Aksi */}
-                                        <div className="mb-3.5">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex flex-col min-w-0 pr-2">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <h2 className="text-sm sm:text-[15px] font-semibold text-slate-800 leading-tight">
-                                                            {doctor.nama}
-                                                        </h2>
-                                                        {/* Badge Status Real-Time Berdasarkan Hari & Jam Akhir Praktik (Tanpa Titik) */}
-                                                        {statusInfo.isActive ? (
-                                                            <span className="text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e5ff8f] text-[#637704] border border-[#adc91f] shadow-2xs">
-                                                                Aktif
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                                                                Tidak Aktif
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[11.5px] sm:text-xs text-[#adc91f] font-medium mt-1 leading-none">
-                                                        {doctor.spesialisasi}
-                                                    </p>
-                                                </div>
-
-                                                {/* Tombol Aksi (Lingkaran Hijau Lime & Lingkaran Merah Muda) */}
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    {/* Edit Button */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleOpenEditModal(doctor)}
-                                                        className="w-7 h-7 rounded-full bg-[#e5ff8f] hover:bg-[#d6f552] text-[#728905] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                                                        title="Edit Dokter"
-                                                        aria-label="Edit Dokter"
-                                                    >
-                                                        <EditIcon className="w-3.5 h-3.5" />
-                                                    </button>
-
-                                                    {/* Delete Button */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteDoctor(doctor.id, doctor.nama)}
-                                                        className="w-7 h-7 rounded-full bg-[#fddada] hover:bg-[#fca5a5] text-[#e31e1e] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                                                        title="Hapus Dokter"
-                                                        aria-label="Hapus Dokter"
-                                                    >
-                                                        <TrashIcon className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Bagian Bawah Card: Jadwal Praktek (Hanya Cabang Muchtar) */}
-                                        <div className="border-t border-gray-100 pt-3 space-y-2">
-                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                                                <ClockOutlineIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                                <span>Jadwal Praktek Cabang Muchtar</span>
-                                            </div>
-                                            <div className="space-y-1">
-                                                {schedules.length > 0 ? (
-                                                    schedules.map((j, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="flex items-center justify-between text-xs text-slate-600 font-normal"
-                                                        >
-                                                            <span>{j.hari}</span>
-                                                            <span className="font-medium text-slate-700">{j.jam}</span>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-[11px] text-gray-400 italic">
-                                                        Belum ada jadwal operasional
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })
-                        ) : (
-                            <div className="col-span-full py-16 flex items-center justify-center">
-                                <EmptyState
-                                    icon={DoctorIcon}
-                                    title="Belum ada data dokter"
-                                    description='Silakan tambah dokter baru dengan menekan tombol "Tambah Dokter".'
-                                />
+                    {/* Banner Error jika API gagal */}
+                    {apiError && (
+                        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                                <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
+                                <span>{apiError}</span>
                             </div>
-                        )}
-                    </div>
-                )}
-            </main>
+                            <button
+                                type="button"
+                                onClick={fetchDokter}
+                                className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
+                            >
+                                Coba Lagi
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Status Loading */}
+                    {isLoading && (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <SpinnerIcon className="w-8 h-8 text-[#49baff] animate-spin" />
+                            <span className="text-sm text-gray-500">Memuat data dokter & jadwal praktik...</span>
+                        </div>
+                    )}
+
+                    {/* 2. Grid Card Dokter (3 Kolom sesuai DESIGN.md) */}
+                    {!isLoading && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8 items-start">
+                            {filteredDokterList.length > 0 ? (
+                                filteredDokterList.map((doctor) => {
+                                    const schedules = getDoctorSchedule(doctor)
+                                    const statusInfo = calculateDoctorStatus(doctor)
+
+                                    return (
+                                        <div
+                                            key={doctor.id}
+                                            className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative"
+                                        >
+                                            {/* Bagian Atas Card: Info Dokter, Badge Status & Tombol Aksi */}
+                                            <div className="mb-3.5">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex flex-col min-w-0 pr-2">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h2 className="text-sm sm:text-[15px] font-semibold text-slate-800 leading-tight">
+                                                                {doctor.nama}
+                                                            </h2>
+                                                            {/* Badge Status Real-Time Berdasarkan Hari & Jam Akhir Praktik (Tanpa Titik) */}
+                                                            {statusInfo.isActive ? (
+                                                                <span className="text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full bg-[#e5ff8f] text-[#637704] border border-[#adc91f] shadow-2xs">
+                                                                    Aktif
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                                                    Tidak Aktif
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11.5px] sm:text-xs text-[#adc91f] font-medium mt-1 leading-none">
+                                                            {doctor.spesialisasi}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Tombol Aksi (Lingkaran Hijau Lime & Lingkaran Merah Muda) */}
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {/* Edit Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenEditModal(doctor)}
+                                                            className="w-7 h-7 rounded-full bg-[#e5ff8f] hover:bg-[#d6f552] text-[#728905] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                                                            title="Edit Dokter"
+                                                            aria-label="Edit Dokter"
+                                                        >
+                                                            <EditIcon className="w-3.5 h-3.5" />
+                                                        </button>
+
+                                                        {/* Delete Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteDoctor(doctor.id, doctor.nama)}
+                                                            className="w-7 h-7 rounded-full bg-[#fddada] hover:bg-[#fca5a5] text-[#e31e1e] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                                                            title="Hapus Dokter"
+                                                            aria-label="Hapus Dokter"
+                                                        >
+                                                            <TrashIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Bagian Bawah Card: Jadwal Praktek (Hanya Cabang Muchtar) */}
+                                            <div className="border-t border-gray-100 pt-3 space-y-2">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                                                    <ClockOutlineIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                                    <span>Jadwal Praktek Cabang Muchtar</span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {schedules.length > 0 ? (
+                                                        schedules.map((j, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="flex items-center justify-between text-xs text-slate-600 font-normal"
+                                                            >
+                                                                <span>{j.hari}</span>
+                                                                <span className="font-medium text-slate-700">{j.jam}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-[11px] text-gray-400 italic">
+                                                            Belum ada jadwal operasional
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            ) : (
+                                <div className="col-span-full py-16 flex items-center justify-center">
+                                    <EmptyState
+                                        icon={DoctorIcon}
+                                        title="Belum ada data dokter"
+                                        description='Silakan tambah dokter baru dengan menekan tombol "Tambah Dokter".'
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </main>
             </div>
 
             {/* Modal Pop-up Tambah & Update Dokter */}
@@ -404,7 +404,7 @@ export default function Dokter({ onNavigate, onLogout }) {
                 isOpen={deleteConfirm.isOpen}
                 type="danger"
                 title="Konfirmasi Hapus Dokter"
-                message={`Apakah Anda yakin ingin menghapus data dokter "${deleteConfirm.nama}"? Tindakan ini tidak dapat dibatalkan.`}
+                message={`Tindakan ini tidak dapat dibatalkan dan akan menghapus data reservasi serta rekam medis yang bersangkutan dengan dokter ini.`}
                 confirmText="Ya, Hapus"
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}

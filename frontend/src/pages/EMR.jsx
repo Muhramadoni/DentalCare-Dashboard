@@ -739,239 +739,258 @@ export default function EMR({ onNavigate, onLogout }) {
             />
 
             <div className="flex-1 min-w-0 h-screen flex flex-col">
-            <PageHeader
-                title="Rekam Medis Elektronik (EMR) Pasien"
-                subtitle="Input dan simpan rekam medis pasien lengkap."
-            />
+                <PageHeader
+                    title="Rekam Medis Elektronik (EMR) Pasien"
+                    subtitle="Input dan simpan rekam medis pasien lengkap."
+                />
 
-            {/* Area Konten Utama EMR */}
-            <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-8 pb-12">
-                {/* ====================================================
+                {/* Area Konten Utama EMR */}
+                <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-8 pb-12">
+                    {/* ====================================================
                     1. BAGIAN ATAS: FORM INPUT & UPDATE REKAM MEDIS (EMR)
                    ==================================================== */}
-                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4">
 
-                    {/* Card Form Input Langsung */}
-                    <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col">
-                        {/* Alert Notifikasi Sukses */}
-                        {formSuccess && (
-                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn">
-                                <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span>{formSuccess}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormSuccess('')}
-                                    className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
-                                >
-                                    <ClearIcon className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Alert Notifikasi Error */}
-                        {formError && (
-                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
-                                <div className="flex items-center gap-2">
-                                    <ErrorIcon className="w-4 h-4 text-red-500 shrink-0" />
-                                    <span>{formError}</span>
+                        {/* Card Form Input Langsung */}
+                        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col">
+                            {/* Alert Notifikasi Sukses */}
+                            {formSuccess && (
+                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn">
+                                    <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    <span>{formSuccess}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormSuccess('')}
+                                        className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
+                                    >
+                                        <ClearIcon className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormError('')}
-                                    className="text-red-400 hover:text-red-600 p-0.5"
-                                >
-                                    <ClearIcon className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Banner Mode Edit */}
-                        {editingId && (
-                            <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
-                                <span>Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik "Simpan EMR +".</span>
-                                <button
-                                    type="button"
-                                    onClick={handleResetForm}
-                                    className="text-xs font-semibold underline text-blue-800 hover:text-blue-950 ml-3 cursor-pointer"
-                                >
-                                    Batalkan Edit
-                                </button>
-                            </div>
-                        )}
+                            {/* Alert Notifikasi Error */}
+                            {formError && (
+                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
+                                    <div className="flex items-center gap-2">
+                                        <ErrorIcon className="w-4 h-4 text-red-500 shrink-0" />
+                                        <span>{formError}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormError('')}
+                                        className="text-red-400 hover:text-red-600 p-0.5"
+                                    >
+                                        <ClearIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            )}
 
-                        <form onSubmit={handlePreSubmit} className="space-y-4">
-                            {/* Baris 1: Pilih Pasien, Tanggal, Regio (Gigi) (3 Kolom) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                                {/* Pilih Pasien (Bisa Ketik / Search) */}
-                                <div ref={pasienFormRef} className="relative">
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5 flex items-center justify-between">
-                                        <span>Pilih Pasien</span>
-                                        <span className="text-[11px] text-gray-400 font-normal">Ketik / cari nama</span>
-                                    </label>
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="text"
-                                            value={inputPasien}
-                                            onChange={(e) => {
-                                                setInputPasien(e.target.value)
-                                                setIsPasienFormOpen(true)
-                                            }}
-                                            onFocus={() => setIsPasienFormOpen(true)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Escape') {
-                                                    setIsPasienFormOpen(false)
-                                                } else if (e.key === 'Tab') {
-                                                    setIsPasienFormOpen(false)
-                                                } else if (e.key === 'Enter') {
-                                                    if (isPasienFormOpen && filteredPasienForm.length > 0) {
-                                                        const firstAvailable = filteredPasienForm.find((p) => !p.isRescheduled)
-                                                        if (firstAvailable) {
-                                                            e.preventDefault()
-                                                            handleSelectPatient(firstAvailable)
+                            {/* Banner Mode Edit */}
+                            {editingId && (
+                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
+                                    <span>Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik "Simpan EMR +".</span>
+                                    <button
+                                        type="button"
+                                        onClick={handleResetForm}
+                                        className="text-xs font-semibold underline text-blue-800 hover:text-blue-950 ml-3 cursor-pointer"
+                                    >
+                                        Batalkan Edit
+                                    </button>
+                                </div>
+                            )}
+
+                            <form onSubmit={handlePreSubmit} className="space-y-4">
+                                {/* Baris 1: Pilih Pasien, Tanggal Pemeriksaan, Dokter Pemeriksa (3 Kolom) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                    {/* Pilih Pasien (Bisa Ketik / Search) */}
+                                    <div ref={pasienFormRef} className="relative">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5 flex items-center justify-between">
+                                            <span>Pilih Pasien</span>
+                                            <span className="text-[11px] text-gray-400 font-normal">Ketik / cari nama</span>
+                                        </label>
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="text"
+                                                value={inputPasien}
+                                                onChange={(e) => {
+                                                    setInputPasien(e.target.value)
+                                                    setIsPasienFormOpen(true)
+                                                }}
+                                                onFocus={() => setIsPasienFormOpen(true)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Escape') {
+                                                        setIsPasienFormOpen(false)
+                                                    } else if (e.key === 'Tab') {
+                                                        setIsPasienFormOpen(false)
+                                                    } else if (e.key === 'Enter') {
+                                                        if (isPasienFormOpen && filteredPasienForm.length > 0) {
+                                                            const firstAvailable = filteredPasienForm.find((p) => !p.isRescheduled)
+                                                            if (firstAvailable) {
+                                                                e.preventDefault()
+                                                                handleSelectPatient(firstAvailable)
+                                                            }
                                                         }
                                                     }
-                                                }
-                                            }}
-                                            onBlur={() => {
-                                                setTimeout(() => {
-                                                    const exactMatch = formPasienList.find(
-                                                        (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
-                                                    )
-                                                    if (exactMatch && !exactMatch.isRescheduled) {
-                                                        if (exactMatch.tanggal && !inputTanggal) {
-                                                            setInputTanggal(exactMatch.tanggal)
+                                                }}
+                                                onBlur={() => {
+                                                    setTimeout(() => {
+                                                        const exactMatch = formPasienList.find(
+                                                            (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
+                                                        )
+                                                        if (exactMatch && !exactMatch.isRescheduled) {
+                                                            if (exactMatch.tanggal && !inputTanggal) {
+                                                                setInputTanggal(exactMatch.tanggal)
+                                                            }
+                                                            if (exactMatch.dokter && !inputDokter) {
+                                                                setDokterOptions((prev) => (prev.includes(exactMatch.dokter) ? prev : [...prev, exactMatch.dokter]))
+                                                                setInputDokter(exactMatch.dokter)
+                                                            }
                                                         }
-                                                        if (exactMatch.dokter && !inputDokter) {
-                                                            setDokterOptions((prev) => (prev.includes(exactMatch.dokter) ? prev : [...prev, exactMatch.dokter]))
-                                                            setInputDokter(exactMatch.dokter)
-                                                        }
-                                                    }
-                                                }, 200)
-                                            }}
-                                            placeholder="Ketik atau pilih nama pasien..."
-                                            className="w-full pl-4 pr-16 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
-                                        />
+                                                    }, 200)
+                                                }}
+                                                placeholder="Ketik atau pilih nama pasien..."
+                                                className="w-full pl-4 pr-16 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
+                                            />
 
-                                        {/* Action Buttons di dalam input: Clear + Chevron */}
-                                        <div className="absolute right-2.5 flex items-center gap-1 text-gray-400">
-                                            {inputPasien && (
+                                            {/* Action Buttons di dalam input: Clear + Chevron */}
+                                            <div className="absolute right-2.5 flex items-center gap-1 text-gray-400">
+                                                {inputPasien && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setInputPasien('')
+                                                            setIsPasienFormOpen(true)
+                                                            // Buka kunci field tanggal & dokter saat pasien di-clear
+                                                            setIsPatientLocked(false)
+                                                            setInputTanggal('')
+                                                            setInputDokter('')
+                                                        }}
+                                                        title="Hapus nama pasien"
+                                                        className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                                                    >
+                                                        <ClearIcon className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setInputPasien('')
-                                                        setIsPasienFormOpen(true)
-                                                        // Buka kunci field tanggal & dokter saat pasien di-clear
-                                                        setIsPatientLocked(false)
-                                                        setInputTanggal('')
-                                                        setInputDokter('')
-                                                    }}
-                                                    title="Hapus nama pasien"
+                                                    onClick={() => setIsPasienFormOpen((prev) => !prev)}
+                                                    title="Buka / tutup daftar pasien"
                                                     className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
                                                 >
-                                                    <ClearIcon className="w-3.5 h-3.5" />
+                                                    <ChevronDownIcon
+                                                        className={`w-4 h-4 transition-transform duration-200 ${isPasienFormOpen ? 'rotate-180' : ''
+                                                            }`}
+                                                    />
                                                 </button>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsPasienFormOpen((prev) => !prev)}
-                                                title="Buka / tutup daftar pasien"
-                                                className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-                                            >
-                                                <ChevronDownIcon
-                                                    className={`w-4 h-4 transition-transform duration-200 ${isPasienFormOpen ? 'rotate-180' : ''
-                                                        }`}
-                                                />
-                                            </button>
+                                            </div>
                                         </div>
+
+                                        {/* Dropdown Menu Pasien untuk Form Input */}
+                                        {isPasienFormOpen && (
+                                            <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden text-xs sm:text-sm animate-in fade-in duration-100">
+                                                <div className="px-3 py-1.5 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-medium">
+                                                    <span>
+                                                        {inputPasien.trim()
+                                                            ? `Hasil pencarian (${filteredPasienForm.length})`
+                                                            : `Daftar Pasien (${formPasienList.length})`}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400">Klik / Enter</span>
+                                                </div>
+                                                <div className="max-h-52 overflow-y-auto divide-y divide-gray-50">
+                                                    {filteredPasienForm.length > 0 ? (
+                                                        filteredPasienForm.map((p, idx) => {
+                                                            const isSelected =
+                                                                inputPasien.trim().toLowerCase() === p.nama.toLowerCase()
+                                                            const isRescheduled = Boolean(p.isRescheduled)
+
+                                                            return (
+                                                                <button
+                                                                    key={idx}
+                                                                    type="button"
+                                                                    disabled={isRescheduled}
+                                                                    onClick={() => handleSelectPatient(p)}
+                                                                    className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors ${isRescheduled
+                                                                        ? 'bg-gray-50/80 text-gray-400 cursor-not-allowed opacity-75'
+                                                                        : isSelected
+                                                                            ? 'bg-blue-50 text-[#1e88e5] font-semibold cursor-pointer'
+                                                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <span className={isRescheduled ? 'text-gray-400' : ''}>
+                                                                            {p.nama}
+                                                                        </span>
+                                                                        {isRescheduled && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                                                                                Reschedule
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {isSelected && !isRescheduled && (
+                                                                        <CheckIcon className="w-4 h-4 text-[#1e88e5] shrink-0" />
+                                                                    )}
+                                                                </button>
+                                                            )
+                                                        })
+                                                    ) : (
+                                                        <div className="p-3 text-center">
+                                                            <p className="text-gray-500 text-xs">
+                                                                Tidak ada pasien bernama "{inputPasien}" di daftar.
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Dropdown Menu Pasien untuk Form Input */}
-                                    {isPasienFormOpen && (
-                                        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden text-xs sm:text-sm animate-in fade-in duration-100">
-                                            <div className="px-3 py-1.5 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-medium">
-                                                <span>
-                                                    {inputPasien.trim()
-                                                        ? `Hasil pencarian (${filteredPasienForm.length})`
-                                                        : `Daftar Pasien (${formPasienList.length})`}
-                                                </span>
-                                                <span className="text-[10px] text-gray-400">Klik / Enter</span>
-                                            </div>
-                                            <div className="max-h-52 overflow-y-auto divide-y divide-gray-50">
-                                                {filteredPasienForm.length > 0 ? (
-                                                    filteredPasienForm.map((p, idx) => {
-                                                        const isSelected =
-                                                            inputPasien.trim().toLowerCase() === p.nama.toLowerCase()
-                                                        const isRescheduled = Boolean(p.isRescheduled)
+                                    {/* Tanggal Pemeriksaan */}
+                                    <div>
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
+                                            Tanggal Pemeriksaan
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={inputTanggal}
+                                            onChange={(e) => setInputTanggal(e.target.value)}
+                                            onClick={(e) => !isPatientLocked && e.target.showPicker?.()}
+                                            readOnly={isPatientLocked}
+                                            className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${isPatientLocked
+                                                    ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed pointer-events-none'
+                                                    : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
+                                                }`}
+                                        />
+                                    </div>
 
-                                                        return (
-                                                            <button
-                                                                key={idx}
-                                                                type="button"
-                                                                disabled={isRescheduled}
-                                                                onClick={() => handleSelectPatient(p)}
-                                                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between transition-colors ${isRescheduled
-                                                                    ? 'bg-gray-50/80 text-gray-400 cursor-not-allowed opacity-75'
-                                                                    : isSelected
-                                                                        ? 'bg-blue-50 text-[#1e88e5] font-semibold cursor-pointer'
-                                                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-2 min-w-0">
-                                                                    <span className={isRescheduled ? 'text-gray-400' : ''}>
-                                                                        {p.nama}
-                                                                    </span>
-                                                                    {isRescheduled && (
-                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
-                                                                            Reschedule
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                {isSelected && !isRescheduled && (
-                                                                    <CheckIcon className="w-4 h-4 text-[#1e88e5] shrink-0" />
-                                                                )}
-                                                            </button>
-                                                        )
-                                                    })
-                                                ) : (
-                                                    <div className="p-3 text-center">
-                                                        <p className="text-gray-500 text-xs">
-                                                            Tidak ada pasien bernama "{inputPasien}" di daftar.
-                                                        </p>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setIsPasienFormOpen(false)}
-                                                            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#1e88e5] hover:underline cursor-pointer"
-                                                        >
-                                                            + Tetap gunakan nama "{inputPasien}"
-                                                        </button>
-                                                    </div>
-                                                )}
+                                    {/* Dokter Pemeriksa */}
+                                    <div>
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
+                                            Dokter Pemeriksa
+                                        </label>
+                                        <div className="relative flex items-center">
+                                            <select
+                                                value={inputDokter}
+                                                onChange={(e) => setInputDokter(e.target.value)}
+                                                disabled={isPatientLocked}
+                                                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm appearance-none pr-10 transition-all ${isPatientLocked
+                                                        ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
+                                                        : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
+                                                    }`}
+                                            >
+                                                <option value="" disabled>Pilih Dokter</option>
+                                                {dokterOptions.map((doc, idx) => (
+                                                    <option key={idx} value={doc}>{doc}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-3.5 text-gray-400 pointer-events-none">
+                                                <ChevronDownIcon className="w-4 h-4" />
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
-                                {/* Tanggal Pemeriksaan */}
-                                <div>
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        Tanggal Pemeriksaan
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={inputTanggal}
-                                        onChange={(e) => setInputTanggal(e.target.value)}
-                                        onClick={(e) => !isPatientLocked && e.target.showPicker?.()}
-                                        readOnly={isPatientLocked}
-                                        className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${
-                                            isPatientLocked
-                                                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed pointer-events-none'
-                                                : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
-                                        }`}
-                                    />
-                                </div>
-
-                                {/* Regio (Gigi) */}
-                                <div>
+                                {/* Baris 2: Regio (Gigi) */}
+                                <div className="w-full sm:w-1/3">
                                     <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
                                         Regio (Gigi)
                                     </label>
@@ -983,508 +1002,479 @@ export default function EMR({ onNavigate, onLogout }) {
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none"
                                     />
                                 </div>
-                            </div>
 
-                            {/* Baris 2: Dokter Pemeriksa */}
-                            <div className="w-full sm:w-1/3">
-                                <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                    Dokter Pemeriksa
-                                </label>
-                                <div className="relative flex items-center">
-                                    <select
-                                        value={inputDokter}
-                                        onChange={(e) => setInputDokter(e.target.value)}
-                                        disabled={isPatientLocked}
-                                        className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm appearance-none pr-10 transition-all ${
-                                            isPatientLocked
-                                                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
-                                                : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
-                                        }`}
-                                    >
-                                        <option value="" disabled>Pilih Dokter</option>
-                                        {dokterOptions.map((doc, idx) => (
-                                            <option key={idx} value={doc}>{doc}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-3.5 text-gray-400 pointer-events-none">
-                                        <ChevronDownIcon className="w-4 h-4" />
+                                {/* Baris 3: Anamnesa (Diagnosa) & Tindakan Pelayanan (2 Kolom Textarea) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
+                                            Anamnesa (Diagnosa)
+                                        </label>
+                                        <textarea
+                                            rows="3"
+                                            value={inputAnamnesa}
+                                            onChange={(e) => setInputAnamnesa(e.target.value)}
+                                            placeholder="Diagnosa Utama"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
+                                            Tindakan Pelayanan
+                                        </label>
+                                        <textarea
+                                            rows="3"
+                                            value={inputTindakan}
+                                            onChange={(e) => setInputTindakan(e.target.value)}
+                                            placeholder="Masukkan Detail Tindakan"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
+                                        ></textarea>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Baris 3: Anamnesa (Diagnosa) & Tindakan Pelayanan (2 Kolom Textarea) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        Anamnesa (Diagnosa)
-                                    </label>
-                                    <textarea
-                                        rows="3"
-                                        value={inputAnamnesa}
-                                        onChange={(e) => setInputAnamnesa(e.target.value)}
-                                        placeholder="Diagnosa Utama"
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
-                                    ></textarea>
+                                {/* Baris 4: PF (Resep) & Terapi (Prosedur) (2 Kolom Textarea) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
+                                            PF (Resep)
+                                        </label>
+                                        <textarea
+                                            rows="3"
+                                            value={inputResep}
+                                            onChange={(e) => setInputResep(e.target.value)}
+                                            placeholder="Masukkan Resep Obat"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
+                                            Terapi (Prosedur)
+                                        </label>
+                                        <textarea
+                                            rows="3"
+                                            value={inputTerapi}
+                                            onChange={(e) => setInputTerapi(e.target.value)}
+                                            placeholder="Masukkan Rencana Prosedur Terapi"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
+                                        ></textarea>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        Tindakan Pelayanan
-                                    </label>
-                                    <textarea
-                                        rows="3"
-                                        value={inputTindakan}
-                                        onChange={(e) => setInputTindakan(e.target.value)}
-                                        placeholder="Masukkan Detail Tindakan"
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
-                                    ></textarea>
-                                </div>
-                            </div>
 
-                            {/* Baris 4: PF (Resep) & Terapi (Prosedur) (2 Kolom Textarea) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        PF (Resep)
-                                    </label>
-                                    <textarea
-                                        rows="3"
-                                        value={inputResep}
-                                        onChange={(e) => setInputResep(e.target.value)}
-                                        placeholder="Masukkan Resep Obat"
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
-                                    ></textarea>
-                                </div>
-                                <div>
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        Terapi (Prosedur)
-                                    </label>
-                                    <textarea
-                                        rows="3"
-                                        value={inputTerapi}
-                                        onChange={(e) => setInputTerapi(e.target.value)}
-                                        placeholder="Masukkan Rencana Prosedur Terapi"
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none transition-all"
-                                    ></textarea>
-                                </div>
-                            </div>
-
-                            {/* Tombol Simpan EMR + (di pojok kanan bawah persis seperti di desain) */}
-                            <div className="pt-2 flex items-center justify-end gap-3">
-                                {editingId && (
+                                {/* Tombol Simpan EMR + (di pojok kanan bawah persis seperti di desain) */}
+                                <div className="pt-2 flex items-center justify-end gap-3">
+                                    {editingId && (
+                                        <button
+                                            type="button"
+                                            onClick={handleResetForm}
+                                            className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 active:scale-[0.99] text-gray-700 font-semibold text-sm transition-all cursor-pointer"
+                                        >
+                                            Batal Edit
+                                        </button>
+                                    )}
                                     <button
-                                        type="button"
-                                        onClick={handleResetForm}
-                                        className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 active:scale-[0.99] text-gray-700 font-semibold text-sm transition-all cursor-pointer"
+                                        type="submit"
+                                        className="px-8 py-3 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
                                     >
-                                        Batal Edit
+                                        <span>Simpan EMR +</span>
                                     </button>
-                                )}
-                                <button
-                                    type="submit"
-                                    className="px-8 py-3 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
-                                >
-                                    <span>Simpan EMR +</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                {/* Banner Error jika API gagal */}
-                {apiError && (
-                    <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
-                        <div className="flex items-center gap-2.5">
-                            <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
-                            <span>{apiError}</span>
+                                </div>
+                            </form>
                         </div>
-                        <button
-                            type="button"
-                            onClick={fetchEmr}
-                            className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
-                        >
-                            Coba Lagi
-                        </button>
                     </div>
-                )}
 
-                {/* ====================================================
+                    {/* Banner Error jika API gagal */}
+                    {apiError && (
+                        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                                <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
+                                <span>{apiError}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={fetchEmr}
+                                className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
+                            >
+                                Coba Lagi
+                            </button>
+                        </div>
+                    )}
+
+                    {/* ====================================================
                     2. BAGIAN BAWAH: RIWAYAT REKAM MEDIS (EMR)
                    ==================================================== */}
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
-                                Riwayat Rekam Medis (EMR)
-                            </h2>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                                Rekapitulasi seluruh rekam medis pasien klinik secara terpusat.
-                            </p>
-                        </div>
-
-                        {/* Tombol Unduh Excel */}
-                        <button
-                            type="button"
-                            onClick={handleExportExcel}
-                            disabled={filteredEmrList.length === 0}
-                            className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0 shadow-sm ${
-                                filteredEmrList.length === 0
-                                    ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
-                                    : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-emerald-600/25'
-                            }`}
-                            title={
-                                filteredEmrList.length === 0
-                                    ? 'Tidak ada data rekam medis untuk diunduh'
-                                    : 'Unduh data rekam medis ke file Excel (.xlsx)'
-                            }
-                        >
-                            <ExcelIcon className="w-4 h-4 shrink-0" />
-                            <span>Unduh Excel</span>
-                        </button>
-                    </div>
-
-                    {/* Card Tabel & Filter Riwayat EMR */}
-                    <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col gap-5">
-                        {/* Filter Bar */}
-                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 flex-wrap">
-                            {/* Input Search */}
-                            <div className="relative w-full lg:w-72 flex items-center">
-                                <div className="absolute left-3.5 text-gray-400 pointer-events-none">
-                                    <SearchIcon className="w-4 h-4" />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Cari Pasien, Diagnosa, Tindakan..."
-                                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
-                                />
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
+                                    Riwayat Rekam Medis (EMR)
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    Rekapitulasi seluruh rekam medis pasien klinik secara terpusat.
+                                </p>
                             </div>
 
-                            {/* Filter Rentang Tanggal & Dropdown */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {/* Tgl Mulai */}
-                                <div className="relative flex items-center w-36">
+                            {/* Tombol Unduh Excel */}
+                            <button
+                                type="button"
+                                onClick={handleExportExcel}
+                                disabled={filteredEmrList.length === 0}
+                                className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0 shadow-sm ${filteredEmrList.length === 0
+                                        ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
+                                        : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-emerald-600/25'
+                                    }`}
+                                title={
+                                    filteredEmrList.length === 0
+                                        ? 'Tidak ada data rekam medis untuk diunduh'
+                                        : 'Unduh data rekam medis ke file Excel (.xlsx)'
+                                }
+                            >
+                                <ExcelIcon className="w-4 h-4 shrink-0" />
+                                <span>Unduh Excel</span>
+                            </button>
+                        </div>
+
+                        {/* Card Tabel & Filter Riwayat EMR */}
+                        <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col gap-5">
+                            {/* Filter Bar */}
+                            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 flex-wrap">
+                                {/* Input Search */}
+                                <div className="relative w-full lg:w-72 flex items-center">
+                                    <div className="absolute left-3.5 text-gray-400 pointer-events-none">
+                                        <SearchIcon className="w-4 h-4" />
+                                    </div>
                                     <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        onClick={(e) => e.target.showPicker?.()}
-                                        className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Cari Pasien, Diagnosa, Tindakan..."
+                                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
                                     />
                                 </div>
 
-                                <span className="text-gray-400 text-xs">-</span>
+                                {/* Filter Rentang Tanggal & Dropdown */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Tgl Mulai */}
+                                    <div className="relative flex items-center w-36">
+                                        <input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            onClick={(e) => e.target.showPicker?.()}
+                                            className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
+                                        />
+                                    </div>
 
-                                {/* Tgl Selesai */}
-                                <div className="relative flex items-center w-36">
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        onClick={(e) => e.target.showPicker?.()}
-                                        className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
-                                    />
-                                </div>
+                                    <span className="text-gray-400 text-xs">-</span>
 
-                                {/* Dropdown Filter Pasien (Bisa Search / Ketik Nama) */}
-                                <div ref={pasienFilterRef} className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsPasienFilterOpen((prev) => !prev)
-                                            setPasienFilterSearch('')
-                                        }}
-                                        className={`w-full min-w-[160px] max-w-[220px] px-3 py-2 rounded-xl border text-xs sm:text-sm flex items-center justify-between gap-2 transition-all cursor-pointer ${selectedPasienFilter !== 'Semua Pasien'
-                                            ? 'bg-blue-50/70 border-[#49baff] text-[#1e88e5] font-semibold'
-                                            : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                                            }`}
-                                        title={selectedPasienFilter}
-                                    >
-                                        <span className="truncate">
-                                            {selectedPasienFilter === 'Semua Pasien' ? 'Semua Pasien' : selectedPasienFilter}
-                                        </span>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            {selectedPasienFilter !== 'Semua Pasien' && (
-                                                <span
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        setSelectedPasienFilter('Semua Pasien')
-                                                    }}
-                                                    title="Hapus filter pasien"
-                                                    className="p-0.5 rounded-full hover:bg-blue-200/60 text-blue-600 cursor-pointer"
-                                                >
-                                                    <ClearIcon className="w-3 h-3" />
-                                                </span>
-                                            )}
-                                            <ChevronDownIcon
-                                                className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isPasienFilterOpen ? 'rotate-180' : ''
-                                                    }`}
-                                            />
-                                        </div>
-                                    </button>
+                                    {/* Tgl Selesai */}
+                                    <div className="relative flex items-center w-36">
+                                        <input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                            onClick={(e) => e.target.showPicker?.()}
+                                            className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
+                                        />
+                                    </div>
 
-                                    {/* Dropdown Menu Filter Pasien */}
-                                    {isPasienFilterOpen && (
-                                        <div className="absolute left-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden text-xs sm:text-sm animate-in fade-in duration-100">
-                                            {/* Input Pencarian Pasien */}
-                                            <div className="p-2 border-b border-gray-100 bg-gray-50/60">
-                                                <div className="relative flex items-center">
-                                                    <div className="absolute left-2.5 text-gray-400 pointer-events-none">
-                                                        <SearchIcon className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <input
-                                                        ref={filterSearchInputRef}
-                                                        type="text"
-                                                        value={pasienFilterSearch}
-                                                        onChange={(e) => setPasienFilterSearch(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Escape') {
-                                                                setIsPasienFilterOpen(false)
-                                                            } else if (e.key === 'Enter') {
-                                                                if (filteredPasienFilter.length > 0) {
-                                                                    setSelectedPasienFilter(filteredPasienFilter[0].nama)
-                                                                    setIsPasienFilterOpen(false)
-                                                                    setPasienFilterSearch('')
-                                                                }
-                                                            }
+                                    {/* Dropdown Filter Pasien (Bisa Search / Ketik Nama) */}
+                                    <div ref={pasienFilterRef} className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsPasienFilterOpen((prev) => !prev)
+                                                setPasienFilterSearch('')
+                                            }}
+                                            className={`w-full min-w-[160px] max-w-[220px] px-3 py-2 rounded-xl border text-xs sm:text-sm flex items-center justify-between gap-2 transition-all cursor-pointer ${selectedPasienFilter !== 'Semua Pasien'
+                                                ? 'bg-blue-50/70 border-[#49baff] text-[#1e88e5] font-semibold'
+                                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                                                }`}
+                                            title={selectedPasienFilter}
+                                        >
+                                            <span className="truncate">
+                                                {selectedPasienFilter === 'Semua Pasien' ? 'Semua Pasien' : selectedPasienFilter}
+                                            </span>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {selectedPasienFilter !== 'Semua Pasien' && (
+                                                    <span
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setSelectedPasienFilter('Semua Pasien')
                                                         }}
-                                                        placeholder="Cari / ketik nama pasien..."
-                                                        className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-1 focus:ring-[#49baff]/30 focus:outline-none"
-                                                    />
-                                                    {pasienFilterSearch && (
+                                                        title="Hapus filter pasien"
+                                                        className="p-0.5 rounded-full hover:bg-blue-200/60 text-blue-600 cursor-pointer"
+                                                    >
+                                                        <ClearIcon className="w-3 h-3" />
+                                                    </span>
+                                                )}
+                                                <ChevronDownIcon
+                                                    className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isPasienFilterOpen ? 'rotate-180' : ''
+                                                        }`}
+                                                />
+                                            </div>
+                                        </button>
+
+                                        {/* Dropdown Menu Filter Pasien */}
+                                        {isPasienFilterOpen && (
+                                            <div className="absolute left-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden text-xs sm:text-sm animate-in fade-in duration-100">
+                                                {/* Input Pencarian Pasien */}
+                                                <div className="p-2 border-b border-gray-100 bg-gray-50/60">
+                                                    <div className="relative flex items-center">
+                                                        <div className="absolute left-2.5 text-gray-400 pointer-events-none">
+                                                            <SearchIcon className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <input
+                                                            ref={filterSearchInputRef}
+                                                            type="text"
+                                                            value={pasienFilterSearch}
+                                                            onChange={(e) => setPasienFilterSearch(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Escape') {
+                                                                    setIsPasienFilterOpen(false)
+                                                                } else if (e.key === 'Enter') {
+                                                                    if (filteredPasienFilter.length > 0) {
+                                                                        setSelectedPasienFilter(filteredPasienFilter[0].nama)
+                                                                        setIsPasienFilterOpen(false)
+                                                                        setPasienFilterSearch('')
+                                                                    }
+                                                                }
+                                                            }}
+                                                            placeholder="Cari / ketik nama pasien..."
+                                                            className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-1 focus:ring-[#49baff]/30 focus:outline-none"
+                                                        />
+                                                        {pasienFilterSearch && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPasienFilterSearch('')}
+                                                                title="Hapus kata kunci"
+                                                                className="absolute right-2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                            >
+                                                                <ClearIcon className="w-3 h-3" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* List Pilihan Pasien */}
+                                                <div className="max-h-56 overflow-y-auto divide-y divide-gray-50">
+                                                    {/* Opsi Semua Pasien */}
+                                                    {!pasienFilterSearch.trim() && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => setPasienFilterSearch('')}
-                                                            title="Hapus kata kunci"
-                                                            className="absolute right-2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                            onClick={() => {
+                                                                setSelectedPasienFilter('Semua Pasien')
+                                                                setIsPasienFilterOpen(false)
+                                                            }}
+                                                            className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${selectedPasienFilter === 'Semua Pasien'
+                                                                ? 'bg-blue-50 text-[#1e88e5] font-semibold'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                                                }`}
                                                         >
-                                                            <ClearIcon className="w-3 h-3" />
+                                                            <span>Semua Pasien</span>
+                                                            {selectedPasienFilter === 'Semua Pasien' && (
+                                                                <CheckIcon className="w-3.5 h-3.5 text-[#1e88e5]" />
+                                                            )}
                                                         </button>
+                                                    )}
+
+                                                    {filteredPasienFilter.length > 0 ? (
+                                                        filteredPasienFilter.map((p, idx) => {
+                                                            const isSelected =
+                                                                selectedPasienFilter.trim().toLowerCase() === p.nama.trim().toLowerCase()
+                                                            return (
+                                                                <button
+                                                                    key={idx}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedPasienFilter(p.nama)
+                                                                        setIsPasienFilterOpen(false)
+                                                                        setPasienFilterSearch('')
+                                                                    }}
+                                                                    className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${isSelected
+                                                                        ? 'bg-blue-50 text-[#1e88e5] font-semibold'
+                                                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                                                        }`}
+                                                                >
+                                                                    <span className="truncate">{p.nama}</span>
+                                                                    {isSelected && (
+                                                                        <CheckIcon className="w-3.5 h-3.5 text-[#1e88e5] shrink-0" />
+                                                                    )}
+                                                                </button>
+                                                            )
+                                                        })
+                                                    ) : (
+                                                        <div className="px-3 py-4 text-center text-xs text-gray-400">
+                                                            Tidak ada pasien yang cocok dengan "{pasienFilterSearch}".
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
+                                        )}
+                                    </div>
 
-                                            {/* List Pilihan Pasien */}
-                                            <div className="max-h-56 overflow-y-auto divide-y divide-gray-50">
-                                                {/* Opsi Semua Pasien */}
-                                                {!pasienFilterSearch.trim() && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setSelectedPasienFilter('Semua Pasien')
-                                                            setIsPasienFilterOpen(false)
-                                                        }}
-                                                        className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${selectedPasienFilter === 'Semua Pasien'
-                                                            ? 'bg-blue-50 text-[#1e88e5] font-semibold'
-                                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                                            }`}
-                                                    >
-                                                        <span>Semua Pasien</span>
-                                                        {selectedPasienFilter === 'Semua Pasien' && (
-                                                            <CheckIcon className="w-3.5 h-3.5 text-[#1e88e5]" />
-                                                        )}
-                                                    </button>
-                                                )}
-
-                                                {filteredPasienFilter.length > 0 ? (
-                                                    filteredPasienFilter.map((p, idx) => {
-                                                        const isSelected =
-                                                            selectedPasienFilter.trim().toLowerCase() === p.nama.trim().toLowerCase()
-                                                        return (
-                                                            <button
-                                                                key={idx}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setSelectedPasienFilter(p.nama)
-                                                                    setIsPasienFilterOpen(false)
-                                                                    setPasienFilterSearch('')
-                                                                }}
-                                                                className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${isSelected
-                                                                    ? 'bg-blue-50 text-[#1e88e5] font-semibold'
-                                                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                                                                    }`}
-                                                            >
-                                                                <span className="truncate">{p.nama}</span>
-                                                                {isSelected && (
-                                                                    <CheckIcon className="w-3.5 h-3.5 text-[#1e88e5] shrink-0" />
-                                                                )}
-                                                            </button>
-                                                        )
-                                                    })
-                                                ) : (
-                                                    <div className="px-3 py-4 text-center text-xs text-gray-400">
-                                                        Tidak ada pasien yang cocok dengan "{pasienFilterSearch}".
-                                                    </div>
-                                                )}
-                                            </div>
+                                    {/* Dropdown Semua Dokter */}
+                                    <div className="relative flex items-center w-36">
+                                        <select
+                                            value={selectedDokterFilter}
+                                            onChange={(e) => setSelectedDokterFilter(e.target.value)}
+                                            className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
+                                        >
+                                            <option value="Semua Dokter">Semua Dokter</option>
+                                            {dokterOptions.map((d, idx) => (
+                                                <option key={idx} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-2.5 text-gray-400 pointer-events-none">
+                                            <ChevronDownIcon className="w-3.5 h-3.5" />
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
 
-                                {/* Dropdown Semua Dokter */}
-                                <div className="relative flex items-center w-36">
-                                    <select
-                                        value={selectedDokterFilter}
-                                        onChange={(e) => setSelectedDokterFilter(e.target.value)}
-                                        className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
+                                    {/* Tombol Reset Filter */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStartDate('')
+                                            setEndDate('')
+                                            setSelectedPasienFilter('Semua Pasien')
+                                            setSelectedDokterFilter('Semua Dokter')
+                                            setSearchQuery('')
+                                            setPasienFilterSearch('')
+                                            setIsPasienFilterOpen(false)
+                                            setCurrentPage(1)
+                                        }}
+                                        title="Reset semua filter"
+                                        className="flex items-center justify-center p-2 rounded-xl border border-gray-300 bg-white text-gray-500 hover:border-gray-400 hover:text-gray-400 active:scale-95 transition-all cursor-pointer"
                                     >
-                                        <option value="Semua Dokter">Semua Dokter</option>
-                                        {dokterOptions.map((d, idx) => (
-                                            <option key={idx} value={d}>{d}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-2.5 text-gray-400 pointer-events-none">
-                                        <ChevronDownIcon className="w-3.5 h-3.5" />
+                                        <FilterResetIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Status Loading */}
+                            {isLoading && (
+                                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                                    <SpinnerIcon className="w-8 h-8 text-[#49baff] animate-spin" />
+                                    <span className="text-sm text-gray-500">Memuat riwayat rekam medis pasien...</span>
+                                </div>
+                            )}
+
+                            {/* Tabel Riwayat EMR (Persis 8 Kolom Sesuai Desain Kelola-EMR.png) */}
+                            {!isLoading && (
+                                <div className="rounded-xl border border-gray-200 overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
+                                                    <th className="px-5 py-3.5 whitespace-nowrap">Nama Pasien</th>
+                                                    <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal Pemeriksaan</th>
+                                                    <th className="px-5 py-3.5 whitespace-nowrap text-center">Regio</th>
+                                                    <th className="px-5 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
+                                                    <th className="px-5 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
+                                                    <th className="px-5 py-3.5 min-w-[160px]">PF (Resep)</th>
+                                                    <th className="px-5 py-3.5 min-w-[160px]">Terapi (Prosedur)</th>
+                                                    <th className="px-5 py-3.5 whitespace-nowrap">Dokter</th>
+                                                    <th className="px-5 py-3.5 whitespace-nowrap text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
+                                                {filteredEmrList.length > 0 ? (
+                                                    filteredEmrList
+                                                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                        .map((item) => {
+                                                            const isSelected = editingId === item.id
+
+                                                            return (
+                                                                <tr
+                                                                    key={item.id}
+                                                                    onClick={() => handleSelectRowToUpdate(item)}
+                                                                    className={`transition-colors cursor-pointer ${isSelected
+                                                                        ? 'bg-blue-50/80 text-blue-900 font-semibold'
+                                                                        : 'hover:bg-gray-50/80'
+                                                                        }`}
+                                                                    title="Klik untuk mengedit data ini di form atas"
+                                                                >
+                                                                    <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
+                                                                        {item.namaPasien}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
+                                                                        {toDisplayDate(item.tanggalPemeriksaan || item.tanggal_pemeriksaan || item.tanggal || item.tanggalIso)}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
+                                                                        {item.regio}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-slate-700">
+                                                                        {item.anamnesa}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-slate-700">
+                                                                        {item.tindakan}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-slate-700">
+                                                                        {item.resep}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-slate-700">
+                                                                        {item.terapi}
+                                                                    </td>
+                                                                    <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap font-normal">
+                                                                        {item.dokter}
+                                                                    </td>
+                                                                    {/* Kolom 9: Aksi (Hapus Saja) */}
+                                                                    <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                                                                        <div className="flex items-center justify-center">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation()
+                                                                                    handleDeleteEmr(item.id, item.namaPasien)
+                                                                                }}
+                                                                                className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                                title="Hapus Rekam Medis"
+                                                                                aria-label="Hapus Rekam Medis"
+                                                                            >
+                                                                                <TrashIcon className="w-4 h-4" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )
+                                                        })
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="9" className="px-4 py-12 text-center">
+                                                            {emrList.length === 0 ? (
+                                                                <EmptyState
+                                                                    icon={EMRIcon}
+                                                                    title="Belum ada data rekam medis"
+                                                                    description="Silakan masukkan data rekam medis pasien melalui formulir di atas."
+                                                                />
+                                                            ) : (
+                                                                <EmptyState
+                                                                    icon={SearchIcon}
+                                                                    title="Data tidak ditemukan"
+                                                                    description="Tidak ada rekam medis yang sesuai dengan kriteria filter atau pencarian."
+                                                                />
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
+                            )}
 
-                                {/* Tombol Reset Filter */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setStartDate('')
-                                        setEndDate('')
-                                        setSelectedPasienFilter('Semua Pasien')
-                                        setSelectedDokterFilter('Semua Dokter')
-                                        setSearchQuery('')
-                                        setPasienFilterSearch('')
-                                        setIsPasienFilterOpen(false)
-                                        setCurrentPage(1)
-                                    }}
-                                    title="Reset semua filter"
-                                    className="flex items-center justify-center p-2 rounded-xl border border-gray-300 bg-white text-gray-500 hover:border-gray-400 hover:text-gray-400 active:scale-95 transition-all cursor-pointer"
-                                >
-                                    <FilterResetIcon className="w-4 h-4" />
-                                </button>
-                            </div>
+                            {/* Pagination jika data lebih dari itemsPerPage */}
+                            {filteredEmrList.length > 0 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalItems={filteredEmrList.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={setCurrentPage}
+                                />
+                            )}
                         </div>
-
-                        {/* Status Loading */}
-                        {isLoading && (
-                            <div className="flex flex-col items-center justify-center py-16 gap-3">
-                                <SpinnerIcon className="w-8 h-8 text-[#49baff] animate-spin" />
-                                <span className="text-sm text-gray-500">Memuat riwayat rekam medis pasien...</span>
-                            </div>
-                        )}
-
-                        {/* Tabel Riwayat EMR (Persis 8 Kolom Sesuai Desain Kelola-EMR.png) */}
-                        {!isLoading && (
-                            <div className="rounded-xl border border-gray-200 overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
-                                                <th className="px-5 py-3.5 whitespace-nowrap">Nama Pasien</th>
-                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal Pemeriksaan</th>
-                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Regio</th>
-                                                <th className="px-5 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
-                                                <th className="px-5 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
-                                                <th className="px-5 py-3.5 min-w-[160px]">PF (Resep)</th>
-                                                <th className="px-5 py-3.5 min-w-[160px]">Terapi (Prosedur)</th>
-                                                <th className="px-5 py-3.5 whitespace-nowrap">Dokter</th>
-                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
-                                            {filteredEmrList.length > 0 ? (
-                                                filteredEmrList
-                                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                                                    .map((item) => {
-                                                        const isSelected = editingId === item.id
-
-                                                        return (
-                                                            <tr
-                                                                key={item.id}
-                                                                onClick={() => handleSelectRowToUpdate(item)}
-                                                                className={`transition-colors cursor-pointer ${isSelected
-                                                                    ? 'bg-blue-50/80 text-blue-900 font-semibold'
-                                                                    : 'hover:bg-gray-50/80'
-                                                                    }`}
-                                                                title="Klik untuk mengedit data ini di form atas"
-                                                            >
-                                                                <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
-                                                                    {item.namaPasien}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
-                                                                    {toDisplayDate(item.tanggalPemeriksaan || item.tanggal_pemeriksaan || item.tanggal || item.tanggalIso)}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
-                                                                    {item.regio}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-slate-700">
-                                                                    {item.anamnesa}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-slate-700">
-                                                                    {item.tindakan}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-slate-700">
-                                                                    {item.resep}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-slate-700">
-                                                                    {item.terapi}
-                                                                </td>
-                                                                <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap font-normal">
-                                                                    {item.dokter}
-                                                                </td>
-                                                                {/* Kolom 9: Aksi (Hapus Saja) */}
-                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                                                                    <div className="flex items-center justify-center">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation()
-                                                                                handleDeleteEmr(item.id, item.namaPasien)
-                                                                            }}
-                                                                            className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
-                                                                            title="Hapus Rekam Medis"
-                                                                            aria-label="Hapus Rekam Medis"
-                                                                        >
-                                                                            <TrashIcon className="w-4 h-4" />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        )
-                                                    })
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan="9" className="px-4 py-12 text-center">
-                                                        {emrList.length === 0 ? (
-                                                            <EmptyState
-                                                                icon={EMRIcon}
-                                                                title="Belum ada data rekam medis"
-                                                                description="Silakan masukkan data rekam medis pasien melalui formulir di atas."
-                                                            />
-                                                        ) : (
-                                                            <EmptyState
-                                                                icon={SearchIcon}
-                                                                title="Data tidak ditemukan"
-                                                                description="Tidak ada rekam medis yang sesuai dengan kriteria filter atau pencarian."
-                                                            />
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Pagination jika data lebih dari itemsPerPage */}
-                        {filteredEmrList.length > 0 && (
-                            <Pagination
-                                currentPage={currentPage}
-                                totalItems={filteredEmrList.length}
-                                itemsPerPage={itemsPerPage}
-                                onPageChange={setCurrentPage}
-                            />
-                        )}
                     </div>
-                </div>
-            </main>
+                </main>
             </div>
 
             {/* Dialog Konfirmasi Sebelum Simpan EMR (sesuai FR-7 & security.md) */}
