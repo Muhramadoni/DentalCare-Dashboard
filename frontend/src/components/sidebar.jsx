@@ -93,7 +93,10 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                         A
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="text-xs sm:text-[13px] font-medium text-slate-200 truncate" title={adminEmail}>
+                        <span className="text-sm font-semibold text-white leading-tight truncate">
+                            Admin
+                        </span>
+                        <span className="text-[11px] font-normal text-slate-400 truncate mt-0.5" title={adminEmail}>
                             {adminEmail}
                         </span>
                     </div>

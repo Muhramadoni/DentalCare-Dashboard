@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Sidebar from '../components/sidebar'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
 import { ReservationModal } from '../components/modals'
 import ConfirmModal from '../components/ConfirmModal'
 import Pagination from '../components/pagination'
 import {
+    ReservationIcon,
     SearchIcon,
     ChevronDownIcon,
     PlusIcon,
@@ -278,34 +281,28 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 onLogout={onLogout}
             />
 
-            {/* Area Konten Utama Kelola Reservasi */}
-            <main className="flex-1 h-screen overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
-                {/* 1. Header Halaman */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
-                            Kelola Reservasi Pasien
-                        </h1>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
-                            Kelola seluruh daftar reservasi, jadwal kedatangan, dan status kunjungan pasien secara terpusat.
-                        </p>
-                    </div>
+            <div className="flex-1 min-w-0 h-screen flex flex-col">
+            <PageHeader
+                title="Kelola Reservasi Pasien"
+                subtitle="Kelola seluruh daftar reservasi, jadwal kedatangan, dan status kunjungan pasien secara terpusat."
+            />
 
-                    {/* Toast Alert Notifikasi */}
-                    {toastMessage && (
-                        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs">
-                            <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>{toastMessage.text}</span>
-                            <button
-                                type="button"
-                                onClick={() => setToastMessage(null)}
-                                className="ml-2 text-emerald-500 hover:text-emerald-700 p-0.5"
-                            >
-                                <ClearIcon className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                    )}
-                </div>
+            {/* Area Konten Utama Kelola Reservasi */}
+            <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
+                {/* Toast Alert Notifikasi */}
+                {toastMessage && (
+                    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs self-start sm:self-end">
+                        <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{toastMessage.text}</span>
+                        <button
+                            type="button"
+                            onClick={() => setToastMessage(null)}
+                            className="ml-2 text-emerald-500 hover:text-emerald-700 p-0.5"
+                        >
+                            <ClearIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Banner Error jika API gagal */}
                 {apiError && (
@@ -482,13 +479,20 @@ export default function Reservasi({ onNavigate, onLogout }) {
                                             })
                                     ) : (
                                         <tr>
-                                            <td
-                                                colSpan="6"
-                                                className="px-6 py-10 text-center text-gray-400 text-sm font-normal"
-                                            >
-                                                {reservasiList.length === 0
-                                                    ? 'Belum ada data reservasi. Silakan buat reservasi baru dengan menekan tombol "Tambah Reservasi".'
-                                                    : 'Tidak ada data reservasi yang sesuai dengan pencarian atau filter status.'}
+                                            <td colSpan="6" className="px-6 py-12 text-center">
+                                                {reservasiList.length === 0 ? (
+                                                    <EmptyState
+                                                        icon={ReservationIcon}
+                                                        title="Belum ada data reservasi"
+                                                        description='Silakan buat reservasi baru dengan menekan tombol "Tambah Reservasi".'
+                                                    />
+                                                ) : (
+                                                    <EmptyState
+                                                        icon={SearchIcon}
+                                                        title="Data tidak ditemukan"
+                                                        description="Tidak ada data reservasi yang sesuai dengan pencarian atau filter status."
+                                                    />
+                                                )}
                                             </td>
                                         </tr>
                                     )}
@@ -508,6 +512,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
                     )}
                 </div>
             </main>
+            </div>
 
             {/* Modal Pop-up Tambah & Update Reservasi */}
             <ReservationModal

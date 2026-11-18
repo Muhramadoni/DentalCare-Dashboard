@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import XLSX from 'xlsx-js-style'
 import Sidebar from '../components/sidebar'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
 import Pagination from '../components/pagination'
 import ConfirmModal from '../components/ConfirmModal'
 import {
+    EMRIcon,
     CalendarOutlineIcon,
     ChevronDownIcon,
     CheckIcon,
@@ -733,20 +736,18 @@ export default function EMR({ onNavigate, onLogout }) {
                 onLogout={onLogout}
             />
 
+            <div className="flex-1 min-w-0 h-screen flex flex-col">
+            <PageHeader
+                title="Rekam Medis Elektronik (EMR) Pasien"
+                subtitle="Input dan simpan rekam medis pasien lengkap."
+            />
+
             {/* Area Konten Utama EMR */}
-            <main className="flex-1 h-screen overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-8 pb-12">
+            <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-8 pb-12">
                 {/* ====================================================
                     1. BAGIAN ATAS: FORM INPUT & UPDATE REKAM MEDIS (EMR)
                    ==================================================== */}
                 <div className="flex flex-col gap-4">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
-                            Rekam Medis Elektronik (EMR) Pasien
-                        </h1>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
-                            Input dan simpan rekam medis pasien lengkap
-                        </p>
-                    </div>
 
                     {/* Card Form Input Langsung */}
                     <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col">
@@ -1447,13 +1448,20 @@ export default function EMR({ onNavigate, onLogout }) {
                                                     })
                                             ) : (
                                                 <tr>
-                                                    <td
-                                                        colSpan="9"
-                                                        className="px-4 py-12 text-center text-gray-400 text-xs sm:text-sm font-normal"
-                                                    >
-                                                        {emrList.length === 0
-                                                            ? 'Belum ada data rekam medis. Silakan masukkan data rekam medis pasien melalui formulir di atas.'
-                                                            : 'Tidak ada rekam medis yang sesuai dengan kriteria filter atau pencarian.'}
+                                                    <td colSpan="9" className="px-4 py-12 text-center">
+                                                        {emrList.length === 0 ? (
+                                                            <EmptyState
+                                                                icon={EMRIcon}
+                                                                title="Belum ada data rekam medis"
+                                                                description="Silakan masukkan data rekam medis pasien melalui formulir di atas."
+                                                            />
+                                                        ) : (
+                                                            <EmptyState
+                                                                icon={SearchIcon}
+                                                                title="Data tidak ditemukan"
+                                                                description="Tidak ada rekam medis yang sesuai dengan kriteria filter atau pencarian."
+                                                            />
+                                                        )}
                                                     </td>
                                                 </tr>
                                             )}
@@ -1475,6 +1483,7 @@ export default function EMR({ onNavigate, onLogout }) {
                     </div>
                 </div>
             </main>
+            </div>
 
             {/* Dialog Konfirmasi Sebelum Simpan EMR (sesuai FR-7 & security.md) */}
             {showConfirmModal && (

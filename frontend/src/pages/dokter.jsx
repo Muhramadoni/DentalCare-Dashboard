@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Sidebar from '../components/sidebar'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
 import { DoctorModal } from '../components/modals'
 import ConfirmModal from '../components/ConfirmModal'
 import {
+    DoctorIcon,
     PlusIcon,
     EditIcon,
     TrashIcon,
@@ -224,29 +227,24 @@ export default function Dokter({ onNavigate, onLogout }) {
                 onLogout={onLogout}
             />
 
-            {/* Area Konten Utama Kelola Dokter */}
-            <main className="flex-1 h-screen overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
-                {/* 1. Header Halaman & Tombol Tambah Dokter */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-medium text-slate-800 tracking-tight">
-                            Kelola Dokter & Jadwal Praktik
-                        </h1>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1 font-normal">
-                            Daftar dokter spesialis, ketersediaan, dan jadwal praktik harian.
-                        </p>
-                    </div>
-
-                    {/* Tombol Tambah Dokter */}
+            <div className="flex-1 min-w-0 h-screen flex flex-col">
+            <PageHeader
+                title="Kelola Dokter & Jadwal Praktik"
+                subtitle="Daftar dokter spesialis, ketersediaan, dan jadwal praktik harian."
+                actions={
                     <button
                         type="button"
                         onClick={handleOpenAddModal}
-                        className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0"
+                        className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
                     >
                         <span>Tambah Dokter</span>
                         <PlusIcon className="w-4 h-4" />
                     </button>
-                </div>
+                }
+            />
+
+            {/* Area Konten Utama Kelola Dokter */}
+            <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
 
                 {/* Toast Alert Notifikasi */}
                 {toastMessage && (
@@ -380,13 +378,18 @@ export default function Dokter({ onNavigate, onLogout }) {
                                 )
                             })
                         ) : (
-                            <div className="col-span-full py-16 text-center text-gray-400 text-sm">
-                                Belum ada data dokter. Silakan tambah dokter baru dengan menekan tombol "Tambah Dokter".
+                            <div className="col-span-full py-16 flex items-center justify-center">
+                                <EmptyState
+                                    icon={DoctorIcon}
+                                    title="Belum ada data dokter"
+                                    description='Silakan tambah dokter baru dengan menekan tombol "Tambah Dokter".'
+                                />
                             </div>
                         )}
                     </div>
                 )}
             </main>
+            </div>
 
             {/* Modal Pop-up Tambah & Update Dokter */}
             <DoctorModal

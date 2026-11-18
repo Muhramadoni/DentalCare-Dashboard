@@ -8,26 +8,45 @@ export default function Login({ onLoginSuccess }) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [errorMessage, setErrorMessage] = useState('')
+    const [emailError, setEmailError] = useState('')
+    const [passwordError, setPasswordError] = useState('')
+    const [generalError, setGeneralError] = useState('')
     const [loginSuccess, setLoginSuccess] = useState(false)
 
     const handleClearEmail = () => {
         setEmail('')
+        setEmailError('')
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setErrorMessage('')
+        setEmailError('')
+        setPasswordError('')
+        setGeneralError('')
 
-        if (!email.trim()) {
-            setErrorMessage('Silakan masukkan email Anda.')
-            return
+        let hasError = false
+        const emailTrimmed = email.trim()
+
+        // 1. Validasi Email
+        if (!emailTrimmed) {
+            setEmailError('Silakan masukkan email Anda.')
+            hasError = true
+        } else {
+            // Validasi format email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            if (!emailRegex.test(emailTrimmed)) {
+                setEmailError('Format Email Tidak Sesuai')
+                hasError = true
+            }
         }
 
+        // 2. Validasi Password
         if (!password) {
-            setErrorMessage('Silakan masukkan password Anda.')
-            return
+            setPasswordError('Silakan masukkan password Anda.')
+            hasError = true
         }
+
+        if (hasError) return
 
         setIsLoading(true)
 
@@ -40,7 +59,7 @@ export default function Login({ onLoginSuccess }) {
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    email: email.trim().toLowerCase(),
+                    email: emailTrimmed.toLowerCase(),
                     password,
                 }),
             })
@@ -48,13 +67,22 @@ export default function Login({ onLoginSuccess }) {
             const result = await response.json()
 
             if (!response.ok || !result.success) {
-                // Tangani error dari API (401, 400, 429, dll)
-                if (response.status === 429) {
-                    setErrorMessage('Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.')
-                } else {
-                    setErrorMessage(result?.error?.message || 'Email atau password yang Anda masukkan salah.')
-                }
                 setIsLoading(false)
+                // Tangani error spesifik dari API (401, 400, 429, dll)
+                if (response.status === 429) {
+                    setGeneralError('Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.')
+                } else if (response.status === 401) {
+                    // Kredensial password salah
+                    setPasswordError('Password yang Anda masukkan salah.')
+                } else if (result?.error?.details && result.error.details.length > 0) {
+                    // Validasi dari backend
+                    result.error.details.forEach((det) => {
+                        if (det.field === 'email') setEmailError(det.issue || 'Format Email Tidak Sesuai')
+                        if (det.field === 'password') setPasswordError(det.issue || 'Password tidak boleh kosong.')
+                    })
+                } else {
+                    setPasswordError(result?.error?.message || 'Password yang Anda masukkan salah.')
+                }
                 return
             }
 
@@ -76,7 +104,7 @@ export default function Login({ onLoginSuccess }) {
         } catch (err) {
             // Error jaringan / server tidak bisa dijangkau
             setIsLoading(false)
-            setErrorMessage('Tidak dapat terhubung ke server. Pastikan backend berjalan di port 5000.')
+            setGeneralError('Tidak dapat terhubung ke server. Pastikan backend berjalan di port 5000.')
         }
     }
 
@@ -119,17 +147,17 @@ export default function Login({ onLoginSuccess }) {
                         </p>
                     </div>
 
-                    {/* Alert Notifikasi Error */}
-                    {errorMessage && (
-                        <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
+                    {/* Alert Notifikasi Error Umum (Jaringan / Limitasi) */}
+                    {generalError && (
+                        <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-[#e62e2e]/30 text-[#e62e2e] text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
                             <div className="flex items-center gap-2">
-                                <ErrorIcon className="w-4 h-4 shrink-0 text-red-500" />
-                                <span>{errorMessage}</span>
+                                <ErrorIcon className="w-4 h-4 shrink-0 text-[#e62e2e]" />
+                                <span>{generalError}</span>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setErrorMessage('')}
-                                className="text-red-400 hover:text-red-700 font-bold ml-2 cursor-pointer"
+                                onClick={() => setGeneralError('')}
+                                className="text-red-400 hover:text-[#e62e2e] font-bold ml-2 cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -144,7 +172,7 @@ export default function Login({ onLoginSuccess }) {
                     )}
 
                     {/* Formulir Login */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} noValidate className="space-y-5">
                         {/* Form Group: Email */}
                         <div>
                             <label
@@ -158,10 +186,18 @@ export default function Login({ onLoginSuccess }) {
                                     id="email"
                                     type="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value)
+                                        if (emailError) setEmailError('')
+                                        if (generalError) setGeneralError('')
+                                    }}
                                     placeholder="Masukkan Email"
                                     autoComplete="email"
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder-gray-400 bg-white transition-all pr-10 focus:outline-none ${
+                                        emailError
+                                            ? 'border-[#e62e2e] focus:border-[#e62e2e] focus:ring-2 focus:ring-[#e62e2e]/20'
+                                            : 'border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20'
+                                    }`}
                                 />
                                 {email && (
                                     <button
@@ -175,6 +211,13 @@ export default function Login({ onLoginSuccess }) {
                                     </button>
                                 )}
                             </div>
+                            {/* Pesan Error di Bawah Input Email */}
+                            {emailError && (
+                                <p className="mt-1.5 text-xs text-[#e62e2e] font-medium flex items-center gap-1 animate-fadeIn">
+                                    <ErrorIcon className="w-3.5 h-3.5 shrink-0 text-[#e62e2e]" />
+                                    <span>{emailError}</span>
+                                </p>
+                            )}
                         </div>
 
                         {/* Form Group: Password */}
@@ -190,10 +233,18 @@ export default function Login({ onLoginSuccess }) {
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value)
+                                        if (passwordError) setPasswordError('')
+                                        if (generalError) setGeneralError('')
+                                    }}
                                     placeholder="Masukkan Password"
                                     autoComplete="current-password"
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder-gray-400 bg-white transition-all pr-10 focus:outline-none ${
+                                        passwordError
+                                            ? 'border-[#e62e2e] focus:border-[#e62e2e] focus:ring-2 focus:ring-[#e62e2e]/20'
+                                            : 'border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20'
+                                    }`}
                                 />
                                 <button
                                     type="button"
@@ -209,6 +260,13 @@ export default function Login({ onLoginSuccess }) {
                                     )}
                                 </button>
                             </div>
+                            {/* Pesan Error di Bawah Input Password */}
+                            {passwordError && (
+                                <p className="mt-1.5 text-xs text-[#e62e2e] font-medium flex items-center gap-1 animate-fadeIn">
+                                    <ErrorIcon className="w-3.5 h-3.5 shrink-0 text-[#e62e2e]" />
+                                    <span>{passwordError}</span>
+                                </p>
+                            )}
                         </div>
 
                         {/* Tombol Aksi: Login (Primary Button sesuai DESIGN.md) */}
