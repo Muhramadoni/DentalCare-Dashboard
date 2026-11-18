@@ -166,13 +166,17 @@ export function ReservationModal({
             setNamaPasien(initialData.namaPasien || '')
             if (initialData.tanggalIso) {
                 setTanggal(initialData.tanggalIso)
+            } else if (initialData.tanggal_kunjungan) {
+                setTanggal(toDateInputValue(initialData.tanggal_kunjungan))
+            } else if (initialData.tanggalKunjungan) {
+                setTanggal(toDateInputValue(initialData.tanggalKunjungan))
             } else if (initialData.jadwal) {
                 const parts = initialData.jadwal.split(' ')
                 setTanggal(toDateInputValue(parts[0] || ''))
             } else {
                 setTanggal(toDateInputValue(initialData.tanggal || ''))
             }
-            setWaktu(initialData.waktu || initialData.waktu_reservasi || '')
+            setWaktu(initialData.waktu_kunjungan || initialData.waktuKunjungan || initialData.waktu || initialData.waktu_reservasi || '')
             setDokter(initialData.dokter || initialData.dokterDetail?.nama || '')
             setStatus(initialData.status || 'Appointment')
         } else {
@@ -226,7 +230,11 @@ export function ReservationModal({
             id: initialData?.id,
             namaPasien: namaPasien.trim(),
             tanggal: tanggal.trim(),
+            tanggal_kunjungan: tanggal.trim(),
+            tanggalKunjungan: tanggal.trim(),
             waktu: waktu.trim(),
+            waktu_kunjungan: waktu.trim(),
+            waktuKunjungan: waktu.trim(),
             jadwal: waktu.trim() ? `${displayDate} ${waktu.trim()}` : displayDate,
             dokter: typeof selectedDocObj === 'object' ? selectedDocObj.nama : dokter,
             dokter_id: typeof selectedDocObj === 'object' ? selectedDocObj.id : undefined,
@@ -306,12 +314,12 @@ export function ReservationModal({
                         </div>
                     </div>
 
-                    {/* Grid 2 Kolom: Tanggal & Waktu */}
+                    {/* Grid 2 Kolom: Tanggal Kunjungan & Waktu Kunjungan */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Tanggal */}
+                        {/* Tanggal Kunjungan */}
                         <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                Tanggal
+                                Tanggal Kunjungan
                             </label>
                             <input
                                 type="date"
@@ -322,10 +330,10 @@ export function ReservationModal({
                             />
                         </div>
 
-                        {/* Waktu */}
+                        {/* Waktu Kunjungan */}
                         <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                Waktu
+                                Waktu Kunjungan
                             </label>
                             <div className="relative flex items-center">
                                 <input

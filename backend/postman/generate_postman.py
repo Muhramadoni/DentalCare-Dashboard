@@ -603,6 +603,10 @@ pm.test("Memiliki struktur data ringkasan dashboard lengkap", function () {
                     {
                         "id": 1,
                         "namaPasien": "Budi Santoso",
+                        "tanggal_kunjungan": "16-11-2026",
+                        "tanggalKunjungan": "16-11-2026",
+                        "waktu_kunjungan": "10:00",
+                        "waktuKunjungan": "10:00",
                         "jadwal": "16-11-2026 10:00 WIB",
                         "dokter": "drg. Indira Nugrahani",
                         "cabang": "Muchtar",
@@ -613,6 +617,10 @@ pm.test("Memiliki struktur data ringkasan dashboard lengkap", function () {
                     {
                         "id": 1,
                         "namaPasien": "Budi Santoso",
+                        "tanggal_kunjungan": "16-11-2026",
+                        "tanggalKunjungan": "16-11-2026",
+                        "waktu_kunjungan": "10:00",
+                        "waktuKunjungan": "10:00",
                         "jadwal": "16-11-2026 10:00 WIB",
                         "dokter": "drg. Indira Nugrahani",
                         "cabang": "Muchtar",
@@ -995,7 +1003,7 @@ pm.test("Data reservasi bertipe array", function () {
         method="GET",
         url_path="/api/v1/reservasi",
         query=[
-            {"key": "tanggal_reservasi", "value": "2026-11-16", "description": "Filter tanggal (YYYY-MM-DD)"},
+            {"key": "tanggal_kunjungan", "value": "2026-11-16", "description": "Filter tanggal kunjungan (YYYY-MM-DD)"},
             {"key": "status", "value": "Appointment", "description": "Appointment / Reschedule"},
             {"key": "search", "value": "Budi", "description": "Pencarian nama pasien"}
         ],
@@ -1020,8 +1028,8 @@ pm.test("Filter reservasi berhasil", function () {
         auth_bearer=True,
         body={
             "namaPasien": "Budi Santoso",
-            "tanggal": "2026-11-16",
-            "waktu": "10:00",
+            "tanggal_kunjungan": "2026-11-16",
+            "waktu_kunjungan": "10:00",
             "dokter": "drg. Indira Nugrahani",
             "dokter_id": 1,
             "status": "Appointment"
@@ -1058,9 +1066,11 @@ pm.test("Reservasi berhasil dibuat dan ID disimpan", function () {
                 "dokter": "drg. Indira Nugrahani",
                 "tanggal": "16-11-2026",
                 "tanggalIso": "2026-11-16",
-                "tanggal_reservasi": "2026-11-16T00:00:00.000Z",
+                "tanggal_kunjungan": "2026-11-16T00:00:00.000Z",
+                "tanggalKunjungan": "16-11-2026",
                 "waktu": "10:00",
-                "waktu_reservasi": "10:00",
+                "waktu_kunjungan": "10:00",
+                "waktuKunjungan": "10:00",
                 "jadwal": "16-11-2026 10:00",
                 "status": "Appointment",
                 "pasien": {"id": 1, "nama": "Budi Santoso"},
@@ -1076,8 +1086,8 @@ pm.test("Reservasi berhasil dibuat dan ID disimpan", function () {
         auth_bearer=True,
         body={
             "namaPasien": "",
-            "tanggal": "2026-11-16",
-            "waktu": "10:00",
+            "tanggal_kunjungan": "2026-11-16",
+            "waktu_kunjungan": "10:00",
             "dokter": "drg. Indira Nugrahani"
         },
         description="Uji coba reservasi tanpa mengisi nama pasien.",
@@ -1100,8 +1110,8 @@ pm.test("Error code VALIDATION_ERROR", function () {
         auth_bearer=True,
         body={
             "namaPasien": "Budi Santoso",
-            "tanggal": "2026-11-17",
-            "waktu": "14:00",
+            "tanggal_kunjungan": "2026-11-17",
+            "waktu_kunjungan": "14:00",
             "dokter": "drg. Indira Nugrahani",
             "dokter_id": 1,
             "status": "Reschedule"
@@ -1229,7 +1239,7 @@ pm.test("Filter rekam medis berhasil", function () {
         auth_bearer=True,
         body={
             "namaPasien": "Budi Santoso",
-            "tanggal": "2026-11-16",
+            "tanggal_pemeriksaan": "2026-11-16",
             "regio": "16, 17",
             "dokter": "drg. Indira Nugrahani",
             "dokter_id": 1,
@@ -1270,7 +1280,8 @@ pm.test("Rekam medis berhasil disimpan dan ID dicatat", function () {
                 "dokter": "drg. Indira Nugrahani",
                 "tanggal": "16-11-2026",
                 "tanggalIso": "2026-11-16",
-                "tanggal_rekam": "2026-11-16T00:00:00.000Z",
+                "tanggal_pemeriksaan": "2026-11-16T00:00:00.000Z",
+                "tanggalPemeriksaan": "16-11-2026",
                 "regio": "16, 17",
                 "anamnesa": "Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.",
                 "tindakan": "Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.",
@@ -1289,7 +1300,7 @@ pm.test("Rekam medis berhasil disimpan dan ID dicatat", function () {
         auth_bearer=True,
         body={
             "namaPasien": "",
-            "tanggal": "2026-11-16",
+            "tanggal_pemeriksaan": "2026-11-16",
             "dokter": "drg. Indira Nugrahani",
             "tindakan": "Pembersihan karang gigi"
         },
@@ -1313,7 +1324,7 @@ pm.test("Error code VALIDATION_ERROR", function () {
         auth_bearer=True,
         body={
             "namaPasien": "Budi Santoso",
-            "tanggal": "",
+            "tanggal_pemeriksaan": "",
             "dokter": "drg. Indira Nugrahani",
             "tindakan": "Pembersihan karang gigi"
         },

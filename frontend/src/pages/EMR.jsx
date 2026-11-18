@@ -386,6 +386,8 @@ export default function EMR({ onNavigate, onLogout }) {
         const payload = {
             namaPasien: inputPasien.trim(),
             tanggal: inputTanggal.trim(),
+            tanggal_pemeriksaan: inputTanggal.trim(),
+            tanggalPemeriksaan: inputTanggal.trim(),
             regio: inputRegio.trim(),
             dokter: inputDokter,
             anamnesa: inputAnamnesa.trim(),
@@ -949,10 +951,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                     )}
                                 </div>
 
-                                {/* Tanggal */}
+                                {/* Tanggal Pemeriksaan */}
                                 <div>
                                     <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        Tanggal
+                                        Tanggal Pemeriksaan
                                     </label>
                                     <input
                                         type="date"
@@ -1375,7 +1377,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                         <thead>
                                             <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
                                                 <th className="px-5 py-3.5 whitespace-nowrap">Nama Pasien</th>
-                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal</th>
+                                                <th className="px-5 py-3.5 whitespace-nowrap text-center">Tanggal Pemeriksaan</th>
                                                 <th className="px-5 py-3.5 whitespace-nowrap text-center">Regio</th>
                                                 <th className="px-5 py-3.5 min-w-[180px]">Anamnesa (Diagnosa)</th>
                                                 <th className="px-5 py-3.5 min-w-[180px]">Tindakan Pelayanan</th>
@@ -1406,7 +1408,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     {item.namaPasien}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
-                                                                    {toDisplayDate(item.tanggal || item.tanggalIso)}
+                                                                    {toDisplayDate(item.tanggalPemeriksaan || item.tanggal_pemeriksaan || item.tanggal || item.tanggalIso)}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-center whitespace-nowrap text-slate-800">
                                                                     {item.regio}

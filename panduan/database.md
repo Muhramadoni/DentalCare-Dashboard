@@ -51,8 +51,8 @@ erDiagram
         serial id PK
         int pasien_id FK
         int dokter_id FK
-        date tanggal_reservasi
-        varchar waktu_reservasi
+        date tanggal_kunjungan
+        varchar waktu_kunjungan
         varchar status
     }
 
@@ -60,7 +60,7 @@ erDiagram
         serial id PK
         int pasien_id FK
         int dokter_id FK
-        date tanggal_rekam
+        date tanggal_pemeriksaan
         varchar regio
         text anamnesa
         text tindakan
@@ -110,8 +110,8 @@ Mencatat antrean janji temu pasien dengan dokter pemeriksa.
 * `id` (`SERIAL`, Primary Key)
 * `pasien_id` (`INT`, Foreign Key references `pasien(id)`)
 * `dokter_id` (`INT`, Foreign Key references `dokter(id)`)
-* `tanggal_reservasi` (`DATE`, Not Null) — Tanggal janji temu
-* `waktu_reservasi` (`VARCHAR`, Not Null) — Sesi jam janji temu
+* `tanggal_kunjungan` (`DATE`, Not Null) — Tanggal janji temu kunjungan
+* `waktu_kunjungan` (`VARCHAR`, Not Null) — Sesi jam janji temu kunjungan
 * `status` (`VARCHAR`) — Status reservasi (*Appointment* atau *Reschedule*)
 
 ---
@@ -122,7 +122,7 @@ Menyimpan catatan medis pemeriksaan gigi (EMR).
 * `id` (`SERIAL`, Primary Key)
 * `pasien_id` (`INT`, Foreign Key references `pasien(id)`)
 * `dokter_id` (`INT`, Foreign Key references `dokter(id)`)
-* `tanggal_rekam` (`DATE`, Not Null) — Tanggal pemeriksaan
+* `tanggal_pemeriksaan` (`DATE`, Not Null) — Tanggal pemeriksaan gigi
 * `regio` (`VARCHAR`) — Nomor gigi / area (odontogram)
 * `anamnesa` (`TEXT`) — Keluhan utama dan riwayat penyakit pasien
 * `tindakan` (`TEXT`) — Tindakan penanganan medis yang dilakukan
@@ -226,31 +226,31 @@ model Reservasi {
   id                Int      @id @default(autoincrement())
   pasien_id         Int
   dokter_id         Int
-  tanggal_reservasi DateTime @db.Date
-  waktu_reservasi   String   @db.VarChar(100)
+  tanggal_kunjungan DateTime @db.Date
+  waktu_kunjungan   String   @db.VarChar(100)
   status            String   @default("Appointment") @db.VarChar(50)
 
   pasien            Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
   dokter            Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
 
-  @@index([tanggal_reservasi], map: "idx_reservasi_tanggal")
+  @@index([tanggal_kunjungan], map: "idx_reservasi_tanggal_kunjungan")
   @@map("reservasi")
 }
 
 // 5. Tabel rekam_medis
 model RekamMedis {
-  id            Int      @id @default(autoincrement())
-  pasien_id     Int
-  dokter_id     Int
-  tanggal_rekam DateTime @default(now()) @db.Date
-  regio         String?  @db.VarChar(100)
-  anamnesa      String?  @db.Text
-  tindakan      String?  @db.Text
-  resep         String?  @db.Text
-  terapi        String?  @db.Text
+  id                  Int      @id @default(autoincrement())
+  pasien_id           Int
+  dokter_id           Int
+  tanggal_pemeriksaan DateTime @default(now()) @db.Date
+  regio               String?  @db.VarChar(100)
+  anamnesa            String?  @db.Text
+  tindakan            String?  @db.Text
+  resep               String?  @db.Text
+  terapi              String?  @db.Text
 
-  pasien        Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
-  dokter        Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
+  pasien              Pasien   @relation(fields: [pasien_id], references: [id], onDelete: Cascade)
+  dokter              Dokter   @relation(fields: [dokter_id], references: [id], onDelete: Cascade)
 
   @@index([pasien_id], map: "idx_rekam_medis_pasien")
   @@map("rekam_medis")
@@ -299,8 +299,8 @@ CREATE TABLE IF NOT EXISTS reservasi (
     id SERIAL PRIMARY KEY,
     pasien_id INT NOT NULL REFERENCES pasien(id) ON DELETE CASCADE,
     dokter_id INT NOT NULL REFERENCES dokter(id) ON DELETE CASCADE,
-    tanggal_reservasi DATE NOT NULL,
-    waktu_reservasi VARCHAR(100) NOT NULL,
+    tanggal_kunjungan DATE NOT NULL,
+    waktu_kunjungan VARCHAR(100) NOT NULL,
     status VARCHAR(50) DEFAULT 'Appointment'
 );
 
@@ -308,7 +308,7 @@ CREATE TABLE IF NOT EXISTS rekam_medis (
     id SERIAL PRIMARY KEY,
     pasien_id INT NOT NULL REFERENCES pasien(id) ON DELETE CASCADE,
     dokter_id INT NOT NULL REFERENCES dokter(id) ON DELETE CASCADE,
-    tanggal_rekam DATE NOT NULL DEFAULT CURRENT_DATE,
+    tanggal_pemeriksaan DATE NOT NULL DEFAULT CURRENT_DATE,
     regio VARCHAR(100),
     anamnesa TEXT,
     tindakan TEXT,
@@ -316,6 +316,6 @@ CREATE TABLE IF NOT EXISTS rekam_medis (
     terapi TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_reservasi_tanggal ON reservasi (tanggal_reservasi);
+CREATE INDEX IF NOT EXISTS idx_reservasi_tanggal_kunjungan ON reservasi (tanggal_kunjungan);
 CREATE INDEX IF NOT EXISTS idx_rekam_medis_pasien ON rekam_medis (pasien_id);
 ```

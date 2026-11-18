@@ -233,7 +233,8 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                         <thead>
                                             <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
                                                 <th className="px-5 py-3.5">Nama Pasien</th>
-                                                <th className="px-5 py-3.5 text-center">Tanggal & Waktu</th>
+                                                <th className="px-5 py-3.5 text-center">Tanggal Kunjungan</th>
+                                                <th className="px-5 py-3.5 text-center">Waktu Kunjungan</th>
                                                 <th className="px-5 py-3.5 text-center">Dokter</th>
                                                 <th className="px-5 py-3.5 text-center">Status</th>
                                             </tr>
@@ -241,7 +242,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                         <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
                                             {isLoading ? (
                                                 <tr>
-                                                    <td colSpan={4} className="py-12 text-center text-gray-400">
+                                                    <td colSpan={5} className="py-12 text-center text-gray-400">
                                                         <div className="flex flex-col items-center justify-center gap-2">
                                                             <SpinnerIcon className="w-6 h-6 animate-spin text-[#49baff]" />
                                                             <span className="text-xs">Memuat data reservasi...</span>
@@ -250,7 +251,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                                 </tr>
                                             ) : reservasiList.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={4} className="py-12 text-center">
+                                                    <td colSpan={5} className="py-12 text-center">
                                                         <EmptyState
                                                             icon={ReservationIcon}
                                                             title="Belum ada data reservasi"
@@ -263,6 +264,8 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                                     .map((item) => {
                                                         const isAppointment = item.status === 'Appointment'
+                                                        const rawTime = item.waktuKunjungan || item.waktu_kunjungan || item.waktu || ''
+                                                        const displayTime = rawTime ? (rawTime.includes('WIB') ? rawTime : `${rawTime} WIB`) : '-'
 
                                                         return (
                                                             <tr
@@ -273,7 +276,10 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                                                     {item.namaPasien}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-center text-slate-700">
-                                                                    {item.jadwal}
+                                                                    {item.tanggalKunjungan || item.tanggal_kunjungan || item.tanggal || '-'}
+                                                                </td>
+                                                                <td className="px-5 py-3.5 text-center text-slate-700">
+                                                                    {displayTime}
                                                                 </td>
                                                                 <td className="px-5 py-3.5 text-center text-slate-700">
                                                                     {item.dokter}

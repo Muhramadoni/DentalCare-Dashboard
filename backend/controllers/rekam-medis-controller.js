@@ -38,7 +38,8 @@ const parseEmrDate = (str) => {
  * @returns {Object}
  */
 const formatEmrItem = (item) => {
-  const d = new Date(item.tanggal_rekam);
+  const rawDate = item.tanggal_pemeriksaan || item.tanggal_rekam;
+  const d = new Date(rawDate);
   const day = String(d.getUTCDate()).padStart(2, '0');
   const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   const year = d.getUTCFullYear();
@@ -53,7 +54,9 @@ const formatEmrItem = (item) => {
     dokter: item.dokter?.nama || 'Dokter',
     tanggal: formattedDate,
     tanggalIso: isoDate,
-    tanggal_rekam: item.tanggal_rekam,
+    tanggal_pemeriksaan: rawDate,
+    tanggalPemeriksaan: formattedDate,
+    tanggal_rekam: rawDate,
     regio: item.regio || '-',
     anamnesa: item.anamnesa || '-',
     tindakan: item.tindakan || '-',
@@ -116,14 +119,14 @@ const getRekamMedis = async (req, res, next) => {
 
     // 4. Filter Rentang Tanggal
     if (startDate || endDate) {
-      where.tanggal_rekam = {};
+      where.tanggal_pemeriksaan = {};
       if (startDate) {
-        where.tanggal_rekam.gte = parseEmrDate(startDate);
+        where.tanggal_pemeriksaan.gte = parseEmrDate(startDate);
       }
       if (endDate) {
         const endD = parseEmrDate(endDate);
         endD.setUTCDate(endD.getUTCDate() + 1);
-        where.tanggal_rekam.lt = endD;
+        where.tanggal_pemeriksaan.lt = endD;
       }
     }
 
@@ -138,7 +141,7 @@ const getRekamMedis = async (req, res, next) => {
         },
       },
       orderBy: [
-        { tanggal_rekam: 'desc' },
+        { tanggal_pemeriksaan: 'desc' },
         { id: 'desc' },
       ],
     });
@@ -218,7 +221,7 @@ const createRekamMedis = async (req, res, next) => {
     const pasienId = req.body.pasien_id || req.body.pasienId;
     const dokterNama = req.body.dokter_nama || req.body.dokterNama || req.body.dokter || req.body.doctorName;
     const dokterId = req.body.dokter_id || req.body.dokterId;
-    const tanggalRekam = req.body.tanggal_rekam || req.body.tanggalReservasi || req.body.tanggal || req.body.visitDate;
+    const tanggalRekam = req.body.tanggal_pemeriksaan || req.body.tanggalPemeriksaan || req.body.tanggal_rekam || req.body.tanggalReservasi || req.body.tanggal || req.body.visitDate;
 
     // 1. Validasi input wajib
     if ((!namaPasien || !namaPasien.trim()) && !pasienId) {
@@ -237,8 +240,8 @@ const createRekamMedis = async (req, res, next) => {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Tanggal rekam medis wajib diisi.',
-          details: [{ field: 'tanggal', issue: 'Silakan isi tanggal rekam medis.' }],
+          message: 'Tanggal pemeriksaan wajib diisi.',
+          details: [{ field: 'tanggal', issue: 'Silakan isi tanggal pemeriksaan rekam medis.' }],
         },
       });
     }
@@ -353,7 +356,7 @@ const createRekamMedis = async (req, res, next) => {
       data: {
         pasien_id: pasien.id,
         dokter_id: dokter.id,
-        tanggal_rekam: parsedDate,
+        tanggal_pemeriksaan: parsedDate,
         regio: cleanRegio || null,
         anamnesa: cleanAnamnesa || null,
         tindakan: cleanTindakan || null,
@@ -436,8 +439,9 @@ const updateRekamMedis = async (req, res, next) => {
     }
 
     // 2. Perbarui tanggal jika ada
-    if (req.body.tanggal_rekam || req.body.tanggal) {
-      dataToUpdate.tanggal_rekam = parseEmrDate(req.body.tanggal_rekam || req.body.tanggal);
+    const dateInput = req.body.tanggal_pemeriksaan || req.body.tanggalPemeriksaan || req.body.tanggal_rekam || req.body.tanggal;
+    if (dateInput) {
+      dataToUpdate.tanggal_pemeriksaan = parseEmrDate(dateInput);
     }
 
     // 3. Perbarui pasien jika nama pasien diganti
@@ -588,13 +592,13 @@ const getPatients = async (req, res, next) => {
         nama: true,
         reservasi: {
           orderBy: [
-            { tanggal_reservasi: 'desc' },
+            { tanggal_kunjungan: 'desc' },
             { id: 'desc' },
           ],
           select: {
             id: true,
             status: true,
-            tanggal_reservasi: true,
+            tanggal_kunjungan: true,
             dokter_id: true,
             dokter: {
               select: {
@@ -606,13 +610,13 @@ const getPatients = async (req, res, next) => {
         },
         rekam_medis: {
           orderBy: [
-            { tanggal_rekam: 'desc' },
+            { tanggal_pemeriksaan: 'desc' },
             { id: 'desc' },
           ],
           take: 1,
           select: {
             id: true,
-            tanggal_rekam: true,
+            tanggal_pemeriksaan: true,
             dokter: {
               select: {
                 id: true,
@@ -636,8 +640,9 @@ const getPatients = async (req, res, next) => {
       let dokterId = null;
 
       if (latestReservasi) {
-        if (latestReservasi.tanggal_reservasi) {
-          const d = new Date(latestReservasi.tanggal_reservasi);
+        const rawDate = latestReservasi.tanggal_kunjungan || latestReservasi.tanggal_reservasi;
+        if (rawDate) {
+          const d = new Date(rawDate);
           const day = String(d.getUTCDate()).padStart(2, '0');
           const month = String(d.getUTCMonth() + 1).padStart(2, '0');
           const year = d.getUTCFullYear();
@@ -650,8 +655,9 @@ const getPatients = async (req, res, next) => {
       } else if (p.rekam_medis && p.rekam_medis.length > 0) {
         // Fallback: Gunakan data rekam medis terakhir jika belum ada reservasi baru
         const latestEmr = p.rekam_medis[0];
-        if (latestEmr.tanggal_rekam) {
-          const d = new Date(latestEmr.tanggal_rekam);
+        const rawEmrDate = latestEmr.tanggal_pemeriksaan || latestEmr.tanggal_rekam;
+        if (rawEmrDate) {
+          const d = new Date(rawEmrDate);
           const day = String(d.getUTCDate()).padStart(2, '0');
           const month = String(d.getUTCMonth() + 1).padStart(2, '0');
           const year = d.getUTCFullYear();

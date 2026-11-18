@@ -29,7 +29,7 @@ const getSummary = async (req, res, next) => {
 
     // Filter rentang waktu reservasi khusus hari ini (00:00 - 23:59 UTC @db.Date)
     const filterHariIni = {
-      tanggal_reservasi: {
+      tanggal_kunjungan: {
         gte: todayUtc,
         lt: tomorrowUtc,
       },
@@ -84,13 +84,13 @@ const getSummary = async (req, res, next) => {
       prisma.reservasi.findMany({
         take: 15,
         orderBy: [
-          { tanggal_reservasi: 'desc' },
+          { tanggal_kunjungan: 'desc' },
           { id: 'desc' }
         ],
         select: {
           id: true,
-          tanggal_reservasi: true,
-          waktu_reservasi: true,
+          tanggal_kunjungan: true,
+          waktu_kunjungan: true,
           status: true,
           pasien: {
             select: {
@@ -113,7 +113,7 @@ const getSummary = async (req, res, next) => {
     // 3. Format daftar reservasi untuk dikonsumsi frontend
     const formattedReservasi = daftarReservasi.map((item) => {
       // Format tanggal DD-MM-YYYY
-      const d = new Date(item.tanggal_reservasi);
+      const d = new Date(item.tanggal_kunjungan);
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
@@ -122,7 +122,13 @@ const getSummary = async (req, res, next) => {
       return {
         id: item.id,
         namaPasien: item.pasien?.nama || 'Pasien',
-        jadwal: `${formattedDate} ${item.waktu_reservasi} WIB`,
+        tanggal_kunjungan: formattedDate,
+        tanggalKunjungan: formattedDate,
+        waktu_kunjungan: item.waktu_kunjungan,
+        waktuKunjungan: item.waktu_kunjungan,
+        tanggal: formattedDate,
+        waktu: item.waktu_kunjungan,
+        jadwal: `${formattedDate} ${item.waktu_kunjungan} WIB`,
         dokter: item.dokter?.nama || 'Dokter Umum',
         cabang: item.dokter?.cabang || '-',
         status: item.status,

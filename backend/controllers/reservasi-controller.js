@@ -37,7 +37,10 @@ const parseReservationDate = (dateInput) => {
  * @returns {Object}
  */
 const formatReservasiItem = (item) => {
-  const d = new Date(item.tanggal_reservasi);
+  const rawDate = item.tanggal_kunjungan || item.tanggal_reservasi;
+  const rawTime = item.waktu_kunjungan || item.waktu_reservasi || '';
+
+  const d = new Date(rawDate);
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
@@ -52,10 +55,14 @@ const formatReservasiItem = (item) => {
     dokter: item.dokter?.nama || 'Dokter',
     tanggal: formattedDate,
     tanggalIso: isoDate,
-    tanggal_reservasi: item.tanggal_reservasi,
-    waktu: item.waktu_reservasi,
-    waktu_reservasi: item.waktu_reservasi,
-    jadwal: `${formattedDate} ${item.waktu_reservasi}`,
+    tanggal_kunjungan: rawDate,
+    tanggalKunjungan: formattedDate,
+    tanggal_reservasi: rawDate,
+    waktu: rawTime,
+    waktu_kunjungan: rawTime,
+    waktuKunjungan: rawTime,
+    waktu_reservasi: rawTime,
+    jadwal: `${formattedDate} ${rawTime}`,
     status: item.status,
     pasien: item.pasien,
     dokterDetail: item.dokter,
@@ -65,11 +72,12 @@ const formatReservasiItem = (item) => {
 /**
  * GET /api/v1/reservasi
  * Mengambil daftar reservasi menggunakan prisma.reservasi.findMany
- * Mendukung filter tanggal_reservasi, status, dan pencarian nama pasien
+ * Mendukung filter tanggal_kunjungan, status, dan pencarian nama pasien
  */
 const getReservasi = async (req, res, next) => {
   try {
-    const { tanggal_reservasi, status, search } = req.query;
+    const { tanggal_kunjungan, tanggal_reservasi, status, search } = req.query;
+    const filterTanggal = tanggal_kunjungan || tanggal_reservasi;
 
     const where = {};
 
@@ -78,16 +86,16 @@ const getReservasi = async (req, res, next) => {
       where.status = status;
     }
 
-    // Filter tanggal_reservasi spesifik
-    if (tanggal_reservasi) {
-      const targetDate = parseReservationDate(tanggal_reservasi);
+    // Filter tanggal_kunjungan spesifik
+    if (filterTanggal) {
+      const targetDate = parseReservationDate(filterTanggal);
       const startOfDay = new Date(targetDate);
       startOfDay.setHours(0, 0, 0, 0);
 
       const endOfDay = new Date(targetDate);
       endOfDay.setHours(23, 59, 59, 999);
 
-      where.tanggal_reservasi = {
+      where.tanggal_kunjungan = {
         gte: startOfDay,
         lte: endOfDay,
       };
@@ -110,7 +118,7 @@ const getReservasi = async (req, res, next) => {
         dokter: true,
       },
       orderBy: [
-        { tanggal_reservasi: 'desc' },
+        { tanggal_kunjungan: 'desc' },
         { id: 'desc' },
       ],
     });
@@ -137,8 +145,8 @@ const getReservasi = async (req, res, next) => {
 const createReservasi = async (req, res, next) => {
   try {
     const namaPasien = req.body.nama_pasien || req.body.namaPasien || req.body.nama;
-    const tanggalReservasi = req.body.tanggal_reservasi || req.body.tanggalReservasi || req.body.tanggal;
-    const waktuReservasi = req.body.waktu_reservasi || req.body.waktuReservasi || req.body.waktu;
+    const tanggalKunjungan = req.body.tanggal_kunjungan || req.body.tanggalKunjungan || req.body.tanggal_reservasi || req.body.tanggalReservasi || req.body.tanggal;
+    const waktuKunjungan = req.body.waktu_kunjungan || req.body.waktuKunjungan || req.body.waktu_reservasi || req.body.waktuReservasi || req.body.waktu;
     const dokterId = req.body.dokter_id || req.body.dokterId;
     const dokterNama = req.body.dokter_nama || req.body.dokterNama || req.body.dokter;
     const cabang = req.body.cabang;
@@ -156,24 +164,24 @@ const createReservasi = async (req, res, next) => {
       });
     }
 
-    if (!tanggalReservasi) {
+    if (!tanggalKunjungan) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Tanggal reservasi wajib diisi.',
-          details: [{ field: 'tanggalReservasi', issue: 'Tanggal reservasi tidak boleh kosong.' }],
+          message: 'Tanggal kunjungan wajib diisi.',
+          details: [{ field: 'tanggalKunjungan', issue: 'Tanggal kunjungan tidak boleh kosong.' }],
         },
       });
     }
 
-    if (!waktuReservasi || !waktuReservasi.trim()) {
+    if (!waktuKunjungan || !waktuKunjungan.trim()) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Waktu reservasi wajib diisi.',
-          details: [{ field: 'waktuReservasi', issue: 'Waktu reservasi tidak boleh kosong.' }],
+          message: 'Waktu kunjungan wajib diisi.',
+          details: [{ field: 'waktuKunjungan', issue: 'Waktu kunjungan tidak boleh kosong.' }],
         },
       });
     }
@@ -248,15 +256,15 @@ const createReservasi = async (req, res, next) => {
     }
 
     // 4. Simpan reservasi via prisma.reservasi.create
-    const parsedDate = parseReservationDate(tanggalReservasi);
+    const parsedDate = parseReservationDate(tanggalKunjungan);
     const validStatus = status === 'Reschedule' ? 'Reschedule' : 'Appointment';
 
     const newReservasi = await prisma.reservasi.create({
       data: {
         pasien_id: pasien.id,
         dokter_id: selectedDokter.id,
-        tanggal_reservasi: parsedDate,
-        waktu_reservasi: waktuReservasi.trim(),
+        tanggal_kunjungan: parsedDate,
+        waktu_kunjungan: waktuKunjungan.trim(),
         status: validStatus,
       },
       include: {
@@ -319,10 +327,10 @@ const updateReservasi = async (req, res, next) => {
 
     const dataToUpdate = {};
 
-    // 1. Update waktu_reservasi
-    const waktuInput = req.body.waktu_reservasi || req.body.waktuReservasi || req.body.waktu;
+    // 1. Update waktu_kunjungan
+    const waktuInput = req.body.waktu_kunjungan || req.body.waktuKunjungan || req.body.waktu_reservasi || req.body.waktuReservasi || req.body.waktu;
     if (waktuInput && waktuInput.trim()) {
-      dataToUpdate.waktu_reservasi = waktuInput.trim();
+      dataToUpdate.waktu_kunjungan = waktuInput.trim();
     }
 
     // 2. Update status ('Appointment' atau 'Reschedule')
@@ -332,10 +340,10 @@ const updateReservasi = async (req, res, next) => {
       }
     }
 
-    // 3. Update tanggal_reservasi jika disediakan
-    const tanggalInput = req.body.tanggal_reservasi || req.body.tanggalReservasi || req.body.tanggal;
+    // 3. Update tanggal_kunjungan jika disediakan
+    const tanggalInput = req.body.tanggal_kunjungan || req.body.tanggalKunjungan || req.body.tanggal_reservasi || req.body.tanggalReservasi || req.body.tanggal;
     if (tanggalInput) {
-      dataToUpdate.tanggal_reservasi = parseReservationDate(tanggalInput);
+      dataToUpdate.tanggal_kunjungan = parseReservationDate(tanggalInput);
     }
 
     // 4. Update dokter jika disediakan

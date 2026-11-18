@@ -182,7 +182,9 @@ export default function Reservasi({ onNavigate, onLogout }) {
                     body: JSON.stringify({
                         namaPasien: data.namaPasien,
                         tanggal: data.tanggal,
+                        tanggal_kunjungan: data.tanggal_kunjungan || data.tanggal,
                         waktu: data.waktu,
+                        waktu_kunjungan: data.waktu_kunjungan || data.waktu,
                         dokter: data.dokter,
                         dokter_id: data.dokter_id,
                         status: data.status,
@@ -210,7 +212,9 @@ export default function Reservasi({ onNavigate, onLogout }) {
                     body: JSON.stringify({
                         namaPasien: data.namaPasien,
                         tanggal: data.tanggal,
+                        tanggal_kunjungan: data.tanggal_kunjungan || data.tanggal,
                         waktu: data.waktu,
+                        waktu_kunjungan: data.waktu_kunjungan || data.waktu,
                         dokter: data.dokter,
                         dokter_id: data.dokter_id,
                         status: data.status,
@@ -386,8 +390,8 @@ export default function Reservasi({ onNavigate, onLogout }) {
                                     <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
                                         <th className="px-5 py-3.5">Nama Pasien</th>
                                         <th className="px-5 py-3.5 text-center">Dokter</th>
-                                        <th className="px-5 py-3.5 text-center">Tanggal</th>
-                                        <th className="px-5 py-3.5 text-center">Waktu</th>
+                                        <th className="px-5 py-3.5 text-center">Tanggal Kunjungan</th>
+                                        <th className="px-5 py-3.5 text-center">Waktu Kunjungan</th>
                                         <th className="px-5 py-3.5 text-center">Status</th>
                                         <th className="px-5 py-3.5 text-center">Aksi</th>
                                     </tr>
@@ -423,14 +427,14 @@ export default function Reservasi({ onNavigate, onLogout }) {
                                                             {item.dokter}
                                                         </td>
 
-                                                        {/* Kolom 3: Tanggal */}
+                                                        {/* Kolom 3: Tanggal Kunjungan */}
                                                         <td className="px-5 py-3.5 text-center text-slate-800 whitespace-nowrap">
-                                                            {item.tanggal}
+                                                            {item.tanggalKunjungan || item.tanggal_kunjungan || item.tanggal}
                                                         </td>
 
-                                                        {/* Kolom 4: Waktu */}
+                                                        {/* Kolom 4: Waktu Kunjungan */}
                                                         <td className="px-5 py-3.5 text-center text-slate-800 whitespace-nowrap">
-                                                            {item.waktu}
+                                                            {item.waktuKunjungan || item.waktu_kunjungan || item.waktu}
                                                         </td>
 
                                                         {/* Kolom 5: Status */}

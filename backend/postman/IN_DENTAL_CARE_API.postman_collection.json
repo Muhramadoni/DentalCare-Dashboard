@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "919ba265-7175-4cbe-9b0e-4333fbeccbc8",
+    "_postman_id": "71cb6a5a-b314-4a83-96a6-f974bd6da1fa",
     "name": "IN DENTAL CARE - REST API Testing Collection (All Modules)",
     "description": "Koleksi Postman resmi dan komprehensif untuk pengujian REST API IN DENTAL CARE Admin Dashboard:\n1. Health Check\n2. Modul Autentikasi (/api/v1/auth)\n3. Modul Dashboard Overview (/api/v1/dashboard)\n4. Modul Kelola Dokter (/api/v1/dokter)\n5. Modul Kelola Reservasi (/api/v1/reservasi)\n6. Modul Rekam Medis EMR (/api/v1/rekam-medis)\n7. Endpoint 404 Not Found Handling\n\nDilengkapi pm.test assertion untuk kode status, format JSON, error code, serta auto-chaining JWT token dan dynamic IDs.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -1099,7 +1099,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Data ringkasan operasional dashboard berhasil diambil.\",\n  \"data\": {\n    \"totalReservasiHariIni\": 4,\n    \"totalDokter\": 6,\n    \"totalDokterAktif\": 5,\n    \"totalDokterPraktikHariIni\": 3,\n    \"rekapStatus\": {\n      \"appointment\": 3,\n      \"reschedule\": 1\n    },\n    \"cards\": {\n      \"totalReservasiHariIni\": 4,\n      \"totalDokter\": 6,\n      \"dokterPraktik\": 3,\n      \"dokterAktif\": 5\n    },\n    \"daftarReservasi\": [\n      {\n        \"id\": 1,\n        \"namaPasien\": \"Budi Santoso\",\n        \"jadwal\": \"16-11-2026 10:00 WIB\",\n        \"dokter\": \"drg. Indira Nugrahani\",\n        \"cabang\": \"Muchtar\",\n        \"status\": \"Appointment\"\n      }\n    ],\n    \"reservations\": [\n      {\n        \"id\": 1,\n        \"namaPasien\": \"Budi Santoso\",\n        \"jadwal\": \"16-11-2026 10:00 WIB\",\n        \"dokter\": \"drg. Indira Nugrahani\",\n        \"cabang\": \"Muchtar\",\n        \"status\": \"Appointment\"\n      }\n    ],\n    \"riwayatAktivitas\": [\n      {\n        \"id\": \"act_1\",\n        \"waktu\": \"16:15 WIB\",\n        \"tipe\": \"reservasi\",\n        \"status\": \"Tambah\",\n        \"deskripsi\": \"Menambahkan reservasi pasien: Budi Santoso (Appointment)\"\n      }\n    ],\n    \"activities\": [\n      {\n        \"id\": \"act_1\",\n        \"waktu\": \"16:15 WIB\",\n        \"tipe\": \"reservasi\",\n        \"status\": \"Tambah\",\n        \"deskripsi\": \"Menambahkan reservasi pasien: Budi Santoso (Appointment)\"\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Data ringkasan operasional dashboard berhasil diambil.\",\n  \"data\": {\n    \"totalReservasiHariIni\": 4,\n    \"totalDokter\": 6,\n    \"totalDokterAktif\": 5,\n    \"totalDokterPraktikHariIni\": 3,\n    \"rekapStatus\": {\n      \"appointment\": 3,\n      \"reschedule\": 1\n    },\n    \"cards\": {\n      \"totalReservasiHariIni\": 4,\n      \"totalDokter\": 6,\n      \"dokterPraktik\": 3,\n      \"dokterAktif\": 5\n    },\n    \"daftarReservasi\": [\n      {\n        \"id\": 1,\n        \"namaPasien\": \"Budi Santoso\",\n        \"tanggal_kunjungan\": \"16-11-2026\",\n        \"tanggalKunjungan\": \"16-11-2026\",\n        \"waktu_kunjungan\": \"10:00\",\n        \"waktuKunjungan\": \"10:00\",\n        \"jadwal\": \"16-11-2026 10:00 WIB\",\n        \"dokter\": \"drg. Indira Nugrahani\",\n        \"cabang\": \"Muchtar\",\n        \"status\": \"Appointment\"\n      }\n    ],\n    \"reservations\": [\n      {\n        \"id\": 1,\n        \"namaPasien\": \"Budi Santoso\",\n        \"tanggal_kunjungan\": \"16-11-2026\",\n        \"tanggalKunjungan\": \"16-11-2026\",\n        \"waktu_kunjungan\": \"10:00\",\n        \"waktuKunjungan\": \"10:00\",\n        \"jadwal\": \"16-11-2026 10:00 WIB\",\n        \"dokter\": \"drg. Indira Nugrahani\",\n        \"cabang\": \"Muchtar\",\n        \"status\": \"Appointment\"\n      }\n    ],\n    \"riwayatAktivitas\": [\n      {\n        \"id\": \"act_1\",\n        \"waktu\": \"16:15 WIB\",\n        \"tipe\": \"reservasi\",\n        \"status\": \"Tambah\",\n        \"deskripsi\": \"Menambahkan reservasi pasien: Budi Santoso (Appointment)\"\n      }\n    ],\n    \"activities\": [\n      {\n        \"id\": \"act_1\",\n        \"waktu\": \"16:15 WIB\",\n        \"tipe\": \"reservasi\",\n        \"status\": \"Tambah\",\n        \"deskripsi\": \"Menambahkan reservasi pasien: Budi Santoso (Appointment)\"\n      }\n    ]\n  }\n}"
             }
           ],
           "event": [
@@ -1914,7 +1914,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/reservasi?tanggal_reservasi=2026-11-16&status=Appointment&search=Budi",
+              "raw": "{{base_url}}/api/v1/reservasi?tanggal_kunjungan=2026-11-16&status=Appointment&search=Budi",
               "host": [
                 "{{base_url}}"
               ],
@@ -1925,9 +1925,9 @@
               ],
               "query": [
                 {
-                  "key": "tanggal_reservasi",
+                  "key": "tanggal_kunjungan",
                   "value": "2026-11-16",
-                  "description": "Filter tanggal (YYYY-MM-DD)",
+                  "description": "Filter tanggal kunjungan (YYYY-MM-DD)",
                   "disabled": false
                 },
                 {
@@ -2001,7 +2001,7 @@
             "description": "Membuat jadwal reservasi baru pasien (sesuai payload frontend reservasi.jsx). ID reservasi baru disimpan ke 'reservasi_id' dan 'test_reservasi_id'.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal\": \"2026-11-16\",\n  \"waktu\": \"10:00\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"status\": \"Appointment\"\n}",
+              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal_kunjungan\": \"2026-11-16\",\n  \"waktu_kunjungan\": \"10:00\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"status\": \"Appointment\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2045,7 +2045,7 @@
                 "description": "Membuat jadwal reservasi baru pasien (sesuai payload frontend reservasi.jsx). ID reservasi baru disimpan ke 'reservasi_id' dan 'test_reservasi_id'.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal\": \"2026-11-16\",\n  \"waktu\": \"10:00\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"status\": \"Appointment\"\n}",
+                  "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal_kunjungan\": \"2026-11-16\",\n  \"waktu_kunjungan\": \"10:00\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"status\": \"Appointment\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2062,7 +2062,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Reservasi berhasil dibuat.\",\n  \"data\": {\n    \"id\": 1,\n    \"pasien_id\": 1,\n    \"dokter_id\": 1,\n    \"namaPasien\": \"Budi Santoso\",\n    \"dokter\": \"drg. Indira Nugrahani\",\n    \"tanggal\": \"16-11-2026\",\n    \"tanggalIso\": \"2026-11-16\",\n    \"tanggal_reservasi\": \"2026-11-16T00:00:00.000Z\",\n    \"waktu\": \"10:00\",\n    \"waktu_reservasi\": \"10:00\",\n    \"jadwal\": \"16-11-2026 10:00\",\n    \"status\": \"Appointment\",\n    \"pasien\": {\n      \"id\": 1,\n      \"nama\": \"Budi Santoso\"\n    },\n    \"dokterDetail\": {\n      \"id\": 1,\n      \"nama\": \"drg. Indira Nugrahani\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reservasi berhasil dibuat.\",\n  \"data\": {\n    \"id\": 1,\n    \"pasien_id\": 1,\n    \"dokter_id\": 1,\n    \"namaPasien\": \"Budi Santoso\",\n    \"dokter\": \"drg. Indira Nugrahani\",\n    \"tanggal\": \"16-11-2026\",\n    \"tanggalIso\": \"2026-11-16\",\n    \"tanggal_kunjungan\": \"2026-11-16T00:00:00.000Z\",\n    \"tanggalKunjungan\": \"16-11-2026\",\n    \"waktu\": \"10:00\",\n    \"waktu_kunjungan\": \"10:00\",\n    \"waktuKunjungan\": \"10:00\",\n    \"jadwal\": \"16-11-2026 10:00\",\n    \"status\": \"Appointment\",\n    \"pasien\": {\n      \"id\": 1,\n      \"nama\": \"Budi Santoso\"\n    },\n    \"dokterDetail\": {\n      \"id\": 1,\n      \"nama\": \"drg. Indira Nugrahani\"\n    }\n  }\n}"
             }
           ],
           "event": [
@@ -2121,7 +2121,7 @@
             "description": "Uji coba reservasi tanpa mengisi nama pasien.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"namaPasien\": \"\",\n  \"tanggal\": \"2026-11-16\",\n  \"waktu\": \"10:00\",\n  \"dokter\": \"drg. Indira Nugrahani\"\n}",
+              "raw": "{\n  \"namaPasien\": \"\",\n  \"tanggal_kunjungan\": \"2026-11-16\",\n  \"waktu_kunjungan\": \"10:00\",\n  \"dokter\": \"drg. Indira Nugrahani\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2185,7 +2185,7 @@
             "description": "Memperbarui tanggal, waktu, dokter, atau status reservasi pasien (misalnya Reschedule).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal\": \"2026-11-17\",\n  \"waktu\": \"14:00\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"status\": \"Reschedule\"\n}",
+              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal_kunjungan\": \"2026-11-17\",\n  \"waktu_kunjungan\": \"14:00\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"status\": \"Reschedule\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2532,7 +2532,7 @@
             "description": "Menyimpan rekam medis baru ke database dengan sanitasi XSS otomatis (sesuai payload frontend EMR.jsx). ID rekam medis otomatis disimpan ke variabel 'rekam_medis_id' dan 'test_emr_id'.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal\": \"2026-11-16\",\n  \"regio\": \"16, 17\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"anamnesa\": \"Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.\",\n  \"tindakan\": \"Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.\",\n  \"resep\": \"Asam Mefenamat 500mg 3x1 tablet sesudah makan, Amoxicillin 500mg 3x1 tablet.\",\n  \"terapi\": \"Hindari mengunyah makanan keras di sisi kanan selama 24 jam. Kontrol 1 minggu lagi.\"\n}",
+              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal_pemeriksaan\": \"2026-11-16\",\n  \"regio\": \"16, 17\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"anamnesa\": \"Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.\",\n  \"tindakan\": \"Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.\",\n  \"resep\": \"Asam Mefenamat 500mg 3x1 tablet sesudah makan, Amoxicillin 500mg 3x1 tablet.\",\n  \"terapi\": \"Hindari mengunyah makanan keras di sisi kanan selama 24 jam. Kontrol 1 minggu lagi.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2576,7 +2576,7 @@
                 "description": "Menyimpan rekam medis baru ke database dengan sanitasi XSS otomatis (sesuai payload frontend EMR.jsx). ID rekam medis otomatis disimpan ke variabel 'rekam_medis_id' dan 'test_emr_id'.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal\": \"2026-11-16\",\n  \"regio\": \"16, 17\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"anamnesa\": \"Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.\",\n  \"tindakan\": \"Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.\",\n  \"resep\": \"Asam Mefenamat 500mg 3x1 tablet sesudah makan, Amoxicillin 500mg 3x1 tablet.\",\n  \"terapi\": \"Hindari mengunyah makanan keras di sisi kanan selama 24 jam. Kontrol 1 minggu lagi.\"\n}",
+                  "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal_pemeriksaan\": \"2026-11-16\",\n  \"regio\": \"16, 17\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"dokter_id\": 1,\n  \"anamnesa\": \"Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.\",\n  \"tindakan\": \"Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.\",\n  \"resep\": \"Asam Mefenamat 500mg 3x1 tablet sesudah makan, Amoxicillin 500mg 3x1 tablet.\",\n  \"terapi\": \"Hindari mengunyah makanan keras di sisi kanan selama 24 jam. Kontrol 1 minggu lagi.\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2593,7 +2593,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Data rekam medis berhasil disimpan.\",\n  \"data\": {\n    \"id\": 1,\n    \"pasien_id\": 1,\n    \"dokter_id\": 1,\n    \"namaPasien\": \"Budi Santoso\",\n    \"dokter\": \"drg. Indira Nugrahani\",\n    \"tanggal\": \"16-11-2026\",\n    \"tanggalIso\": \"2026-11-16\",\n    \"tanggal_rekam\": \"2026-11-16T00:00:00.000Z\",\n    \"regio\": \"16, 17\",\n    \"anamnesa\": \"Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.\",\n    \"tindakan\": \"Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.\",\n    \"resep\": \"Asam Mefenamat 500mg 3x1 tablet sesudah makan, Amoxicillin 500mg 3x1 tablet.\",\n    \"terapi\": \"Hindari mengunyah makanan keras di sisi kanan selama 24 jam. Kontrol 1 minggu lagi.\",\n    \"pasien\": {\n      \"id\": 1,\n      \"nama\": \"Budi Santoso\"\n    },\n    \"dokterDetail\": {\n      \"id\": 1,\n      \"nama\": \"drg. Indira Nugrahani\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Data rekam medis berhasil disimpan.\",\n  \"data\": {\n    \"id\": 1,\n    \"pasien_id\": 1,\n    \"dokter_id\": 1,\n    \"namaPasien\": \"Budi Santoso\",\n    \"dokter\": \"drg. Indira Nugrahani\",\n    \"tanggal\": \"16-11-2026\",\n    \"tanggalIso\": \"2026-11-16\",\n    \"tanggal_pemeriksaan\": \"2026-11-16T00:00:00.000Z\",\n    \"tanggalPemeriksaan\": \"16-11-2026\",\n    \"regio\": \"16, 17\",\n    \"anamnesa\": \"Pasien mengeluhkan gigi geraham kanan berdenyut sejak 2 hari yang lalu setelah makan.\",\n    \"tindakan\": \"Pembersihan kavitas, ekskavasi jaringan karies, dan aplikasi tumpatan sementara.\",\n    \"resep\": \"Asam Mefenamat 500mg 3x1 tablet sesudah makan, Amoxicillin 500mg 3x1 tablet.\",\n    \"terapi\": \"Hindari mengunyah makanan keras di sisi kanan selama 24 jam. Kontrol 1 minggu lagi.\",\n    \"pasien\": {\n      \"id\": 1,\n      \"nama\": \"Budi Santoso\"\n    },\n    \"dokterDetail\": {\n      \"id\": 1,\n      \"nama\": \"drg. Indira Nugrahani\"\n    }\n  }\n}"
             }
           ],
           "event": [
@@ -2652,7 +2652,7 @@
             "description": "Uji coba menyimpan EMR tanpa memilih atau memasukkan nama pasien.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"namaPasien\": \"\",\n  \"tanggal\": \"2026-11-16\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"tindakan\": \"Pembersihan karang gigi\"\n}",
+              "raw": "{\n  \"namaPasien\": \"\",\n  \"tanggal_pemeriksaan\": \"2026-11-16\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"tindakan\": \"Pembersihan karang gigi\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2715,7 +2715,7 @@
             "description": "Uji coba menyimpan EMR tanpa tanggal kunjungan.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal\": \"\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"tindakan\": \"Pembersihan karang gigi\"\n}",
+              "raw": "{\n  \"namaPasien\": \"Budi Santoso\",\n  \"tanggal_pemeriksaan\": \"\",\n  \"dokter\": \"drg. Indira Nugrahani\",\n  \"tindakan\": \"Pembersihan karang gigi\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
