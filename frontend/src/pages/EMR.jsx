@@ -556,7 +556,7 @@ export default function EMR({ onNavigate, onLogout }) {
             [
                 'NO',
                 'NAMA PASIEN',
-                'TANGGAL',
+                'TANGGAL PEMERIKSAAN',
                 'REGIO',
                 'ANAMNESA (DIAGNOSA)',
                 'TINDAKAN PELAYANAN',
@@ -571,7 +571,7 @@ export default function EMR({ onNavigate, onLogout }) {
             rows.push([
                 index + 1,
                 item.namaPasien || '-',
-                toDisplayDate(item.tanggal || item.tanggalIso),
+                toDisplayDate(item.tanggalPemeriksaan || item.tanggal_pemeriksaan || item.tanggal || item.tanggalIso),
                 item.regio || '-',
                 item.anamnesa || '-',
                 item.tindakan || '-',
@@ -712,7 +712,7 @@ export default function EMR({ onNavigate, onLogout }) {
         ws['!cols'] = [
             { wch: 6 },  // NO
             { wch: 24 }, // NAMA PASIEN
-            { wch: 16 }, // TANGGAL
+            { wch: 22 }, // TANGGAL PEMERIKSAAN
             { wch: 12 }, // REGIO
             { wch: 36 }, // ANAMNESA (DIAGNOSA)
             { wch: 36 }, // TINDAKAN PELAYANAN
