@@ -89,7 +89,7 @@ Menyimpan data dokter gigi dan jadwal fleksibelnya.
 * `id` (`SERIAL`, Primary Key)
 * `nama` (`VARCHAR`, Not Null) — Nama lengkap dokter gigi
 * `spesialisasi` (`VARCHAR`) — Spesialisasi bidang medis gigi
-* `cabang` (`VARCHAR`) — Lokasi cabang klinik (Contoh: Garuda, Muchtar Raya)
+* `cabang` (`VARCHAR`) — Lokasi cabang klinik (Contoh: Garuda)
 * `jadwal_json` (`JSONB`) — Menyimpan konfigurasi hari & jam praktik fleksibel
 * `status` (`VARCHAR`) — Status dokter (misal: Aktif / Tidak Aktif)
 

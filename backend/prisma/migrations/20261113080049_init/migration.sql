@@ -34,8 +34,8 @@ CREATE TABLE "reservasi" (
     "id" SERIAL NOT NULL,
     "pasien_id" INTEGER NOT NULL,
     "dokter_id" INTEGER NOT NULL,
-    "tanggal_reservasi" DATE NOT NULL,
-    "waktu_reservasi" VARCHAR(100) NOT NULL,
+    "tanggal_kunjungan" DATE NOT NULL,
+    "waktu_kunjungan" VARCHAR(100) NOT NULL,
     "status" VARCHAR(50) NOT NULL DEFAULT 'Appointment',
 
     CONSTRAINT "reservasi_pkey" PRIMARY KEY ("id")
@@ -46,7 +46,7 @@ CREATE TABLE "rekam_medis" (
     "id" SERIAL NOT NULL,
     "pasien_id" INTEGER NOT NULL,
     "dokter_id" INTEGER NOT NULL,
-    "tanggal_rekam" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "tanggal_pemeriksaan" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "regio" VARCHAR(100),
     "anamnesa" TEXT,
     "tindakan" TEXT,
@@ -60,7 +60,7 @@ CREATE TABLE "rekam_medis" (
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
-CREATE INDEX "idx_reservasi_tanggal" ON "reservasi"("tanggal_reservasi");
+CREATE INDEX "idx_reservasi_tanggal_kunjungan" ON "reservasi"("tanggal_kunjungan");
 
 -- CreateIndex
 CREATE INDEX "idx_rekam_medis_pasien" ON "rekam_medis"("pasien_id");

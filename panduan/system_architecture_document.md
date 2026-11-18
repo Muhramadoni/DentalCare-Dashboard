@@ -85,13 +85,13 @@ Ringkasan 5 tabel utama yang dikelola pada basis data PostgreSQL:
 * **`user`:** Akun login email dan password terenkripsi (`password_hash`).
 * **`dokter`:** Master data dokter, cabang tempat praktik, dan konfigurasi jadwal (`jadwal_json`).
 * **`pasien`:** Data nama pasien klinik gigi.
-* **`reservasi`:** Jadwal janji temu pasien dengan dokter (`pasien_id`, `dokter_id`, `tanggal_reservasi`, `waktu_reservasi`, `status`).
-* **`rekam_medis`:** Data rekam medis elektronik / EMR (`pasien_id`, `dokter_id`, `tanggal_rekam`, `regio`, `anamnesa`, `tindakan`, `resep`, `terapi`).
+* **`reservasi`:** Jadwal janji temu pasien dengan dokter (`pasien_id`, `dokter_id`, `tanggal_kunjungan`, `waktu_kunjungan`, `status`).
+* **`rekam_medis`:** Data rekam medis elektronik / EMR (`pasien_id`, `dokter_id`, `tanggal_pemeriksaan`, `regio`, `anamnesa`, `tindakan`, `resep`, `terapi`).
 
 ## 6. Skalabilitas & Performance (Scalability)
 
 * **Database Connection Pooling:** Menggunakan mekanisme connection pooling bawaan **Prisma Client** (dikonfigurasi dengan parameter `connection_limit` pada `DATABASE_URL`) untuk mengelola koneksi PostgreSQL secara optimal dan mencegah lonjakan beban (menjamin respon API <200ms).
-* **Indexed Queries:** Pembuatan indeks melalui Prisma (`@@index`) pada kolom pencarian sering (seperti `tanggal_reservasi` dan `pasien_id`) di PostgreSQL untuk memastikan pencarian data EMR dan reservasi instan.
+* **Indexed Queries:** Pembuatan indeks melalui Prisma (`@@index`) pada kolom pencarian sering (seperti `tanggal_kunjungan` dan `pasien_id`) di PostgreSQL untuk memastikan pencarian data EMR dan reservasi instan.
 * **Modular Analytics:** Pemrosesan data analitik dipisahkan ke lingkungan Python/Jupyter terisolasi agar tidak membebani performa operasional server Express.js utama.
 
 ## 7. Feature Considerations & Future Roadmap

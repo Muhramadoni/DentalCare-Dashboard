@@ -186,12 +186,12 @@ Pengembangan backend menggunakan **Prisma ORM** untuk interaksi dengan PostgreSQ
   // Baik: Mengambil kolom spesifik dan relasi terarah
   const daftarReservasi = await prisma.reservasi.findMany({
     where: {
-      tanggal_reservasi: new Date(targetDate),
+      tanggal_kunjungan: new Date(targetDate),
       status: 'Appointment'
     },
     select: {
       id: true,
-      waktu_reservasi: true,
+      waktu_kunjungan: true,
       status: true,
       pasien: {
         select: {
@@ -208,7 +208,7 @@ Pengembangan backend menggunakan **Prisma ORM** untuk interaksi dengan PostgreSQ
       }
     },
     orderBy: {
-      waktu_reservasi: 'asc'
+      waktu_kunjungan: 'asc'
     }
   });
   ```

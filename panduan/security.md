@@ -119,7 +119,7 @@ Data medis EMR (anamnesa, regio gigi, tindakan, dan resep obat) merupakan data t
   const reservasi = await prisma.reservasi.findMany({
     where: {
       dokter_id: doctorId,
-      tanggal_reservasi: new Date(appointmentDate)
+      tanggal_kunjungan: new Date(appointmentDate)
     }
   });
 
