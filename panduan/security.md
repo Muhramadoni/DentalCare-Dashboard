@@ -191,7 +191,7 @@ Sesuai dengan **NFR-2**, seluruh transmisi data wajib dienkripsi selama transit 
 
 ---
 
-## 9. Keamanan Khusus Pipeline Data Analytics (Python & Jupyter Notebook) (belum saatnya diterapkan)
+## 9. Keamanan Khusus Pipeline Data Analytics (Python & Jupyter Notebook)
 
 Modul analitik Python **bukan akun website** dan **bukan peran login**. Yang masuk ke dashboard tetap hanya admin. Jika modul ini dibuat nanti, skripnya memakai akun database terpisah, bukan email dan password admin. Aturan akun itu:
 
@@ -233,7 +233,7 @@ Seluruh pengembang wajib menguji implementasi kode terhadap daftar risiko keaman
 3. **A03: Injection:** Diverifikasi melalui penggunaan 100% Parameterized Queries PostgreSQL dan sanitasi input.
 4. **A04: Insecure Design:** Diverifikasi melalui penerapan rate limiting pada rute autentikasi dan alur bisnis reservasi.
 5. **A05: Security Misconfiguration:** Diverifikasi dengan pemanfaatan `helmet`, penonaktifan *stack trace*, dan pengetatan CORS.
-6. **A06: Vulnerable and Outdated Components:** (belum saatnya diimplementasikan)
+6. **A06: Vulnerable and Outdated Components:**
    * Wajib menjalankan audit dependensi berkala:
      ```bash
      # Untuk Frontend & Backend Node.js
