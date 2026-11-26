@@ -15,18 +15,18 @@ import { calculateDoctorStatus } from '../utils/doctorStatus'
 
 // Palet warna batang statistik sesuai referensi (Merah, Plum, Cokelat, Ungu, Teal, Violet, Hijau Lemon, Hijau Daun, Indigo, Krem/Peach, Mustard, Hijau Muda)
 const CHART_PALETTE = [
-    '#e11d48', // Crimson / Ruby Red
-    '#8e4a6d', // Mauve / Plum
-    '#8d5448', // Terracotta / Warm Brown
-    '#a855f7', // Purple / Lilac
-    '#0f766e', // Teal / Slate Green
-    '#6b21a8', // Deep Violet
-    '#84cc16', // Bright Lime Green
-    '#16a34a', // Medium Forest Green
-    '#4f46e5', // Indigo / Periwinkle Blue
-    '#fed7aa', // Light Peach / Cream
-    '#ca8a04', // Mustard / Gold
-    '#4ade80', // Spring / Soft Green
+    '#49baff', // Sky Blue (primary)
+    '#1e88e5', // Bright Blue
+    '#0ea5e9', // Light Blue
+    '#2563eb', // Royal Blue
+    '#38bdf8', // Soft Cyan Blue
+    '#3b82f6', // Medium Blue
+    '#60a5fa', // Periwinkle Blue
+    '#0284c7', // Deep Sky Blue
+    '#7dd3fc', // Pale Blue
+    '#1d4ed8', // Indigo Blue
+    '#93c5fd', // Muted Blue
+    '#0369a1', // Dark Ocean Blue
 ]
 
 // Helper penghitungan skala sumbu Y (Y-Axis ticks) yang rapi
