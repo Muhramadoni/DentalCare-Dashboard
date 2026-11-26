@@ -1,5 +1,3 @@
-import React from 'react'
-
 /**
  * Clear / Close Icon (X)
  */
@@ -133,20 +131,14 @@ export function ReservationIcon({ className = 'w-5 h-5', ...props }) {
             {...props}
         >
             {/* Body outline */}
-            <rect x="3" y="4" width="18" height="18" rx="3" />
-
-            {/* Rings */}
+            <rect x="3" y="4" width="18" height="18" rx="3" />            {/* Rings */}
             <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-
-            {/* Header fill (tanpa garis divider) */}
+            <line x1="8" y1="2" x2="8" y2="6" />            {/* Header fill (tanpa garis divider) */}
             <path
                 d="M3 7 Q3 4 6 4 L18 4 Q21 4 21 7 L21 8 L3 8 Z"
                 fill="currentColor"
                 stroke="none"
-            />
-
-            {/* Checkmark */}
+            />            {/* Checkmark */}
             <path d="M9 16l2 2 4-4" />
         </svg>
     )
@@ -168,12 +160,8 @@ export function DoctorIcon({ className = 'w-5 h-5', ...props }) {
             {...props}
         >
             {/* Kepala */}
-            <circle cx="10" cy="7" r="4" />
-
-            {/* Badan */}
-            <path d="M3 21v-1a6 6 0 0 1 12 0v1" />
-
-            {/* Tanda Plus Outline (User-plus style) */}
+            <circle cx="10" cy="7" r="4" />            {/* Badan */}
+            <path d="M3 21v-1a6 6 0 0 1 12 0v1" />            {/* Tanda Plus Outline (User-plus style) */}
             <path d="M19 10v4m-2-2h4" />
         </svg>
     );
@@ -466,6 +454,3 @@ export function ExcelIcon({ className = 'w-4 h-4', ...props }) {
         </svg>
     )
 }
-
-
-

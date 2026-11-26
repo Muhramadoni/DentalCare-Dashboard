@@ -81,7 +81,7 @@ const getRekamMedis = async (req, res, next) => {
 
     const where = {};
 
-    // 1. Filter Pencarian Cepat (<10 detik sesuai Target G3)
+    // 1. Filter Pencarian Cepat Menyeluruh (<10 detik sesuai Target G3)
     if (search && search.trim()) {
       const q = search.trim();
       where.OR = [
@@ -89,6 +89,8 @@ const getRekamMedis = async (req, res, next) => {
         { dokter: { nama: { contains: q, mode: 'insensitive' } } },
         { anamnesa: { contains: q, mode: 'insensitive' } },
         { tindakan: { contains: q, mode: 'insensitive' } },
+        { terapi: { contains: q, mode: 'insensitive' } },
+        { resep: { contains: q, mode: 'insensitive' } },
         { regio: { contains: q, mode: 'insensitive' } },
       ];
     }
@@ -349,9 +351,50 @@ const createRekamMedis = async (req, res, next) => {
       });
     }
 
-    // 5. Simpan ke database via prisma.rekamMedis.create
+    // 5. Validasi Anti Duplikasi Data Rekam Medis
     const parsedDate = parseEmrDate(tanggalRekam);
 
+    const sameDayRecords = await prisma.rekamMedis.findMany({
+      where: {
+        pasien_id: pasien.id,
+        dokter_id: dokter.id,
+        tanggal_pemeriksaan: parsedDate,
+      },
+    });
+
+    const inRegio = (cleanRegio || '').trim().toLowerCase();
+    const inAnamnesa = (cleanAnamnesa || '').trim().toLowerCase();
+    const inTindakan = (cleanTindakan || '').trim().toLowerCase();
+    const inResep = (cleanResep || '').trim().toLowerCase();
+    const inTerapi = (cleanTerapi || '').trim().toLowerCase();
+
+    const isExactDuplicate = sameDayRecords.some((r) => {
+      const rRegio = (r.regio || '').trim().toLowerCase();
+      const rAnamnesa = (r.anamnesa || '').trim().toLowerCase();
+      const rTindakan = (r.tindakan || '').trim().toLowerCase();
+      const rResep = (r.resep || '').trim().toLowerCase();
+      const rTerapi = (r.terapi || '').trim().toLowerCase();
+
+      return (
+        rRegio === inRegio &&
+        rAnamnesa === inAnamnesa &&
+        rTindakan === inTindakan &&
+        rResep === inResep &&
+        rTerapi === inTerapi
+      );
+    });
+
+    if (isExactDuplicate) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_DATA',
+          message: `Duplikasi Data: Rekam medis dengan rincian yang sama persis sudah pernah tersimpan sebelumnya untuk pasien "${pasien.nama}".`,
+        },
+      });
+    }
+
+    // 6. Simpan ke database via prisma.rekamMedis.create
     const newEmr = await prisma.rekamMedis.create({
       data: {
         pasien_id: pasien.id,
@@ -474,6 +517,46 @@ const updateRekamMedis = async (req, res, next) => {
       dataToUpdate.dokter_id = dokter.id;
     } else if (req.body.dokter_id && Number(req.body.dokter_id) > 0) {
       dataToUpdate.dokter_id = Number(req.body.dokter_id);
+    }
+
+    // Validasi Anti Duplikasi Data Rekam Medis pada saat Update
+    const targetPasienId = dataToUpdate.pasien_id || existingEmr.pasien_id;
+    const targetDokterId = dataToUpdate.dokter_id || existingEmr.dokter_id;
+    const targetDate = dataToUpdate.tanggal_pemeriksaan || existingEmr.tanggal_pemeriksaan;
+
+    const existingSameRecords = await prisma.rekamMedis.findMany({
+      where: {
+        id: { not: id },
+        pasien_id: targetPasienId,
+        dokter_id: targetDokterId,
+        tanggal_pemeriksaan: targetDate,
+      },
+    });
+
+    const checkRegio = (dataToUpdate.regio !== undefined ? dataToUpdate.regio : existingEmr.regio) || '';
+    const checkAnamnesa = (dataToUpdate.anamnesa !== undefined ? dataToUpdate.anamnesa : existingEmr.anamnesa) || '';
+    const checkTindakan = (dataToUpdate.tindakan !== undefined ? dataToUpdate.tindakan : existingEmr.tindakan) || '';
+    const checkResep = (dataToUpdate.resep !== undefined ? dataToUpdate.resep : existingEmr.resep) || '';
+    const checkTerapi = (dataToUpdate.terapi !== undefined ? dataToUpdate.terapi : existingEmr.terapi) || '';
+
+    const isDuplicateUpdate = existingSameRecords.some((r) => {
+      return (
+        (r.regio || '').trim().toLowerCase() === checkRegio.trim().toLowerCase() &&
+        (r.anamnesa || '').trim().toLowerCase() === checkAnamnesa.trim().toLowerCase() &&
+        (r.tindakan || '').trim().toLowerCase() === checkTindakan.trim().toLowerCase() &&
+        (r.resep || '').trim().toLowerCase() === checkResep.trim().toLowerCase() &&
+        (r.terapi || '').trim().toLowerCase() === checkTerapi.trim().toLowerCase()
+      );
+    });
+
+    if (isDuplicateUpdate) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_DATA',
+          message: 'Duplikasi Data: Data rekam medis dengan rincian yang sama persis sudah ada di sistem.',
+        },
+      });
     }
 
     const updatedEmr = await prisma.rekamMedis.update({

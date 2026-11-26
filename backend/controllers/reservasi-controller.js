@@ -255,10 +255,30 @@ const createReservasi = async (req, res, next) => {
       }
     }
 
-    // 4. Simpan reservasi via prisma.reservasi.create
+    // 4. Validasi Anti Duplikasi Data Reservasi
     const parsedDate = parseReservationDate(tanggalKunjungan);
     const validStatus = status === 'Reschedule' ? 'Reschedule' : 'Appointment';
 
+    const existingReservasi = await prisma.reservasi.findFirst({
+      where: {
+        pasien_id: pasien.id,
+        dokter_id: selectedDokter.id,
+        tanggal_kunjungan: parsedDate,
+        waktu_kunjungan: waktuKunjungan.trim(),
+      },
+    });
+
+    if (existingReservasi) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_DATA',
+          message: `Duplikasi Data: Reservasi untuk pasien "${pasien.nama}" dengan dokter "${selectedDokter.nama}" pada tanggal dan waktu tersebut sudah pernah dibuat sebelumnya.`,
+        },
+      });
+    }
+
+    // 5. Simpan reservasi via prisma.reservasi.create
     const newReservasi = await prisma.reservasi.create({
       data: {
         pasien_id: pasien.id,
@@ -402,6 +422,32 @@ const updateReservasi = async (req, res, next) => {
       dataToUpdate.pasien_id = pasien.id;
     }
 
+    // Validasi Anti Duplikasi Data Reservasi pada saat Update
+    const targetPasienId = dataToUpdate.pasien_id || existingReservasi.pasien_id;
+    const targetDokterId = dataToUpdate.dokter_id || existingReservasi.dokter_id;
+    const targetTanggal = dataToUpdate.tanggal_kunjungan || existingReservasi.tanggal_kunjungan;
+    const targetWaktu = (dataToUpdate.waktu_kunjungan || existingReservasi.waktu_kunjungan || '').trim();
+
+    const duplicateReservasi = await prisma.reservasi.findFirst({
+      where: {
+        id: { not: id },
+        pasien_id: targetPasienId,
+        dokter_id: targetDokterId,
+        tanggal_kunjungan: targetTanggal,
+        waktu_kunjungan: targetWaktu,
+      },
+    });
+
+    if (duplicateReservasi) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_DATA',
+          message: 'Duplikasi Data: Data reservasi dengan pasien, dokter, tanggal, dan jam kunjungan ini sudah ada di sistem.',
+        },
+      });
+    }
+
     const updatedReservasi = await prisma.reservasi.update({
       where: { id },
       data: dataToUpdate,
@@ -532,9 +578,8 @@ const deleteReservasi = async (req, res, next) => {
  */
 const getDoctors = async (req, res, next) => {
   try {
-    // Ambil daftar dokter aktif beserta jadwal praktiknya
+    // Ambil seluruh daftar dokter beserta jadwal praktiknya agar frontend dapat men-disable dokter yang tidak aktif
     const doctors = await prisma.dokter.findMany({
-      where: { status: 'Aktif' },
       select: {
         id: true,
         nama: true,

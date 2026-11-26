@@ -1,143 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
     ReservationIcon,
     DoctorIcon,
     EMRIcon,
     ClearIcon,
-    CalendarOutlineIcon,
     ClockOutlineIcon,
     ChevronDownIcon,
 } from './icon'
-import { toDateInputValue, toDisplayDate, getTodayDateString } from '../utils/date'
-
-/**
- * Helper: Dapatkan nama hari dalam Bahasa Indonesia dari format tanggal YYYY-MM-DD
- */
-export function getDayNameFromDate(dateStr) {
-    if (!dateStr) return null
-    const clean = String(dateStr).trim()
-    const parts = clean.split('-')
-    if (parts.length === 3) {
-        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-        return days[d.getDay()]
-    }
-    const d = new Date(clean)
-    if (isNaN(d.getTime())) return null
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-    return days[d.getDay()]
-}
-
-/**
- * Helper: Ubah string jam ("15.00", "20:00 WIB", "09.42", dsb) menjadi total menit sejak tengah malam
- */
-export function parseTimeToMinutes(timeStr) {
-    if (!timeStr) return null
-    const clean = String(timeStr).trim()
-    const match = clean.match(/(\d{1,2})[:.](\d{2})/)
-    if (match) {
-        const h = parseInt(match[1], 10)
-        const m = parseInt(match[2], 10)
-        return h * 60 + m
-    }
-    const singleMatch = clean.match(/^(\d{1,2})$/)
-    if (singleMatch) {
-        return parseInt(singleMatch[1], 10) * 60
-    }
-    return null
-}
-
-/**
- * Helper: Ambil seluruh daftar jadwal praktik dokter tanpa data dummy
- */
-export function getDoctorScheduleList(doctor) {
-    if (!doctor || typeof doctor !== 'object') return []
-
-    // 1. Array langsung dari doctor.jadwal
-    if (Array.isArray(doctor.jadwal) && doctor.jadwal.length > 0) {
-        return doctor.jadwal
-    }
-
-    // 2. Hanya dari jadwalMuchtar jika ada
-    const combinedBranches = [
-        ...(Array.isArray(doctor.jadwalMuchtar) ? doctor.jadwalMuchtar : []),
-    ]
-    if (combinedBranches.length > 0) {
-        return combinedBranches
-    }
-
-    // 3. Dari objek jadwal_json
-    if (doctor.jadwal_json) {
-        if (Array.isArray(doctor.jadwal_json)) {
-            return doctor.jadwal_json
-        }
-        if (typeof doctor.jadwal_json === 'object') {
-            if (Array.isArray(doctor.jadwal_json.jadwal) && doctor.jadwal_json.jadwal.length > 0) {
-                return doctor.jadwal_json.jadwal
-            }
-            const jsonBranches = [
-                ...(Array.isArray(doctor.jadwal_json.jadwalMuchtar) ? doctor.jadwal_json.jadwalMuchtar : []),
-            ]
-            if (jsonBranches.length > 0) {
-                return jsonBranches
-            }
-        }
-    }
-
-    return []
-}
-
-/**
- * Helper: Cek ketersediaan dokter berdasarkan hari praktik
- * Menghasilkan { isAvailable: boolean, reason: string }
- * Jika dokter tidak memiliki jadwal praktik pada hari yang bersangkutan,
- * dokter dinonaktifkan (disabled) dan label menunjukkan alasan.
- */
-export function checkDoctorAvailability(doctor, tanggal) {
-    if (!doctor) return { isAvailable: false, reason: 'Data dokter tidak valid' }
-
-    // 1. Cek status dasar dokter
-    if (doctor.status && doctor.status.toLowerCase() !== 'aktif') {
-        return { isAvailable: false, reason: 'Tidak Aktif' }
-    }
-
-    const schedules = getDoctorScheduleList(doctor)
-
-    // Jika dokter belum memiliki konfigurasi jadwal sama sekali
-    if (!schedules || schedules.length === 0) {
-        return {
-            isAvailable: false,
-            reason: 'Tidak Praktik',
-        }
-    }
-
-    // Tentukan hari dan apakah sedang mengecek hari ini
-    const todayStr = getTodayDateString()
-    const targetDate = tanggal || todayStr
-    const dayName = getDayNameFromDate(targetDate)
-    const isTodayCheck = !tanggal || tanggal === todayStr
-
-    if (!dayName) {
-        return { isAvailable: true, reason: '' }
-    }
-
-    // Cari jadwal praktik dokter pada hari yang bersangkutan
-    const daySchedules = schedules.filter((s) => {
-        if (!s || !s.hari) return false
-        const cleanDay = s.hari.replace(':', '').trim().toLowerCase()
-        return cleanDay === dayName.toLowerCase()
-    })
-
-    // Jika dokter tidak memiliki jadwal praktik sama sekali pada hari tersebut
-    if (daySchedules.length === 0) {
-        return {
-            isAvailable: false,
-            reason: isTodayCheck ? 'Tidak Praktik Hari Ini' : `Tidak Praktik Hari ${dayName}`,
-        }
-    }
-
-    return { isAvailable: true, reason: '' }
-}
+import { toDateInputValue, toDisplayDate } from '../utils/date'
+import { calculateDoctorStatus } from '../utils/doctorStatus'
 
 /**
  * Modal Tambah / Update Reservasi Pasien
@@ -162,31 +33,33 @@ export function ReservationModal({
     const activeDoctorList = doctors || []
 
     useEffect(() => {
-        if (initialData) {
-            setNamaPasien(initialData.namaPasien || '')
-            if (initialData.tanggalIso) {
-                setTanggal(initialData.tanggalIso)
-            } else if (initialData.tanggal_kunjungan) {
-                setTanggal(toDateInputValue(initialData.tanggal_kunjungan))
-            } else if (initialData.tanggalKunjungan) {
-                setTanggal(toDateInputValue(initialData.tanggalKunjungan))
-            } else if (initialData.jadwal) {
-                const parts = initialData.jadwal.split(' ')
-                setTanggal(toDateInputValue(parts[0] || ''))
+        Promise.resolve().then(() => {
+            if (initialData) {
+                setNamaPasien(initialData.namaPasien || '')
+                if (initialData.tanggalIso) {
+                    setTanggal(initialData.tanggalIso)
+                } else if (initialData.tanggal_kunjungan) {
+                    setTanggal(toDateInputValue(initialData.tanggal_kunjungan))
+                } else if (initialData.tanggalKunjungan) {
+                    setTanggal(toDateInputValue(initialData.tanggalKunjungan))
+                } else if (initialData.jadwal) {
+                    const parts = initialData.jadwal.split(' ')
+                    setTanggal(toDateInputValue(parts[0] || ''))
+                } else {
+                    setTanggal(toDateInputValue(initialData.tanggal || ''))
+                }
+                setWaktu(initialData.waktu_kunjungan || initialData.waktuKunjungan || initialData.waktu || initialData.waktu_reservasi || '')
+                setDokter(initialData.dokter || initialData.dokterDetail?.nama || '')
+                setStatus(initialData.status || 'Appointment')
             } else {
-                setTanggal(toDateInputValue(initialData.tanggal || ''))
+                setNamaPasien('')
+                setTanggal('')
+                setWaktu('')
+                setDokter('')
+                setStatus('Appointment')
             }
-            setWaktu(initialData.waktu_kunjungan || initialData.waktuKunjungan || initialData.waktu || initialData.waktu_reservasi || '')
-            setDokter(initialData.dokter || initialData.dokterDetail?.nama || '')
-            setStatus(initialData.status || 'Appointment')
-        } else {
-            setNamaPasien('')
-            setTanggal('')
-            setWaktu('')
-            setDokter('')
-            setStatus('Appointment')
-        }
-        setError('')
+            setError('')
+        })
     }, [initialData, isOpen])
 
     if (!isOpen) return null
@@ -223,6 +96,16 @@ export function ReservationModal({
         if (!selectedDocObj) {
             setError('Silakan pilih dokter yang valid.')
             return
+        }
+
+        if (typeof selectedDocObj === 'object') {
+            const statusInfo = calculateDoctorStatus(selectedDocObj)
+            const isStatusNonAktif = selectedDocObj.status && selectedDocObj.status.toLowerCase() !== 'aktif'
+            const isSameInitialDoctor = isEdit && initialData?.dokter === selectedDocObj.nama
+            if ((isStatusNonAktif || !statusInfo.isActive) && !isSameInitialDoctor) {
+                setError('Jadwal dokter yang dipilih sedang tidak aktif dan tidak dapat dipilih.')
+                return
+            }
         }
 
         const displayDate = toDisplayDate(tanggal.trim())
@@ -296,11 +179,10 @@ export function ReservationModal({
                                 onChange={(e) => setNamaPasien(e.target.value)}
                                 placeholder="Nama Lengkap Pasien"
                                 disabled={isEdit}
-                                className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all pr-10 ${
-                                    isEdit
-                                        ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed select-none'
-                                        : 'bg-white text-gray-800 placeholder-gray-400 border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none'
-                                }`}
+                                className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all pr-10 ${isEdit
+                                    ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed select-none'
+                                    : 'bg-white text-gray-800 placeholder-gray-400 border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none'
+                                    }`}
                             />
                             {!isEdit && namaPasien && (
                                 <button
@@ -367,10 +249,23 @@ export function ReservationModal({
                                         Pilih Dokter
                                     </option>
                                     {activeDoctorList.map((doc, idx) => {
-                                        const name = typeof doc === 'object' ? doc.nama : doc
+                                        const isObj = typeof doc === 'object' && doc !== null
+                                        const name = isObj ? doc.nama : doc
+                                        const statusInfo = isObj ? calculateDoctorStatus(doc) : { isActive: true, reason: '' }
+                                        const isStatusNonAktif = isObj && doc.status && doc.status.toLowerCase() !== 'aktif'
+                                        const isDisabled = isStatusNonAktif || !statusInfo.isActive
+                                        const label = isDisabled
+                                            ? `${name} (${isStatusNonAktif ? 'Tidak Aktif' : 'Jadwal Tidak Aktif'})`
+                                            : name
+
                                         return (
-                                            <option key={idx} value={name}>
-                                                {name}
+                                            <option
+                                                key={isObj ? (doc.id || idx) : idx}
+                                                value={name}
+                                                disabled={isDisabled}
+                                                className={isDisabled ? 'text-gray-400 bg-gray-50' : 'text-gray-800'}
+                                            >
+                                                {label}
                                             </option>
                                         )
                                     })}
@@ -453,39 +348,41 @@ export function DoctorModal({
     const [muchtarDays, setMuchtarDays] = useState(createEmptyDays)
 
     useEffect(() => {
-        if (initialData) {
-            setNama(initialData.nama || '')
-            setSpesialisasi(initialData.spesialisasi || '')
+        Promise.resolve().then(() => {
+            if (initialData) {
+                setNama(initialData.nama || '')
+                setSpesialisasi(initialData.spesialisasi || '')
 
-            const mapSchedule = (targetJadwal) =>
-                createEmptyDays().map((d) => {
-                    if (!targetJadwal || !Array.isArray(targetJadwal)) return d
-                    const match = targetJadwal.find((j) =>
-                        j.hari && j.hari.toLowerCase().includes(d.key.toLowerCase())
-                    )
-                    if (match && match.jam) {
-                        const parts = match.jam.split('-')
-                        const start = parts[0] ? parts[0].trim() : ''
-                        const end = parts[1] ? parts[1].trim() : ''
-                        return { ...d, active: true, start: start || '', end: end || '' }
-                    }
-                    return d
-                })
+                const mapSchedule = (targetJadwal) =>
+                    createEmptyDays().map((d) => {
+                        if (!targetJadwal || !Array.isArray(targetJadwal)) return d
+                        const match = targetJadwal.find((j) =>
+                            j.hari && j.hari.toLowerCase().includes(d.key.toLowerCase())
+                        )
+                        if (match && match.jam) {
+                            const parts = match.jam.split('-')
+                            const start = parts[0] ? parts[0].trim() : ''
+                            const end = parts[1] ? parts[1].trim() : ''
+                            return { ...d, active: true, start: start || '', end: end || '' }
+                        }
+                        return d
+                    })
 
-            const rawJadwal =
-                (Array.isArray(initialData.jadwalMuchtar) && initialData.jadwalMuchtar.length > 0)
-                    ? initialData.jadwalMuchtar
-                    : ((Array.isArray(initialData.jadwal) && initialData.jadwal.length > 0)
-                        ? initialData.jadwal
-                        : [])
+                const rawJadwal =
+                    (Array.isArray(initialData.jadwalMuchtar) && initialData.jadwalMuchtar.length > 0)
+                        ? initialData.jadwalMuchtar
+                        : ((Array.isArray(initialData.jadwal) && initialData.jadwal.length > 0)
+                            ? initialData.jadwal
+                            : [])
 
-            setMuchtarDays(mapSchedule(rawJadwal))
-        } else {
-            setNama('')
-            setSpesialisasi('')
-            setMuchtarDays(createEmptyDays())
-        }
-        setError('')
+                setMuchtarDays(mapSchedule(rawJadwal))
+            } else {
+                setNama('')
+                setSpesialisasi('')
+                setMuchtarDays(createEmptyDays())
+            }
+            setError('')
+        })
     }, [initialData, isOpen])
 
     if (!isOpen) return null
@@ -647,8 +544,8 @@ export function DoctorModal({
                                 <div
                                     key={day.key}
                                     className={`rounded-xl border p-2.5 flex flex-col transition-all ${day.active
-                                            ? 'border-gray-300 bg-white shadow-2xs gap-2'
-                                            : 'border-gray-200 bg-gray-50/60'
+                                        ? 'border-gray-300 bg-white shadow-2xs gap-2'
+                                        : 'border-gray-200 bg-gray-50/60'
                                         }`}
                                 >
                                     <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-slate-800 select-none">
@@ -737,26 +634,28 @@ export function EMRModal({
     ]
 
     useEffect(() => {
-        if (initialData) {
-            setPasien(initialData.namaPasien || '')
-            setTanggal(toDateInputValue(initialData.tanggal) || '')
-            setRegio(initialData.regio || '')
-            setDokter(initialData.dokter || '')
-            setAnamnesa(initialData.anamnesa || '')
-            setTindakan(initialData.tindakan || '')
-            setResep(initialData.resep || '')
-            setTerapi(initialData.terapi || '')
-        } else {
-            setPasien('Pasien 1')
-            setTanggal('2026-05-20')
-            setRegio('16')
-            setDokter('drg. Indira Nugrahani')
-            setAnamnesa('')
-            setTindakan('')
-            setResep('')
-            setTerapi('')
-        }
-        setError('')
+        Promise.resolve().then(() => {
+            if (initialData) {
+                setPasien(initialData.namaPasien || '')
+                setTanggal(toDateInputValue(initialData.tanggal) || '')
+                setRegio(initialData.regio || '')
+                setDokter(initialData.dokter || '')
+                setAnamnesa(initialData.anamnesa || '')
+                setTindakan(initialData.tindakan || '')
+                setResep(initialData.resep || '')
+                setTerapi(initialData.terapi || '')
+            } else {
+                setPasien('Pasien 1')
+                setTanggal('2026-05-20')
+                setRegio('16')
+                setDokter('drg. Indira Nugrahani')
+                setAnamnesa('')
+                setTindakan('')
+                setResep('')
+                setTerapi('')
+            }
+            setError('')
+        })
     }, [initialData, isOpen])
 
     if (!isOpen) return null

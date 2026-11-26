@@ -147,6 +147,23 @@ const createDokter = async (req, res, next) => {
       });
     }
 
+    // Validasi Anti Duplikasi Data Dokter
+    const existingDoctor = await prisma.dokter.findFirst({
+      where: {
+        nama: { equals: nama.trim(), mode: 'insensitive' },
+      },
+    });
+
+    if (existingDoctor) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_DATA',
+          message: `Duplikasi Data: Dokter dengan nama "${nama.trim()}" sudah pernah didaftarkan sebelumnya.`,
+        },
+      });
+    }
+
     // Susun jadwal_json
     let jadwal_json = req.body.jadwal_json;
     if (!jadwal_json) {

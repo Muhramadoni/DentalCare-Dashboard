@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import doctorImg from '../assets/image/doctor.png'
 import logoImg from '../assets/image/logo-indentalcare.png'
 import { ClearIcon, EyeIcon, EyeOffIcon, SpinnerIcon, ErrorIcon } from '../components/icon'
@@ -101,7 +101,7 @@ export default function Login({ onLoginSuccess }) {
                 }
             }, 500)
 
-        } catch (err) {
+        } catch {
             // Error jaringan / server tidak bisa dijangkau
             setIsLoading(false)
             setGeneralError('Tidak dapat terhubung ke server. Pastikan backend berjalan di port 5000.')
@@ -193,11 +193,10 @@ export default function Login({ onLoginSuccess }) {
                                     }}
                                     placeholder="Masukkan Email"
                                     autoComplete="email"
-                                    className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder-gray-400 bg-white transition-all pr-10 focus:outline-none ${
-                                        emailError
-                                            ? 'border-[#e62e2e] focus:border-[#e62e2e] focus:ring-2 focus:ring-[#e62e2e]/20'
-                                            : 'border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20'
-                                    }`}
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder-gray-400 bg-white transition-all pr-10 focus:outline-none ${emailError
+                                        ? 'border-[#e62e2e] focus:border-[#e62e2e] focus:ring-2 focus:ring-[#e62e2e]/20'
+                                        : 'border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20'
+                                        }`}
                                 />
                                 {email && (
                                     <button
@@ -240,11 +239,10 @@ export default function Login({ onLoginSuccess }) {
                                     }}
                                     placeholder="Masukkan Password"
                                     autoComplete="current-password"
-                                    className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder-gray-400 bg-white transition-all pr-10 focus:outline-none ${
-                                        passwordError
-                                            ? 'border-[#e62e2e] focus:border-[#e62e2e] focus:ring-2 focus:ring-[#e62e2e]/20'
-                                            : 'border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20'
-                                    }`}
+                                    className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 placeholder-gray-400 bg-white transition-all pr-10 focus:outline-none ${passwordError
+                                        ? 'border-[#e62e2e] focus:border-[#e62e2e] focus:ring-2 focus:ring-[#e62e2e]/20'
+                                        : 'border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20'
+                                        }`}
                                 />
                                 <button
                                     type="button"

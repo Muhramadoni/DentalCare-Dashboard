@@ -43,6 +43,7 @@ const getSummary = async (req, res, next) => {
       totalDokter,
       dokterAktifList,
       daftarReservasi,
+      emrList,
     ] = await Promise.all([
       // Total reservasi hari ini: hanya menghitung reservasi dengan tanggal kunjungan hari ini
       prisma.reservasi.count({
@@ -106,6 +107,15 @@ const getSummary = async (req, res, next) => {
               cabang: true,
             },
           },
+        },
+      }),
+
+      // Ambil data rekam medis untuk statistik grafik tren (Diagnosa, Regio, Tindakan)
+      prisma.rekamMedis.findMany({
+        select: {
+          anamnesa: true,
+          regio: true,
+          tindakan: true,
         },
       }),
     ]);
@@ -188,10 +198,37 @@ const getSummary = async (req, res, next) => {
 
     const totalDokterPraktikHariIni = dokterPraktikHariIni.length;
 
-    // 5. Ambil riwayat aktivitas admin khusus HARI INI (In-Memory, otomatis reset jam 00:00)
+    // 5. Agregasi data tren EMR: Diagnosa (Anamnesa), Regio, dan Tindakan
+    const countOccurrences = (items, key, splitByComma = false) => {
+      const freq = {};
+      (items || []).forEach((item) => {
+        const val = item[key];
+        if (!val || val === '-' || !val.trim()) return;
+        if (splitByComma && val.includes(',')) {
+          val.split(',').forEach((sub) => {
+            const clean = sub.trim();
+            if (clean && clean !== '-') {
+              freq[clean] = (freq[clean] || 0) + 1;
+            }
+          });
+        } else {
+          const clean = val.trim();
+          freq[clean] = (freq[clean] || 0) + 1;
+        }
+      });
+      return Object.entries(freq)
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count);
+    };
+
+    const trenDiagnosa = countOccurrences(emrList, 'anamnesa', false);
+    const trenRegio = countOccurrences(emrList, 'regio', true);
+    const trenTindakan = countOccurrences(emrList, 'tindakan', false);
+
+    // 6. Ambil riwayat aktivitas admin khusus HARI INI (In-Memory, otomatis reset jam 00:00)
     const riwayatAktivitas = getTodayActivities(20);
 
-    // 6. Kembalikan respons terstandarisasi sesuai apiguide.md
+    // 7. Kembalikan respons terstandarisasi sesuai apiguide.md
     return res.status(200).json({
       success: true,
       message: 'Data ringkasan operasional dashboard berhasil diambil.',
@@ -214,6 +251,12 @@ const getSummary = async (req, res, next) => {
         reservations: formattedReservasi,
         riwayatAktivitas,
         activities: riwayatAktivitas,
+        trenEmr: {
+          diagnosa: trenDiagnosa,
+          regio: trenRegio,
+          tindakan: trenTindakan,
+          totalRecords: emrList ? emrList.length : 0,
+        },
       },
     });
   } catch (error) {

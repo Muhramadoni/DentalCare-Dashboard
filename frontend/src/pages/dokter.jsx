@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../components/sidebar'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
@@ -34,6 +34,9 @@ export default function Dokter({ onNavigate, onLogout }) {
 
     // State Modal Konfirmasi Hapus Dokter
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
+
+    // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
+    const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
 
     // Helper: Ambil token JWT dari sessionStorage
     const getAuthToken = useCallback(() => {
@@ -82,7 +85,15 @@ export default function Dokter({ onNavigate, onLogout }) {
     }, [getAuthToken, onLogout])
 
     useEffect(() => {
-        fetchDokter()
+        let isMounted = true
+        Promise.resolve().then(() => {
+            if (isMounted) {
+                fetchDokter()
+            }
+        })
+        return () => {
+            isMounted = false
+        }
     }, [fetchDokter])
 
     // Notifikasi toast otomatis hilang setelah 4 detik
@@ -118,6 +129,20 @@ export default function Dokter({ onNavigate, onLogout }) {
     const handleSaveDoctor = async (data) => {
         const token = getAuthToken()
         if (!token) return
+
+        // Validasi Anti Duplikasi Dokter di Frontend
+        if (!editingDoctor) {
+            const isDup = dokterList.some((doc) => doc.nama.trim().toLowerCase() === (data.nama || '').trim().toLowerCase())
+            if (isDup) {
+                setAlertModal({
+                    isOpen: true,
+                    title: 'Duplikasi Data Dokter',
+                    message: `Dokter dengan nama "${data.nama}" sudah pernah didaftarkan sebelumnya!`,
+                    type: 'danger',
+                })
+                return
+            }
+        }
 
         try {
             if (editingDoctor) {
@@ -177,7 +202,12 @@ export default function Dokter({ onNavigate, onLogout }) {
             }
         } catch (err) {
             console.error('Error saat menyimpan dokter:', err)
-            alert(err.message || 'Terjadi kesalahan saat menyimpan data dokter.')
+            setAlertModal({
+                isOpen: true,
+                title: err.message?.includes('Duplikasi') ? 'Duplikasi Data Terdeteksi' : 'Gagal Menyimpan Data',
+                message: err.message || 'Terjadi kesalahan saat menyimpan data dokter.',
+                type: 'warning',
+            })
         }
     }
 
@@ -212,7 +242,12 @@ export default function Dokter({ onNavigate, onLogout }) {
             setToastMessage({ type: 'success', text: `Data dokter "${nama}" berhasil dihapus!` })
         } catch (err) {
             console.error('Error saat menghapus dokter:', err)
-            alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+            setAlertModal({
+                isOpen: true,
+                title: 'Gagal Menghapus Data',
+                message: err.message || 'Terjadi kesalahan saat menghapus data.',
+                type: 'danger',
+            })
         } finally {
             setDeleteConfirm({ isOpen: false, id: null, nama: '' })
         }
@@ -409,6 +444,17 @@ export default function Dokter({ onNavigate, onLogout }) {
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
                 onConfirm={handleConfirmDeleteDoctor}
+            />
+
+            {/* Modal Alert Sistem (Bergaya Persis Seperti Konfirmasi Hapus) */}
+            <ConfirmModal
+                isOpen={alertModal.isOpen}
+                isAlert={true}
+                type={alertModal.type || 'warning'}
+                title={alertModal.title}
+                message={alertModal.message}
+                confirmText="Mengerti"
+                onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
             />
         </div>
     )

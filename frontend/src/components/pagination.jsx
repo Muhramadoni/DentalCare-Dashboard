@@ -1,4 +1,3 @@
-import React from 'react'
 import { ChevronLeftIcon, ChevronRightIcon } from './icon'
 
 /**
@@ -61,11 +60,10 @@ export default function Pagination({
                                 key={page}
                                 type="button"
                                 onClick={() => onPageChange(page)}
-                                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                                    isActive
+                                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer ${isActive
                                         ? 'bg-[#49baff] text-white shadow-xs'
                                         : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 {page}
                             </button>

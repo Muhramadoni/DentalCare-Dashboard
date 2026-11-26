@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import XLSX from 'xlsx-js-style'
 import Sidebar from '../components/sidebar'
 import PageHeader from '../components/PageHeader'
@@ -7,7 +7,6 @@ import Pagination from '../components/pagination'
 import ConfirmModal from '../components/ConfirmModal'
 import {
     EMRIcon,
-    CalendarOutlineIcon,
     ChevronDownIcon,
     CheckIcon,
     ClearIcon,
@@ -54,6 +53,9 @@ export default function EMR({ onNavigate, onLogout }) {
 
     // State Modal Konfirmasi Hapus Rekam Medis
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
+
+    // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
+    const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
 
     // State Riwayat Rekam Medis (EMR) - Bersih dari data dummy, siap input manual
     const [emrList, setEmrList] = useState([])
@@ -170,9 +172,16 @@ export default function EMR({ onNavigate, onLogout }) {
     }, [getAuthToken])
 
     useEffect(() => {
-        fetchEmr()
-        fetchDokterList()
-        fetchPatients()
+        let isMounted = true
+        Promise.resolve().then(() => {
+            if (!isMounted) return
+            fetchEmr()
+            fetchDokterList()
+            fetchPatients()
+        })
+        return () => {
+            isMounted = false
+        }
     }, [fetchEmr, fetchDokterList, fetchPatients])
 
     // 1. Daftar pasien untuk Form Input (HANYA pasien yang memiliki jadwal reservasi aktif)
@@ -298,10 +307,11 @@ export default function EMR({ onNavigate, onLogout }) {
         }
     }, [isPasienFilterOpen])
 
-    // Reset ke halaman 1 saat filter atau pencarian berubah
-    useEffect(() => {
+    // Helper untuk mengubah filter sekaligus mereset pagination ke halaman 1
+    const applyFilter = useCallback((setter, value) => {
+        setter(value)
         setCurrentPage(1)
-    }, [searchQuery, startDate, endDate, selectedPasienFilter, selectedDokterFilter])
+    }, [])
 
     // Toast notifikasi hilang otomatis setelah 4 detik
     useEffect(() => {
@@ -383,6 +393,52 @@ export default function EMR({ onNavigate, onLogout }) {
             return
         }
 
+        // Validasi Anti Duplikasi Data: Cek apakah data yang sama persis sudah pernah diinputkan
+        const isDuplicate = emrList.some((item) => {
+            if (editingId && item.id === editingId) return false
+
+            const samePatient = (item.namaPasien || '').trim().toLowerCase() === inputPasien.trim().toLowerCase()
+            const itemDate = item.tanggalIso || toDateInputValue(item.tanggal) || ''
+            const inputDateClean = inputTanggal.trim()
+            const sameDate = itemDate === inputDateClean || item.tanggal === inputDateClean
+            const sameDoctor = (item.dokter || '').trim().toLowerCase() === inputDokter.trim().toLowerCase()
+
+            const itemRegio = ((item.regio === '-' ? '' : item.regio) || '').trim().toLowerCase()
+            const itemAnamnesa = ((item.anamnesa === '-' ? '' : item.anamnesa) || '').trim().toLowerCase()
+            const itemTindakan = ((item.tindakan === '-' ? '' : item.tindakan) || '').trim().toLowerCase()
+            const itemResep = ((item.resep === '-' ? '' : item.resep) || '').trim().toLowerCase()
+            const itemTerapi = ((item.terapi === '-' ? '' : item.terapi) || '').trim().toLowerCase()
+
+            const inRegio = (inputRegio || '').trim().toLowerCase()
+            const inAnamnesa = (inputAnamnesa || '').trim().toLowerCase()
+            const inTindakan = (inputTindakan || '').trim().toLowerCase()
+            const inResep = (inputResep || '').trim().toLowerCase()
+            const inTerapi = (inputTerapi || '').trim().toLowerCase()
+
+            return (
+                samePatient &&
+                sameDate &&
+                sameDoctor &&
+                itemRegio === inRegio &&
+                itemAnamnesa === inAnamnesa &&
+                itemTindakan === inTindakan &&
+                itemResep === inResep &&
+                itemTerapi === inTerapi
+            )
+        })
+
+        if (isDuplicate) {
+            const dupMsg = `Data rekam medis dengan rincian yang sama persis sudah pernah tersimpan sebelumnya untuk pasien "${inputPasien.trim()}". Tidak dapat menginputkan data yang sama untuk mencegah duplikasi data.`
+            setFormError(dupMsg)
+            setAlertModal({
+                isOpen: true,
+                title: 'Duplikasi Data Terdeteksi',
+                message: dupMsg,
+                type: 'danger',
+            })
+            return
+        }
+
         const payload = {
             namaPasien: inputPasien.trim(),
             tanggal: inputTanggal.trim(),
@@ -447,7 +503,14 @@ export default function EMR({ onNavigate, onLogout }) {
             fetchPatients()
         } catch (err) {
             console.error('Error saat simpan EMR:', err)
-            setFormError(err.message || 'Terjadi kesalahan saat menyimpan rekam medis.')
+            const errText = err.message || 'Terjadi kesalahan saat menyimpan rekam medis.'
+            setFormError(errText)
+            setAlertModal({
+                isOpen: true,
+                title: errText.includes('Duplikasi') ? 'Duplikasi Data Terdeteksi' : 'Pemberitahuan Sistem',
+                message: errText,
+                type: 'danger',
+            })
             setShowConfirmModal(false)
         } finally {
             setIsSubmitting(false)
@@ -494,23 +557,33 @@ export default function EMR({ onNavigate, onLogout }) {
             }
         } catch (err) {
             console.error('Error saat menghapus rekam medis:', err)
-            alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+            setAlertModal({
+                isOpen: true,
+                title: 'Gagal Menghapus Data',
+                message: err.message || 'Terjadi kesalahan saat menghapus data.',
+                type: 'danger',
+            })
         } finally {
             setDeleteConfirm({ isOpen: false, id: null, nama: '' })
         }
     }
 
     // Filter data tabel riwayat EMR secara instan (<10 detik sesuai Target G3)
+    // Menu search menyeluruh untuk mencari di semua kolom (Pasien, Dokter, Diagnosa, Tindakan, Prosedur, Resep, Regio, Tanggal)
     const filteredEmrList = useMemo(() => {
         return emrList.filter((item) => {
             const query = searchQuery.toLowerCase().trim()
             const matchesSearch =
                 !query ||
-                item.namaPasien.toLowerCase().includes(query) ||
-                item.anamnesa.toLowerCase().includes(query) ||
-                item.tindakan.toLowerCase().includes(query) ||
-                item.regio.toLowerCase().includes(query) ||
-                item.dokter.toLowerCase().includes(query)
+                (item.namaPasien && item.namaPasien.toLowerCase().includes(query)) ||
+                (item.dokter && item.dokter.toLowerCase().includes(query)) ||
+                (item.anamnesa && item.anamnesa.toLowerCase().includes(query)) ||
+                (item.tindakan && item.tindakan.toLowerCase().includes(query)) ||
+                (item.terapi && item.terapi.toLowerCase().includes(query)) ||
+                (item.resep && item.resep.toLowerCase().includes(query)) ||
+                (item.regio && item.regio.toLowerCase().includes(query)) ||
+                (item.tanggal && item.tanggal.toLowerCase().includes(query)) ||
+                (item.tanggalIso && item.tanggalIso.toLowerCase().includes(query))
 
             const matchesPasien =
                 selectedPasienFilter === 'Semua Pasien' ||
@@ -536,7 +609,12 @@ export default function EMR({ onNavigate, onLogout }) {
     // Fungsi unduh data rekam medis ke file Excel (.xlsx) dengan tampilan desain profesional
     const handleExportExcel = () => {
         if (!filteredEmrList || filteredEmrList.length === 0) {
-            alert('Tidak ada data rekam medis yang dapat diunduh.')
+            setAlertModal({
+                isOpen: true,
+                title: 'Informasi Unduh Data',
+                message: 'Tidak ada data rekam medis yang dapat diunduh.',
+                type: 'warning',
+            })
             return
         }
 
@@ -956,8 +1034,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                             onClick={(e) => !isPatientLocked && e.target.showPicker?.()}
                                             readOnly={isPatientLocked}
                                             className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${isPatientLocked
-                                                    ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed pointer-events-none'
-                                                    : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
+                                                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed pointer-events-none'
+                                                : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
                                                 }`}
                                         />
                                     </div>
@@ -973,8 +1051,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                                 onChange={(e) => setInputDokter(e.target.value)}
                                                 disabled={isPatientLocked}
                                                 className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm appearance-none pr-10 transition-all ${isPatientLocked
-                                                        ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
-                                                        : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
+                                                    ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
+                                                    : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
                                                     }`}
                                             >
                                                 <option value="" disabled>Pilih Dokter</option>
@@ -1118,8 +1196,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                 onClick={handleExportExcel}
                                 disabled={filteredEmrList.length === 0}
                                 className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0 shadow-sm ${filteredEmrList.length === 0
-                                        ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
-                                        : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-emerald-600/25'
+                                    ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-emerald-600/25'
                                     }`}
                                 title={
                                     filteredEmrList.length === 0
@@ -1144,8 +1222,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                     <input
                                         type="text"
                                         value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Cari Pasien, Diagnosa, Tindakan..."
+                                        onChange={(e) => applyFilter(setSearchQuery, e.target.value)}
+                                        placeholder="Cari data rekam medis"
                                         className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
                                     />
                                 </div>
@@ -1157,7 +1235,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                         <input
                                             type="date"
                                             value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)}
+                                            onChange={(e) => applyFilter(setStartDate, e.target.value)}
                                             onClick={(e) => e.target.showPicker?.()}
                                             className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
                                         />
@@ -1170,7 +1248,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                         <input
                                             type="date"
                                             value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
+                                            onChange={(e) => applyFilter(setEndDate, e.target.value)}
                                             onClick={(e) => e.target.showPicker?.()}
                                             className="w-full pl-3 pr-2 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none cursor-pointer"
                                         />
@@ -1200,7 +1278,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                         tabIndex={0}
                                                         onClick={(e) => {
                                                             e.stopPropagation()
-                                                            setSelectedPasienFilter('Semua Pasien')
+                                                            applyFilter(setSelectedPasienFilter, 'Semua Pasien')
                                                         }}
                                                         title="Hapus filter pasien"
                                                         className="p-0.5 rounded-full hover:bg-blue-200/60 text-blue-600 cursor-pointer"
@@ -1234,7 +1312,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     setIsPasienFilterOpen(false)
                                                                 } else if (e.key === 'Enter') {
                                                                     if (filteredPasienFilter.length > 0) {
-                                                                        setSelectedPasienFilter(filteredPasienFilter[0].nama)
+                                                                        applyFilter(setSelectedPasienFilter, filteredPasienFilter[0].nama)
                                                                         setIsPasienFilterOpen(false)
                                                                         setPasienFilterSearch('')
                                                                     }
@@ -1263,7 +1341,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                setSelectedPasienFilter('Semua Pasien')
+                                                                applyFilter(setSelectedPasienFilter, 'Semua Pasien')
                                                                 setIsPasienFilterOpen(false)
                                                             }}
                                                             className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between transition-colors cursor-pointer ${selectedPasienFilter === 'Semua Pasien'
@@ -1287,7 +1365,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     key={idx}
                                                                     type="button"
                                                                     onClick={() => {
-                                                                        setSelectedPasienFilter(p.nama)
+                                                                        applyFilter(setSelectedPasienFilter, p.nama)
                                                                         setIsPasienFilterOpen(false)
                                                                         setPasienFilterSearch('')
                                                                     }}
@@ -1317,7 +1395,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                     <div className="relative flex items-center w-36">
                                         <select
                                             value={selectedDokterFilter}
-                                            onChange={(e) => setSelectedDokterFilter(e.target.value)}
+                                            onChange={(e) => applyFilter(setSelectedDokterFilter, e.target.value)}
                                             className="w-full pl-3 pr-7 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-700 bg-white hover:border-gray-400 focus:border-[#49baff] focus:outline-none appearance-none cursor-pointer"
                                         >
                                             <option value="Semua Dokter">Semua Dokter</option>
@@ -1531,6 +1609,17 @@ export default function EMR({ onNavigate, onLogout }) {
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
                 onConfirm={handleConfirmDeleteEmr}
+            />
+
+            {/* Modal Alert Sistem (Bergaya Persis Seperti Konfirmasi Hapus) */}
+            <ConfirmModal
+                isOpen={alertModal.isOpen}
+                isAlert={true}
+                type={alertModal.type || 'warning'}
+                title={alertModal.title}
+                message={alertModal.message}
+                confirmText="Mengerti"
+                onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
             />
         </div>
     )

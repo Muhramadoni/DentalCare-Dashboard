@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Sidebar from '../components/sidebar'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
@@ -44,6 +44,9 @@ export default function Reservasi({ onNavigate, onLogout }) {
 
     // State Modal Konfirmasi Hapus Reservasi
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
+
+    // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
+    const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
 
     // Helper: Ambil token JWT dari sessionStorage
     const getAuthToken = useCallback(() => {
@@ -115,14 +118,22 @@ export default function Reservasi({ onNavigate, onLogout }) {
     }, [getAuthToken])
 
     useEffect(() => {
-        fetchReservasi()
-        fetchDoctors()
+        let isMounted = true
+        Promise.resolve().then(() => {
+            if (!isMounted) return
+            fetchReservasi()
+            fetchDoctors()
+        })
+        return () => {
+            isMounted = false
+        }
     }, [fetchReservasi, fetchDoctors])
 
-    // Reset ke halaman 1 saat pencarian atau filter status berubah
-    useEffect(() => {
+    // Helper untuk mengubah filter sekaligus mereset pagination ke halaman 1
+    const applyFilter = useCallback((setter, value) => {
+        setter(value)
         setCurrentPage(1)
-    }, [searchQuery, statusFilter])
+    }, [])
 
     // Notifikasi toast otomatis hilang setelah 4 detik
     useEffect(() => {
@@ -169,6 +180,32 @@ export default function Reservasi({ onNavigate, onLogout }) {
     const handleSaveReservasi = async (data) => {
         const token = getAuthToken()
         if (!token) return
+
+        // Validasi Anti Duplikasi Data Reservasi di Frontend
+        const isDuplicate = reservasiList.some((item) => {
+            if (editingItem && item.id === editingItem.id) return false
+
+            const samePasien = (item.namaPasien || item.nama || '').trim().toLowerCase() === (data.namaPasien || '').trim().toLowerCase()
+            const itemDate = item.tanggal_kunjungan || item.tanggal || ''
+            const inputDate = data.tanggal_kunjungan || data.tanggal || ''
+            const sameDate = itemDate === inputDate
+            const itemWaktu = (item.waktu_kunjungan || item.waktu || '').trim().toLowerCase()
+            const inputWaktu = (data.waktu_kunjungan || data.waktu || '').trim().toLowerCase()
+            const sameWaktu = itemWaktu === inputWaktu
+            const sameDokter = (item.dokter || '').trim().toLowerCase() === (data.dokter || '').trim().toLowerCase()
+
+            return samePasien && sameDate && sameWaktu && sameDokter
+        })
+
+        if (isDuplicate) {
+            setAlertModal({
+                isOpen: true,
+                title: 'Duplikasi Data Reservasi',
+                message: `Data reservasi untuk pasien "${data.namaPasien}" dengan dokter "${data.dokter}" pada tanggal dan jam kunjungan tersebut sudah pernah dibuat sebelumnya!`,
+                type: 'danger',
+            })
+            return
+        }
 
         try {
             if (editingItem) {
@@ -232,7 +269,12 @@ export default function Reservasi({ onNavigate, onLogout }) {
             }
         } catch (err) {
             console.error('Error saat menyimpan reservasi:', err)
-            alert(err.message || 'Terjadi kesalahan saat menyimpan data.')
+            setAlertModal({
+                isOpen: true,
+                title: err.message?.includes('Duplikasi') ? 'Duplikasi Data Terdeteksi' : 'Gagal Menyimpan Data',
+                message: err.message || 'Terjadi kesalahan saat menyimpan data.',
+                type: 'danger',
+            })
         }
     }
 
@@ -270,7 +312,12 @@ export default function Reservasi({ onNavigate, onLogout }) {
             })
         } catch (err) {
             console.error('Error saat menghapus reservasi:', err)
-            alert(err.message || 'Terjadi kesalahan saat menghapus data.')
+            setAlertModal({
+                isOpen: true,
+                title: 'Gagal Menghapus Data',
+                message: err.message || 'Terjadi kesalahan saat menghapus data.',
+                type: 'danger',
+            })
         } finally {
             setDeleteConfirm({ isOpen: false, id: null, nama: '' })
         }
@@ -286,236 +333,236 @@ export default function Reservasi({ onNavigate, onLogout }) {
             />
 
             <div className="flex-1 min-w-0 h-screen flex flex-col">
-            <PageHeader
-                title="Kelola Reservasi Pasien"
-                subtitle="Kelola seluruh daftar reservasi, jadwal kedatangan, dan status kunjungan pasien secara terpusat."
-            />
+                <PageHeader
+                    title="Kelola Reservasi Pasien"
+                    subtitle="Kelola seluruh daftar reservasi, jadwal kedatangan, dan status kunjungan pasien secara terpusat."
+                />
 
-            {/* Area Konten Utama Kelola Reservasi */}
-            <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
-                {/* Toast Alert Notifikasi */}
-                {toastMessage && (
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs self-start sm:self-end">
-                        <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{toastMessage.text}</span>
-                        <button
-                            type="button"
-                            onClick={() => setToastMessage(null)}
-                            className="ml-2 text-emerald-500 hover:text-emerald-700 p-0.5"
-                        >
-                            <ClearIcon className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                )}
-
-                {/* Banner Error jika API gagal */}
-                {apiError && (
-                    <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
-                        <div className="flex items-center gap-2.5">
-                            <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
-                            <span>{apiError}</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={fetchReservasi}
-                            className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
-                        >
-                            Coba Lagi
-                        </button>
-                    </div>
-                )}
-
-                {/* 2. Top Filter & Action Bar Card */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                    {/* Sisi Kiri: Filter Search & Status */}
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                        {/* Input Pencarian Nama Pasien (<30 detik Target G1) */}
-                        <div className="relative w-full sm:w-72 flex items-center">
-                            <div className="absolute left-3.5 text-gray-400 pointer-events-none">
-                                <SearchIcon className="w-4 h-4" />
-                            </div>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Cari nama pasien"
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
-                            />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-3 p-1 text-gray-400 hover:text-gray-600"
-                                    title="Hapus pencarian"
-                                >
-                                    <ClearIcon className="w-3.5 h-3.5" />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Dropdown Filter Status */}
-                        <div className="relative w-full sm:w-44 flex items-center">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all appearance-none cursor-pointer"
+                {/* Area Konten Utama Kelola Reservasi */}
+                <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-6">
+                    {/* Toast Alert Notifikasi */}
+                    {toastMessage && (
+                        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs self-start sm:self-end">
+                            <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>{toastMessage.text}</span>
+                            <button
+                                type="button"
+                                onClick={() => setToastMessage(null)}
+                                className="ml-2 text-emerald-500 hover:text-emerald-700 p-0.5"
                             >
-                                <option value="Semua Status">Semua Status</option>
-                                <option value="Appointment">Appointment</option>
-                                <option value="Reschedule">Reschedule</option>
-                            </select>
-                            <div className="absolute right-3.5 text-gray-400 pointer-events-none">
-                                <ChevronDownIcon className="w-4 h-4" />
+                                <ClearIcon className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Banner Error jika API gagal */}
+                    {apiError && (
+                        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                                <ErrorIcon className="w-5 h-5 text-red-500 shrink-0" />
+                                <span>{apiError}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={fetchReservasi}
+                                className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-medium text-xs hover:bg-red-700 transition-colors cursor-pointer"
+                            >
+                                Coba Lagi
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 2. Top Filter & Action Bar Card */}
+                    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                        {/* Sisi Kiri: Filter Search & Status */}
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                            {/* Input Pencarian Nama Pasien (<30 detik Target G1) */}
+                            <div className="relative w-full sm:w-72 flex items-center">
+                                <div className="absolute left-3.5 text-gray-400 pointer-events-none">
+                                    <SearchIcon className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => applyFilter(setSearchQuery, e.target.value)}
+                                    placeholder="Cari nama pasien"
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => applyFilter(setSearchQuery, '')}
+                                        className="absolute right-3 p-1 text-gray-400 hover:text-gray-600"
+                                        title="Hapus pencarian"
+                                    >
+                                        <ClearIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Dropdown Filter Status */}
+                            <div className="relative w-full sm:w-44 flex items-center">
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => applyFilter(setStatusFilter, e.target.value)}
+                                    className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="Semua Status">Semua Status</option>
+                                    <option value="Appointment">Appointment</option>
+                                    <option value="Reschedule">Reschedule</option>
+                                </select>
+                                <div className="absolute right-3.5 text-gray-400 pointer-events-none">
+                                    <ChevronDownIcon className="w-4 h-4" />
+                                </div>
                             </div>
                         </div>
+
+                        {/* Sisi Kanan: Tombol Tambah Reservasi */}
+                        <button
+                            type="button"
+                            onClick={handleOpenAddModal}
+                            className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+                        >
+                            <span>Tambah Reservasi</span>
+                            <PlusIcon className="w-4 h-4" />
+                        </button>
                     </div>
 
-                    {/* Sisi Kanan: Tombol Tambah Reservasi */}
-                    <button
-                        type="button"
-                        onClick={handleOpenAddModal}
-                        className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
-                    >
-                        <span>Tambah Reservasi</span>
-                        <PlusIcon className="w-4 h-4" />
-                    </button>
-                </div>
-
-                {/* 3. Card Tabel Daftar Reservasi (Nama Pasien, Dokter, Tanggal, Waktu, Status, Aksi) */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col mb-6">
-                    <div className="rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
-                                        <th className="px-5 py-3.5">Nama Pasien</th>
-                                        <th className="px-5 py-3.5 text-center">Dokter</th>
-                                        <th className="px-5 py-3.5 text-center">Tanggal Kunjungan</th>
-                                        <th className="px-5 py-3.5 text-center">Waktu Kunjungan</th>
-                                        <th className="px-5 py-3.5 text-center">Status</th>
-                                        <th className="px-5 py-3.5 text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
-                                    {isLoading ? (
-                                        <tr>
-                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
-                                                <div className="flex flex-col items-center justify-center gap-2">
-                                                    <SpinnerIcon className="w-6 h-6 text-[#49baff] animate-spin" />
-                                                    <span className="text-xs text-gray-500">Memuat data reservasi...</span>
-                                                </div>
-                                            </td>
+                    {/* 3. Card Tabel Daftar Reservasi (Nama Pasien, Dokter, Tanggal, Waktu, Status, Aksi) */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col mb-6">
+                        <div className="rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 text-xs sm:text-sm font-semibold text-slate-800 bg-white">
+                                            <th className="px-5 py-3.5">Nama Pasien</th>
+                                            <th className="px-5 py-3.5 text-center">Dokter</th>
+                                            <th className="px-5 py-3.5 text-center">Tanggal Kunjungan</th>
+                                            <th className="px-5 py-3.5 text-center">Waktu Kunjungan</th>
+                                            <th className="px-5 py-3.5 text-center">Status</th>
+                                            <th className="px-5 py-3.5 text-center">Aksi</th>
                                         </tr>
-                                    ) : filteredList.length > 0 ? (
-                                        filteredList
-                                            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                                            .map((item) => {
-                                                const isAppointment = item.status === 'Appointment'
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-slate-700">
+                                        {isLoading ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <SpinnerIcon className="w-6 h-6 text-[#49baff] animate-spin" />
+                                                        <span className="text-xs text-gray-500">Memuat data reservasi...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : filteredList.length > 0 ? (
+                                            filteredList
+                                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                                .map((item) => {
+                                                    const isAppointment = item.status === 'Appointment'
 
-                                                return (
-                                                    <tr
-                                                        key={item.id}
-                                                        className="hover:bg-gray-50/70 transition-colors"
-                                                    >
-                                                        {/* Kolom 1: Nama Pasien */}
-                                                        <td className="px-5 py-3.5 text-slate-800 font-medium">
-                                                            {item.namaPasien}
-                                                        </td>
+                                                    return (
+                                                        <tr
+                                                            key={item.id}
+                                                            className="hover:bg-gray-50/70 transition-colors"
+                                                        >
+                                                            {/* Kolom 1: Nama Pasien */}
+                                                            <td className="px-5 py-3.5 text-slate-800 font-medium">
+                                                                {item.namaPasien}
+                                                            </td>
 
-                                                        {/* Kolom 2: Dokter */}
-                                                        <td className="px-5 py-3.5 text-center text-slate-800">
-                                                            {item.dokter}
-                                                        </td>
+                                                            {/* Kolom 2: Dokter */}
+                                                            <td className="px-5 py-3.5 text-center text-slate-800">
+                                                                {item.dokter}
+                                                            </td>
 
-                                                        {/* Kolom 3: Tanggal Kunjungan */}
-                                                        <td className="px-5 py-3.5 text-center text-slate-800 whitespace-nowrap">
-                                                            {item.tanggalKunjungan || item.tanggal_kunjungan || item.tanggal}
-                                                        </td>
+                                                            {/* Kolom 3: Tanggal Kunjungan */}
+                                                            <td className="px-5 py-3.5 text-center text-slate-800 whitespace-nowrap">
+                                                                {item.tanggalKunjungan || item.tanggal_kunjungan || item.tanggal}
+                                                            </td>
 
-                                                        {/* Kolom 4: Waktu Kunjungan */}
-                                                        <td className="px-5 py-3.5 text-center text-slate-800 whitespace-nowrap">
-                                                            {item.waktuKunjungan || item.waktu_kunjungan || item.waktu}
-                                                        </td>
+                                                            {/* Kolom 4: Waktu Kunjungan */}
+                                                            <td className="px-5 py-3.5 text-center text-slate-800 whitespace-nowrap">
+                                                                {item.waktuKunjungan || item.waktu_kunjungan || item.waktu}
+                                                            </td>
 
-                                                        {/* Kolom 5: Status */}
-                                                        <td className="px-5 py-3.5 text-center">
-                                                            {isAppointment ? (
-                                                                /* Badge Appointment (Cyan Style) */
-                                                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
-                                                                    Appointment
-                                                                </span>
-                                                            ) : (
-                                                                /* Badge Reschedule (Lime Style) */
-                                                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
-                                                                    Reschedule
-                                                                </span>
-                                                            )}
-                                                        </td>
+                                                            {/* Kolom 5: Status */}
+                                                            <td className="px-5 py-3.5 text-center">
+                                                                {isAppointment ? (
+                                                                    /* Badge Appointment (Cyan Style) */
+                                                                    <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#d2e8ff] text-[#49baff] border-2 border-[#49baff]">
+                                                                        Appointment
+                                                                    </span>
+                                                                ) : (
+                                                                    /* Badge Reschedule (Lime Style) */
+                                                                    <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-[#e5ff8f] text-[#adc91f] border-2 border-[#adc91f]">
+                                                                        Reschedule
+                                                                    </span>
+                                                                )}
+                                                            </td>
 
-                                                        {/* Kolom 6: Aksi */}
-                                                        <td className="px-5 py-3.5 text-center">
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                {/* Tombol Edit (Hijau Lime #adc91f) */}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleOpenEditModal(item)}
-                                                                    className="w-8 h-8 rounded-lg bg-[#adc91f] hover:bg-[#98c51a] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
-                                                                    title="Edit Reservasi"
-                                                                    aria-label="Edit Reservasi"
-                                                                >
-                                                                    <EditIcon className="w-4 h-4" />
-                                                                </button>
+                                                            {/* Kolom 6: Aksi */}
+                                                            <td className="px-5 py-3.5 text-center">
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    {/* Tombol Edit (Hijau Lime #adc91f) */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleOpenEditModal(item)}
+                                                                        className="w-8 h-8 rounded-lg bg-[#adc91f] hover:bg-[#98c51a] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                        title="Edit Reservasi"
+                                                                        aria-label="Edit Reservasi"
+                                                                    >
+                                                                        <EditIcon className="w-4 h-4" />
+                                                                    </button>
 
-                                                                {/* Tombol Delete (Merah #e62e2e) */}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleDeleteReservasi(item.id, item.namaPasien)}
-                                                                    className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
-                                                                    title="Hapus Reservasi"
-                                                                    aria-label="Hapus Reservasi"
-                                                                >
-                                                                    <TrashIcon className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                )
-                                            })
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="6" className="px-6 py-12 text-center">
-                                                {reservasiList.length === 0 ? (
-                                                    <EmptyState
-                                                        icon={ReservationIcon}
-                                                        title="Belum ada data reservasi"
-                                                        description='Silakan buat reservasi baru dengan menekan tombol "Tambah Reservasi".'
-                                                    />
-                                                ) : (
-                                                    <EmptyState
-                                                        icon={SearchIcon}
-                                                        title="Data tidak ditemukan"
-                                                        description="Tidak ada data reservasi yang sesuai dengan pencarian atau filter status."
-                                                    />
-                                                )}
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                                                    {/* Tombol Delete (Merah #e62e2e) */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteReservasi(item.id, item.namaPasien)}
+                                                                        className="w-8 h-8 rounded-lg bg-[#e62e2e] hover:bg-[#cf2525] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                        title="Hapus Reservasi"
+                                                                        aria-label="Hapus Reservasi"
+                                                                    >
+                                                                        <TrashIcon className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-12 text-center">
+                                                    {reservasiList.length === 0 ? (
+                                                        <EmptyState
+                                                            icon={ReservationIcon}
+                                                            title="Belum ada data reservasi"
+                                                            description='Silakan buat reservasi baru dengan menekan tombol "Tambah Reservasi".'
+                                                        />
+                                                    ) : (
+                                                        <EmptyState
+                                                            icon={SearchIcon}
+                                                            title="Data tidak ditemukan"
+                                                            description="Tidak ada data reservasi yang sesuai dengan pencarian atau filter status."
+                                                        />
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Pagination jika data lebih dari itemsPerPage */}
-                    {filteredList.length > 0 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalItems={filteredList.length}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setCurrentPage}
-                        />
-                    )}
-                </div>
-            </main>
+                        {/* Pagination jika data lebih dari itemsPerPage */}
+                        {filteredList.length > 0 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={filteredList.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                            />
+                        )}
+                    </div>
+                </main>
             </div>
 
             {/* Modal Pop-up Tambah & Update Reservasi */}
@@ -537,6 +584,17 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
                 onConfirm={handleConfirmDeleteReservasi}
+            />
+
+            {/* Modal Alert Sistem (Bergaya Persis Seperti Konfirmasi Hapus) */}
+            <ConfirmModal
+                isOpen={alertModal.isOpen}
+                isAlert={true}
+                type={alertModal.type || 'danger'}
+                title={alertModal.title}
+                message={alertModal.message}
+                confirmText="Mengerti"
+                onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
             />
         </div>
     )
