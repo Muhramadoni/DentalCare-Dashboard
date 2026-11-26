@@ -15,12 +15,12 @@ import {
     SpinnerIcon,
     ErrorIcon,
     TrashIcon,
+    EditIcon,
     ExcelIcon,
 } from '../components/icon'
 import { toDateInputValue, toDisplayDate } from '../utils/date'
-
-const API_BASE_URL = 'http://localhost:5000/api/v1/rekam-medis'
-const DOKTER_API_URL = 'http://localhost:5000/api/v1/dokter'
+import { API } from '../utils/api'
+import { getAuthToken } from '../utils/auth'
 
 export default function EMR({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('emr')
@@ -79,26 +79,16 @@ export default function EMR({ onNavigate, onLogout }) {
     const pasienFilterRef = useRef(null)
     const filterSearchInputRef = useRef(null)
 
-    // Helper: Ambil token JWT dari sessionStorage (atau localStorage)
-    const getAuthToken = useCallback(() => {
-        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')
-        if (!token && onLogout) {
-            onLogout()
-            return null
-        }
-        return token
-    }, [onLogout])
-
     // Ambil data EMR dari Backend REST API (GET /api/v1/rekam-medis)
     const fetchEmr = useCallback(async () => {
         setIsLoading(true)
         setApiError(null)
 
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(API_BASE_URL, {
+            const response = await fetch(API.emr.base, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -123,15 +113,15 @@ export default function EMR({ onNavigate, onLogout }) {
         } finally {
             setIsLoading(false)
         }
-    }, [getAuthToken, onLogout])
+    }, [onLogout])
 
     // Ambil daftar dokter dari Backend REST API (GET /api/v1/dokter)
     const fetchDokterList = useCallback(async () => {
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(DOKTER_API_URL, {
+            const response = await fetch(API.dokter.base, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -146,15 +136,15 @@ export default function EMR({ onNavigate, onLogout }) {
         } catch (err) {
             console.error('Error saat fetch dokter options:', err)
         }
-    }, [getAuthToken])
+    }, [onLogout])
 
     // Ambil daftar pasien dari Backend REST API (GET /api/v1/rekam-medis/patients)
     const fetchPatients = useCallback(async () => {
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(`${API_BASE_URL}/patients`, {
+            const response = await fetch(API.emr.patients, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -169,7 +159,7 @@ export default function EMR({ onNavigate, onLogout }) {
         } catch (err) {
             console.error('Error saat fetch patients list:', err)
         }
-    }, [getAuthToken])
+    }, [onLogout])
 
     useEffect(() => {
         let isMounted = true
@@ -385,12 +375,69 @@ export default function EMR({ onNavigate, onLogout }) {
             return
         }
         if (!inputTanggal.trim()) {
-            setFormError('Silakan isi tanggal rekam medis.')
+            setFormError('Silakan isi tanggal pemeriksaan rekam medis.')
             return
         }
-        if (!inputDokter) {
+        if (!inputRegio.trim()) {
+            setFormError('Silakan isi regio (gigi) pemeriksaan.')
+            return
+        }
+        if (!inputDokter || !inputDokter.trim()) {
             setFormError('Silakan pilih dokter pemeriksa.')
             return
+        }
+        if (!inputAnamnesa.trim()) {
+            setFormError('Silakan isi anamnesa (diagnosa) rekam medis.')
+            return
+        }
+        if (!inputTindakan.trim()) {
+            setFormError('Silakan isi tindakan pelayanan rekam medis.')
+            return
+        }
+        if (!inputResep.trim()) {
+            setFormError('Silakan isi resep obat (PF) rekam medis.')
+            return
+        }
+        if (!inputTerapi.trim()) {
+            setFormError('Silakan isi terapi (prosedur) rekam medis.')
+            return
+        }
+
+        // Validasi: Jika sedang mengedit/update, pastikan ada perubahan data
+        if (editingId) {
+            const currentItem = emrList.find((i) => i.id === editingId)
+            if (currentItem) {
+                const origPasien = (currentItem.namaPasien || '').trim().toLowerCase()
+                const origTanggal = (currentItem.tanggalIso || toDateInputValue(currentItem.tanggal) || '').trim()
+                const origRegio = ((currentItem.regio === '-' ? '' : currentItem.regio) || '').trim().toLowerCase()
+                const origDokter = (currentItem.dokter || '').trim().toLowerCase()
+                const origAnamnesa = ((currentItem.anamnesa === '-' ? '' : currentItem.anamnesa) || '').trim().toLowerCase()
+                const origTindakan = ((currentItem.tindakan === '-' ? '' : currentItem.tindakan) || '').trim().toLowerCase()
+                const origResep = ((currentItem.resep === '-' ? '' : currentItem.resep) || '').trim().toLowerCase()
+                const origTerapi = ((currentItem.terapi === '-' ? '' : currentItem.terapi) || '').trim().toLowerCase()
+
+                const isUnchanged =
+                    inputPasien.trim().toLowerCase() === origPasien &&
+                    inputTanggal.trim() === origTanggal &&
+                    inputRegio.trim().toLowerCase() === origRegio &&
+                    inputDokter.trim().toLowerCase() === origDokter &&
+                    inputAnamnesa.trim().toLowerCase() === origAnamnesa &&
+                    inputTindakan.trim().toLowerCase() === origTindakan &&
+                    inputResep.trim().toLowerCase() === origResep &&
+                    inputTerapi.trim().toLowerCase() === origTerapi
+
+                if (isUnchanged) {
+                    const noChangeMsg = 'Anda belum mengubah data apapun pada rekam medis ini.'
+                    setFormError(noChangeMsg)
+                    setAlertModal({
+                        isOpen: true,
+                        title: 'Tidak Ada Perubahan',
+                        message: noChangeMsg,
+                        type: 'danger',
+                    })
+                    return
+                }
+            }
         }
 
         // Validasi Anti Duplikasi Data: Cek apakah data yang sama persis sudah pernah diinputkan
@@ -464,11 +511,11 @@ export default function EMR({ onNavigate, onLogout }) {
         setFormError('')
 
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
             const isEdit = Boolean(editingId)
-            const url = isEdit ? `${API_BASE_URL}/${editingId}` : API_BASE_URL
+            const url = isEdit ? API.emr.byId(editingId) : API.emr.base
             const method = isEdit ? 'PUT' : 'POST'
 
             const response = await fetch(url, {
@@ -528,10 +575,10 @@ export default function EMR({ onNavigate, onLogout }) {
         if (!id) return
 
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(`${API_BASE_URL}/${id}`, {
+            const response = await fetch(API.emr.byId(id), {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -820,6 +867,7 @@ export default function EMR({ onNavigate, onLogout }) {
                 <PageHeader
                     title="Rekam Medis Elektronik (EMR) Pasien"
                     subtitle="Input dan simpan rekam medis pasien lengkap."
+                    onLogout={onLogout}
                 />
 
                 {/* Area Konten Utama EMR */}
@@ -865,15 +913,8 @@ export default function EMR({ onNavigate, onLogout }) {
 
                             {/* Banner Mode Edit */}
                             {editingId && (
-                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
-                                    <span>Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik "Simpan EMR +".</span>
-                                    <button
-                                        type="button"
-                                        onClick={handleResetForm}
-                                        className="text-xs font-semibold underline text-blue-800 hover:text-blue-950 ml-3 cursor-pointer"
-                                    >
-                                        Batalkan Edit
-                                    </button>
+                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium animate-fadeIn">
+                                    <span>Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik "Simpan Perubahan".</span>
                                 </div>
                             )}
 
@@ -1137,22 +1178,20 @@ export default function EMR({ onNavigate, onLogout }) {
                                     </div>
                                 </div>
 
-                                {/* Tombol Simpan EMR + (di pojok kanan bawah persis seperti di desain) */}
+                                {/* Tombol Aksi Form EMR (Batal & Simpan) */}
                                 <div className="pt-2 flex items-center justify-end gap-3">
-                                    {editingId && (
-                                        <button
-                                            type="button"
-                                            onClick={handleResetForm}
-                                            className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 active:scale-[0.99] text-gray-700 font-semibold text-sm transition-all cursor-pointer"
-                                        >
-                                            Batal Edit
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleResetForm}
+                                        className="px-6 py-2.5 rounded-xl bg-[#e62e2e] hover:bg-[#cf2525] active:scale-[0.99] text-white text-sm font-semibold transition-all cursor-pointer shadow-sm"
+                                    >
+                                        Batal
+                                    </button>
                                     <button
                                         type="submit"
-                                        className="px-8 py-3 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                                        className="px-8 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
                                     >
-                                        <span>Simpan EMR +</span>
+                                        <span>{editingId ? 'Simpan Perubahan' : 'Simpan EMR +'}</span>
                                     </button>
                                 </div>
                             </form>
@@ -1465,12 +1504,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                                             return (
                                                                 <tr
                                                                     key={item.id}
-                                                                    onClick={() => handleSelectRowToUpdate(item)}
-                                                                    className={`transition-colors cursor-pointer ${isSelected
+                                                                    className={`transition-colors ${isSelected
                                                                         ? 'bg-blue-50/80 text-blue-900 font-semibold'
                                                                         : 'hover:bg-gray-50/80'
                                                                         }`}
-                                                                    title="Klik untuk mengedit data ini di form atas"
                                                                 >
                                                                     <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap">
                                                                         {item.namaPasien}
@@ -1496,9 +1533,24 @@ export default function EMR({ onNavigate, onLogout }) {
                                                                     <td className="px-5 py-3.5 text-slate-800 whitespace-nowrap font-normal">
                                                                         {item.dokter}
                                                                     </td>
-                                                                    {/* Kolom 9: Aksi (Hapus Saja) */}
+                                                                    {/* Kolom 9: Aksi (Edit & Hapus) */}
                                                                     <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                                                                        <div className="flex items-center justify-center">
+                                                                        <div className="flex items-center justify-center gap-2">
+                                                                            {/* Tombol Edit */}
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation()
+                                                                                    handleSelectRowToUpdate(item)
+                                                                                }}
+                                                                                className="w-8 h-8 rounded-lg bg-[#adc91f] hover:bg-[#98c51a] active:scale-95 text-white flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                                                                                title="Edit Rekam Medis"
+                                                                                aria-label="Edit Rekam Medis"
+                                                                            >
+                                                                                <EditIcon className="w-4 h-4" />
+                                                                            </button>
+
+                                                                            {/* Tombol Hapus */}
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={(e) => {

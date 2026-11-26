@@ -12,6 +12,8 @@ import {
     ErrorIcon,
 } from '../components/icon'
 import { calculateDoctorStatus } from '../utils/doctorStatus'
+import { API } from '../utils/api'
+import { getAuthToken } from '../utils/auth'
 
 // Palet warna batang statistik sesuai referensi (Merah, Plum, Cokelat, Ungu, Teal, Violet, Hijau Lemon, Hijau Daun, Indigo, Krem/Peach, Mustard, Hijau Muda)
 const CHART_PALETTE = [
@@ -116,28 +118,25 @@ export default function Dashboard({ onNavigate, onLogout }) {
         setError(null)
 
         try {
-            const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')
-            if (!token) {
-                if (onLogout) onLogout()
-                return
-            }
+            const token = getAuthToken(onLogout)
+            if (!token) return
 
             const [summaryRes, dokterRes, emrRes] = await Promise.all([
-                fetch('http://localhost:5000/api/v1/dashboard/summary', {
+                fetch(API.dashboard.summary, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
                     },
                 }),
-                fetch('http://localhost:5000/api/v1/dokter', {
+                fetch(API.dokter.base, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
                     },
                 }).catch(() => null),
-                fetch('http://localhost:5000/api/v1/rekam-medis', {
+                fetch(API.emr.base, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -277,6 +276,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                 <PageHeader
                     title="Ringkasan Operasional Klinik"
                     subtitle="Laporan rekapitulasi data harian dan aktivitas pelayanan medis untuk evaluasi kinerja klinik secara berkala."
+                    onLogout={onLogout}
                 />
 
                 {/* Area Konten Utama Dashboard (Scrollable) */}
@@ -627,13 +627,26 @@ export default function Dashboard({ onNavigate, onLogout }) {
 
                     {/* 4. Baris Bagian Bawah: Tabel Reservasi Pasien (Full Width di bawah Grafik & Aktivitas) */}
                     <div className="w-full bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col pb-6">
-                        <div className="mb-4">
-                            <h2 className="text-base sm:text-lg font-semibold text-slate-800">
-                                Daftar Reservasi Pasien
-                            </h2>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                                Ringkasan Data Reservasi Pasien Berdasarkan Reservasi Via WA
-                            </p>
+                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <h2 className="text-base sm:text-lg font-semibold text-slate-800">
+                                    Daftar Reservasi Pasien
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    Ringkasan Data Reservasi Pasien Berdasarkan Reservasi Via WA
+                                </p>
+                            </div>
+                            <a
+                                href="#reservasi"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    if (onNavigate) onNavigate('reservasi')
+                                }}
+                                className="text-xs sm:text-sm font-semibold text-[#49baff] hover:text-[#2563eb] hover:underline transition-colors cursor-pointer self-start sm:self-auto flex items-center gap-1"
+                            >
+                                <span>Lihat Semua</span>
+                                <span>&rarr;</span>
+                            </a>
                         </div>
 
                         {/* Tabel Kontainer Bordered */}

@@ -28,7 +28,7 @@ export default function ConfirmModal({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn">
             <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 flex flex-col p-6 sm:p-7 relative my-auto">
                 {/* Header Icon & Close Button */}
                 <div className="flex items-start justify-between">

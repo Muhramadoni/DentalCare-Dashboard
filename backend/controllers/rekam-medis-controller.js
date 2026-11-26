@@ -266,6 +266,61 @@ const createRekamMedis = async (req, res, next) => {
     const cleanResep = sanitizeText(req.body.resep || req.body.prescription);
     const cleanTerapi = sanitizeText(req.body.terapi || req.body.therapy);
 
+    if (!cleanRegio || !cleanRegio.trim() || cleanRegio === '-') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Regio (gigi) wajib diisi.',
+          details: [{ field: 'regio', issue: 'Regio gigi tidak boleh kosong.' }],
+        },
+      });
+    }
+
+    if (!cleanAnamnesa || !cleanAnamnesa.trim() || cleanAnamnesa === '-') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Anamnesa (diagnosa) wajib diisi.',
+          details: [{ field: 'anamnesa', issue: 'Anamnesa rekam medis tidak boleh kosong.' }],
+        },
+      });
+    }
+
+    if (!cleanTindakan || !cleanTindakan.trim() || cleanTindakan === '-') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Tindakan pelayanan wajib diisi.',
+          details: [{ field: 'tindakan', issue: 'Tindakan pelayanan tidak boleh kosong.' }],
+        },
+      });
+    }
+
+    if (!cleanResep || !cleanResep.trim() || cleanResep === '-') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Resep obat (PF) wajib diisi.',
+          details: [{ field: 'resep', issue: 'Resep obat tidak boleh kosong.' }],
+        },
+      });
+    }
+
+    if (!cleanTerapi || !cleanTerapi.trim() || cleanTerapi === '-') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Terapi (prosedur) wajib diisi.',
+          details: [{ field: 'terapi', issue: 'Terapi prosedur tidak boleh kosong.' }],
+        },
+      });
+    }
+
     // 3. Cari atau buat pasien via prisma.pasien.findFirst / create
     let pasien = null;
     if (pasienId && !isNaN(Number(pasienId))) {
@@ -466,19 +521,54 @@ const updateRekamMedis = async (req, res, next) => {
 
     // 1. Sanitasi dan update data klinis jika ada
     if (req.body.regio !== undefined) {
-      dataToUpdate.regio = sanitizeText(req.body.regio) || null;
+      const sanitized = sanitizeText(req.body.regio);
+      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Regio (gigi) tidak boleh kosong.' },
+        });
+      }
+      dataToUpdate.regio = sanitized.trim();
     }
     if (req.body.anamnesa !== undefined) {
-      dataToUpdate.anamnesa = sanitizeText(req.body.anamnesa) || null;
+      const sanitized = sanitizeText(req.body.anamnesa);
+      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Anamnesa (diagnosa) tidak boleh kosong.' },
+        });
+      }
+      dataToUpdate.anamnesa = sanitized.trim();
     }
     if (req.body.tindakan !== undefined) {
-      dataToUpdate.tindakan = sanitizeText(req.body.tindakan) || null;
+      const sanitized = sanitizeText(req.body.tindakan);
+      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Tindakan pelayanan tidak boleh kosong.' },
+        });
+      }
+      dataToUpdate.tindakan = sanitized.trim();
     }
     if (req.body.resep !== undefined) {
-      dataToUpdate.resep = sanitizeText(req.body.resep) || null;
+      const sanitized = sanitizeText(req.body.resep);
+      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Resep obat (PF) tidak boleh kosong.' },
+        });
+      }
+      dataToUpdate.resep = sanitized.trim();
     }
     if (req.body.terapi !== undefined) {
-      dataToUpdate.terapi = sanitizeText(req.body.terapi) || null;
+      const sanitized = sanitizeText(req.body.terapi);
+      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Terapi (prosedur) tidak boleh kosong.' },
+        });
+      }
+      dataToUpdate.terapi = sanitized.trim();
     }
 
     // 2. Perbarui tanggal jika ada

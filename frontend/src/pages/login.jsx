@@ -2,6 +2,8 @@ import { useState } from 'react'
 import doctorImg from '../assets/image/doctor.png'
 import logoImg from '../assets/image/logo-indentalcare.png'
 import { ClearIcon, EyeIcon, EyeOffIcon, SpinnerIcon, ErrorIcon } from '../components/icon'
+import { API } from '../utils/api'
+import { saveAuthSession } from '../utils/auth'
 
 export default function Login({ onLoginSuccess }) {
     const [email, setEmail] = useState('')
@@ -52,7 +54,7 @@ export default function Login({ onLoginSuccess }) {
 
         try {
             // Panggil API Login Backend (sesuai apiguide.md: POST /api/v1/auth/login)
-            const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+            const response = await fetch(API.auth.login, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -88,8 +90,7 @@ export default function Login({ onLoginSuccess }) {
 
             // Login berhasil: simpan token di sessionStorage (auto-reset saat tab/browser ditutup)
             const { token, user } = result.data
-            sessionStorage.setItem('auth_token', token)
-            sessionStorage.setItem('user_email', user.email)
+            saveAuthSession(token, user.email)
 
             setIsLoading(false)
             setLoginSuccess(true)

@@ -141,7 +141,7 @@ Sesuai dengan **NFR-2**, seluruh transmisi data wajib dienkripsi selama transit 
 * Seluruh komunikasi data antara klien ReactJS, server Node.js Express, dan PostgreSQL wajib berjalan di atas protokol **HTTPS** menggunakan enkripsi modern **TLS 1.3** (atau minimal TLS 1.2).
 * Pengalihan Otomatis (*Redirect*): Seluruh permintaan berbasis HTTP biasa port 80 wajib dialihkan (*redirect 301*) secara otomatis ke HTTPS port 443.
 
-### 6.2. Implementasi HTTP Security Headers via Helmet
+### 6.2. Implementasi HTTP Security Headers via Helmeti
 * Pasang dan konfigurasikan pustaka **`helmet`** pada aplikasi Express.js untuk menerapkan header keamanan standar industri:
   * **Strict-Transport-Security (HSTS):** Memaksa browser hanya mengakses via HTTPS (`max-age=31536000; includeSubDomains; preload`).
   * **X-Content-Type-Options:** Disetel ke `nosniff` untuk mencegah MIME-sniffing.

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import {
     ReservationIcon,
     DoctorIcon,
-    EMRIcon,
     ClearIcon,
     ClockOutlineIcon,
     ChevronDownIcon,
@@ -17,6 +16,7 @@ export function ReservationModal({
     isOpen,
     onClose,
     onSubmit,
+    onNoChange,
     initialData = null,
     doctors = [],
 }) {
@@ -48,7 +48,9 @@ export function ReservationModal({
                 } else {
                     setTanggal(toDateInputValue(initialData.tanggal || ''))
                 }
-                setWaktu(initialData.waktu_kunjungan || initialData.waktuKunjungan || initialData.waktu || initialData.waktu_reservasi || '')
+                const rawTime = initialData.waktu_kunjungan || initialData.waktuKunjungan || initialData.waktu || initialData.waktu_reservasi || ''
+                const sanitizedTime = typeof rawTime === 'string' ? (rawTime.replace(':', '.').match(/\d+(\.\d+)?/)?.[0] || '') : (rawTime ?? '')
+                setWaktu(sanitizedTime)
                 setDokter(initialData.dokter || initialData.dokterDetail?.nama || '')
                 setStatus(initialData.status || 'Appointment')
             } else {
@@ -76,7 +78,7 @@ export function ReservationModal({
             setError('Tanggal reservasi wajib diisi.')
             return
         }
-        if (!waktu.trim()) {
+        if (!String(waktu).trim()) {
             setError('Waktu reservasi wajib diisi.')
             return
         }
@@ -109,17 +111,45 @@ export function ReservationModal({
         }
 
         const displayDate = toDisplayDate(tanggal.trim())
+        const cleanWaktu = String(waktu).trim()
+        const selectedDoctorName = typeof selectedDocObj === 'object' ? selectedDocObj.nama : dokter
+
+        if (isEdit) {
+            const isSameNama = namaPasien.trim().toLowerCase() === (initialData?.namaPasien || '').trim().toLowerCase()
+            const initTanggal = initialData?.tanggalIso || toDateInputValue(initialData?.tanggal_kunjungan || initialData?.tanggalKunjungan || initialData?.tanggal || '')
+            const isSameTanggal = tanggal.trim() === initTanggal.trim()
+
+            const rawTime = initialData?.waktu_kunjungan || initialData?.waktuKunjungan || initialData?.waktu || initialData?.waktu_reservasi || ''
+            const sanitizedInitTime = typeof rawTime === 'string' ? (rawTime.replace(':', '.').match(/\d+(\.\d+)?/)?.[0] || '') : (rawTime ?? '')
+            const isSameWaktu = cleanWaktu === String(sanitizedInitTime).trim()
+
+            const initDokter = initialData?.dokter || initialData?.dokterDetail?.nama || ''
+            const isSameDokter = selectedDoctorName === initDokter
+
+            const initStatus = initialData?.status || 'Appointment'
+            const isSameStatus = status === initStatus
+
+            if (isSameNama && isSameTanggal && isSameWaktu && isSameDokter && isSameStatus) {
+                const noChangeMsg = 'Anda belum mengubah data apapun pada reservasi ini.'
+                setError(noChangeMsg)
+                if (onNoChange) {
+                    onNoChange(noChangeMsg)
+                }
+                return
+            }
+        }
+
         const payload = {
             id: initialData?.id,
             namaPasien: namaPasien.trim(),
             tanggal: tanggal.trim(),
             tanggal_kunjungan: tanggal.trim(),
             tanggalKunjungan: tanggal.trim(),
-            waktu: waktu.trim(),
-            waktu_kunjungan: waktu.trim(),
-            waktuKunjungan: waktu.trim(),
-            jadwal: waktu.trim() ? `${displayDate} ${waktu.trim()}` : displayDate,
-            dokter: typeof selectedDocObj === 'object' ? selectedDocObj.nama : dokter,
+            waktu: cleanWaktu,
+            waktu_kunjungan: cleanWaktu,
+            waktuKunjungan: cleanWaktu,
+            jadwal: cleanWaktu ? `${displayDate} ${cleanWaktu}` : displayDate,
+            dokter: selectedDoctorName,
             dokter_id: typeof selectedDocObj === 'object' ? selectedDocObj.id : undefined,
             status,
         }
@@ -219,10 +249,11 @@ export function ReservationModal({
                             </label>
                             <div className="relative flex items-center">
                                 <input
-                                    type="text"
+                                    type="number"
+                                    step="any"
                                     value={waktu}
                                     onChange={(e) => setWaktu(e.target.value)}
-                                    placeholder="09.42 WIB"
+                                    placeholder="09.42"
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all pr-10"
                                 />
                                 <div className="absolute right-3 text-gray-800 pointer-events-none">
@@ -326,6 +357,7 @@ export function DoctorModal({
     isOpen,
     onClose,
     onSubmit,
+    onNoChange,
     initialData = null,
 }) {
     const isEdit = Boolean(initialData)
@@ -417,12 +449,47 @@ export function DoctorModal({
             return
         }
 
-        const activeMuchtar = muchtarDays
-            .filter((d) => d.active)
-            .map((d) => ({
-                hari: `${d.key}:`,
-                jam: `${d.start.trim() || '09.00'} - ${d.end.trim() || '13.00'}`,
-            }))
+        const activeDays = muchtarDays.filter((d) => d.active)
+        if (activeDays.length === 0) {
+            setError('Silakan pilih minimal satu hari jadwal praktik dokter.')
+            return
+        }
+
+        for (const day of activeDays) {
+            if (!day.start || !day.start.trim() || !day.end || !day.end.trim()) {
+                setError(`Jam mulai dan jam selesai untuk hari ${day.label} wajib diisi.`)
+                return
+            }
+        }
+
+        const activeMuchtar = activeDays.map((d) => ({
+            hari: `${d.key}:`,
+            jam: `${d.start.trim()} - ${d.end.trim()}`,
+        }))
+
+        if (isEdit) {
+            const isSameNama = nama.trim().toLowerCase() === (initialData?.nama || '').trim().toLowerCase()
+            const isSameSpesialisasi = spesialisasi.trim().toLowerCase() === (initialData?.spesialisasi || '').trim().toLowerCase()
+
+            const origJadwal = (initialData?.jadwalMuchtar || initialData?.jadwal || [])
+                .map((j) => `${(j.hari || '').toLowerCase()}_${(j.jam || '').replace(/\s+/g, '')}`)
+                .sort()
+                .join('|')
+            const newJadwal = activeMuchtar
+                .map((j) => `${(j.hari || '').toLowerCase()}_${(j.jam || '').replace(/\s+/g, '')}`)
+                .sort()
+                .join('|')
+            const isSameSchedule = origJadwal === newJadwal
+
+            if (isSameNama && isSameSpesialisasi && isSameSchedule) {
+                const noChangeMsg = 'Anda belum mengubah data apapun pada dokter ini.'
+                setError(noChangeMsg)
+                if (onNoChange) {
+                    onNoChange(noChangeMsg)
+                }
+                return
+            }
+        }
 
         const payload = {
             id: initialData?.id || Date.now(),
@@ -431,13 +498,7 @@ export function DoctorModal({
             status: initialData?.status || 'Aktif',
             cabang: 'Muchtar',
             cabangMuchtar: true,
-            jadwal:
-                activeMuchtar.length > 0
-                    ? activeMuchtar
-                    : [
-                        { hari: 'Rabu:', jam: '15.00 - 20.00' },
-                        { hari: 'Kamis:', jam: '08.00 - 20.00' },
-                    ],
+            jadwal: activeMuchtar,
             jadwalMuchtar: activeMuchtar,
         }
 
@@ -561,14 +622,14 @@ export function DoctorModal({
                                     {day.active && (
                                         <div className="flex items-center gap-2">
                                             <input
-                                                type="text"
+                                                type="number"
                                                 value={day.start}
                                                 onChange={(e) => handleMuchtarTimeChange(idx, 'start', e.target.value)}
                                                 placeholder="09.00"
                                                 className="w-full text-center py-1.5 px-2 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-700 bg-white focus:border-[#49baff] focus:outline-none"
                                             />
                                             <input
-                                                type="text"
+                                                type="number"
                                                 value={day.end}
                                                 onChange={(e) => handleMuchtarTimeChange(idx, 'end', e.target.value)}
                                                 placeholder="13.00"
@@ -603,275 +664,3 @@ export function DoctorModal({
     )
 }
 
-/**
- * Modal Tambah / Update Rekam Medis Elektronik (EMR)
- */
-export function EMRModal({
-    isOpen,
-    onClose,
-    onSubmit,
-    initialData = null,
-}) {
-    const isEdit = Boolean(initialData)
-
-    const [pasien, setPasien] = useState('')
-    const [tanggal, setTanggal] = useState('')
-    const [regio, setRegio] = useState('')
-    const [dokter, setDokter] = useState('')
-    const [anamnesa, setAnamnesa] = useState('')
-    const [tindakan, setTindakan] = useState('')
-    const [resep, setResep] = useState('')
-    const [terapi, setTerapi] = useState('')
-    const [error, setError] = useState('')
-
-    const pasienList = ['Pasien 1', 'Pasien 2', 'Budi Santoso', 'Siti Rahma', 'Ahmad Dani']
-    const dokterList = [
-        'drg. Indira Nugrahani',
-        'drg. Adria Permana Putra, Sp.BM',
-        'drg. Mhay Chyntha Harlyana',
-        'drg. Fajar Pratama',
-        'drg. Sarah Melati',
-    ]
-
-    useEffect(() => {
-        Promise.resolve().then(() => {
-            if (initialData) {
-                setPasien(initialData.namaPasien || '')
-                setTanggal(toDateInputValue(initialData.tanggal) || '')
-                setRegio(initialData.regio || '')
-                setDokter(initialData.dokter || '')
-                setAnamnesa(initialData.anamnesa || '')
-                setTindakan(initialData.tindakan || '')
-                setResep(initialData.resep || '')
-                setTerapi(initialData.terapi || '')
-            } else {
-                setPasien('Pasien 1')
-                setTanggal('2026-05-20')
-                setRegio('16')
-                setDokter('drg. Indira Nugrahani')
-                setAnamnesa('')
-                setTindakan('')
-                setResep('')
-                setTerapi('')
-            }
-            setError('')
-        })
-    }, [initialData, isOpen])
-
-    if (!isOpen) return null
-
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        setError('')
-
-        if (!pasien) {
-            setError('Silakan pilih nama pasien.')
-            return
-        }
-        if (!tanggal.trim()) {
-            setError('Tanggal rekam medis wajib diisi.')
-            return
-        }
-        if (!dokter) {
-            setError('Silakan pilih dokter pemeriksa.')
-            return
-        }
-
-        const payload = {
-            id: initialData?.id || Date.now(),
-            namaPasien: pasien,
-            tanggal: toDisplayDate(tanggal.trim()),
-            regio: regio.trim() || '-',
-            dokter,
-            anamnesa: anamnesa.trim() || '-',
-            tindakan: tindakan.trim() || '-',
-            resep: resep.trim() || '-',
-            terapi: terapi.trim() || '-',
-        }
-
-        onSubmit(payload)
-        onClose()
-    }
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn overflow-y-auto">
-            <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-100 flex flex-col p-6 sm:p-7 max-h-[92vh] overflow-y-auto my-auto">
-                {/* Header Modal */}
-                <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
-                    <div className="flex items-center gap-2.5">
-                        <EMRIcon className="w-5 h-5 text-slate-700 shrink-0" />
-                        <h2 className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight">
-                            {isEdit ? 'Update Rekam Medis (EMR)' : 'Tambah Rekam Medis Baru'}
-                        </h2>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-                        aria-label="Tutup modal"
-                    >
-                        <ClearIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    </button>
-                </div>
-
-                {/* Pesan Error */}
-                {error && (
-                    <div className="mt-3 px-4 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-medium">
-                        {error}
-                    </div>
-                )}
-
-                {/* Form Input */}
-                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-                    {/* Baris 1: Pasien, Tanggal, Regio */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                        {/* Pilih Pasien */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                Pilih Pasien
-                            </label>
-                            <div className="relative flex items-center">
-                                <select
-                                    value={pasien}
-                                    onChange={(e) => setPasien(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none appearance-none cursor-pointer pr-8"
-                                >
-                                    <option value="" disabled>Pilih Pasien</option>
-                                    {pasienList.map((p, idx) => (
-                                        <option key={idx} value={p}>{p}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-2.5 text-gray-400 pointer-events-none">
-                                    <ChevronDownIcon className="w-3.5 h-3.5" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Tanggal */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                Tanggal
-                            </label>
-                            <input
-                                type="date"
-                                value={tanggal}
-                                onChange={(e) => setTanggal(e.target.value)}
-                                onClick={(e) => e.target.showPicker?.()}
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer"
-                            />
-                        </div>
-
-                        {/* Regio (Gigi) */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                Regio (Gigi)
-                            </label>
-                            <input
-                                type="text"
-                                value={regio}
-                                onChange={(e) => setRegio(e.target.value)}
-                                placeholder="Contoh: 16, 21"
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Baris 2: Dokter Pemeriksa */}
-                    <div className="sm:w-1/2">
-                        <label className="block text-xs font-medium text-gray-800 mb-1">
-                            Dokter Pemeriksa
-                        </label>
-                        <div className="relative flex items-center">
-                            <select
-                                value={dokter}
-                                onChange={(e) => setDokter(e.target.value)}
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none appearance-none cursor-pointer pr-8"
-                            >
-                                <option value="" disabled>Pilih Dokter</option>
-                                {dokterList.map((d, idx) => (
-                                    <option key={idx} value={d}>{d}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-2.5 text-gray-400 pointer-events-none">
-                                <ChevronDownIcon className="w-3.5 h-3.5" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Baris 3: Anamnesa & Tindakan */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                Anamnesa (Diagnosa)
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={anamnesa}
-                                onChange={(e) => setAnamnesa(e.target.value)}
-                                placeholder="Diagnosa Utama"
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none"
-                            ></textarea>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                Tindakan Pelayanan
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={tindakan}
-                                onChange={(e) => setTindakan(e.target.value)}
-                                placeholder="Masukkan Detail Tindakan"
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none"
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    {/* Baris 4: Resep & Terapi */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                PF (Resep)
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={resep}
-                                onChange={(e) => setResep(e.target.value)}
-                                placeholder="Masukkan Resep Obat"
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none"
-                            ></textarea>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-800 mb-1">
-                                Terapi (Prosedur)
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={terapi}
-                                onChange={(e) => setTerapi(e.target.value)}
-                                placeholder="Masukkan Rencana Prosedur Terapi"
-                                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none resize-none"
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-2.5 rounded-xl bg-[#e62e2e] hover:bg-[#cf2525] active:scale-[0.99] text-white text-sm font-semibold transition-all cursor-pointer shadow-sm"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white text-sm font-semibold transition-all cursor-pointer shadow-md shadow-[#49baff]/30 flex items-center gap-1.5"
-                        >
-                            {isEdit ? 'Simpan Perubahan' : 'Simpan EMR +'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    )
-}

@@ -1,20 +1,12 @@
-import { useState } from 'react'
 import logoImg from '../assets/image/logo-indentalcare.png'
-import ConfirmModal from './ConfirmModal'
 import {
     DashboardIcon,
     ReservationIcon,
     DoctorIcon,
     EMRIcon,
-    LogoutIcon,
 } from './icon'
 
-export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout }) {
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-    const adminEmail =
-        (typeof window !== 'undefined' &&
-            (sessionStorage.getItem('user_email') || localStorage.getItem('user_email'))) ||
-        'admindental@gmail.com'
+export default function Sidebar({ activeTab = 'ringkasan', onTabChange }) {
     const menuItems = [
         {
             id: 'ringkasan',
@@ -39,8 +31,8 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
     ]
 
     return (
-        <aside className="w-64 lg:w-[260px] h-screen bg-[#001e2f] text-white flex flex-col justify-between p-5 select-none shrink-0 sticky top-0 overflow-y-auto z-30 font-['Poppins']">
-            {/* Bagian Atas: Logo & Menu Navigasi */}
+        <aside className="w-64 lg:w-[260px] h-screen bg-[#001e2f] text-white flex flex-col p-5 select-none shrink-0 sticky top-0 overflow-y-auto z-30 font-['Poppins']">
+            {/* Bagian Atas: Logo & Branding */}
             <div>
                 {/* Logo Klinik Gigi & Teks Branding Seimbang */}
                 <div className="flex items-center gap-2.5 px-2 py-3 mb-6">
@@ -71,10 +63,11 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                                 key={item.id}
                                 type="button"
                                 onClick={() => onTabChange && onTabChange(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 sm:py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer ${isActive
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 sm:py-3 rounded-xl text-sm transition-all duration-200 cursor-pointer ${
+                                    isActive
                                         ? 'bg-[#0584bc] text-white font-semibold shadow-sm'
                                         : 'text-slate-300 font-medium hover:text-white hover:bg-white/5'
-                                    }`}
+                                }`}
                             >
                                 <Icon className="w-5 h-5 shrink-0" />
                                 <span className="tracking-normal">{item.label}</span>
@@ -83,54 +76,6 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange, onLogout
                     })}
                 </nav>
             </div>
-
-            {/* Bagian Bawah: Profil Admin & Tombol Logout */}
-            <div className="pt-5 border-t border-slate-800/80 space-y-4">
-                {/* Info Admin */}
-                <div className="flex items-center gap-3 px-2">
-                    <div className="w-9 h-9 rounded-full bg-[#49baff] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-                        A
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-white leading-tight truncate">
-                            Admin
-                        </span>
-                        <span className="text-[11px] font-normal text-slate-400 truncate mt-0.5" title={adminEmail}>
-                            {adminEmail}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Tombol Logout */}
-                <button
-                    type="button"
-                    onClick={() => setShowLogoutConfirm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 rounded-xl bg-[#e31e1e] hover:bg-[#cf1b1b] active:scale-[0.99] text-white text-sm font-semibold transition-all duration-200 cursor-pointer shadow-md shadow-red-950/20"
-                >
-                    <span>Logout</span>
-                    <LogoutIcon className="w-4 h-4" />
-                </button>
-            </div>
-
-            {/* Modal Dialog Konfirmasi Logout */}
-            <ConfirmModal
-                isOpen={showLogoutConfirm}
-                type="logout"
-                title="Konfirmasi Logout"
-                message="Apakah Anda yakin ingin keluar dari sesi admin IN DENTAL CARE?"
-                confirmText="Ya, Logout"
-                cancelText="Batal"
-                onClose={() => setShowLogoutConfirm(false)}
-                onConfirm={() => {
-                    setShowLogoutConfirm(false)
-                    if (onLogout) {
-                        onLogout()
-                    } else {
-                        window.location.reload()
-                    }
-                }}
-            />
         </aside>
     )
 }
-

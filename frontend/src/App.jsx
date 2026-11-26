@@ -4,11 +4,13 @@ import Dashboard from './pages/dashboard'
 import Reservasi from './pages/reservasi'
 import Dokter from './pages/dokter'
 import EMR from './pages/EMR'
+import { API } from './utils/api'
+import { getAuthToken, clearAuthSession } from './utils/auth'
 
 function App() {
     // Cek apakah token autentikasi tersimpan di sessionStorage (hilang otomatis saat tab ditutup)
     const [currentPage, setCurrentPage] = useState(() => {
-        const token = sessionStorage.getItem('auth_token')
+        const token = getAuthToken()
         return token ? 'dashboard' : 'login'
     })
 
@@ -28,10 +30,10 @@ function App() {
 
     // Logout manual: Hanya dieksekusi saat admin menekan tombol "Logout"
     const handleLogout = useCallback(async () => {
-        const token = sessionStorage.getItem('auth_token')
+        const token = getAuthToken()
         if (token) {
             try {
-                await fetch('http://localhost:5000/api/v1/auth/logout', {
+                await fetch(API.auth.logout, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -42,10 +44,7 @@ function App() {
                 console.error('Logout error:', error)
             }
         }
-        sessionStorage.removeItem('auth_token')
-        sessionStorage.removeItem('user_email')
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('user_email')
+        clearAuthSession()
         setCurrentPage('login')
     }, [])
 

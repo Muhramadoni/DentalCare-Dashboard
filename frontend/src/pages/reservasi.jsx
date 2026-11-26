@@ -17,8 +17,9 @@ import {
     CheckIcon,
     ClearIcon,
 } from '../components/icon'
-
-const API_BASE_URL = 'http://localhost:5000/api/v1/reservasi'
+import { API } from '../utils/api'
+import { getAuthToken } from '../utils/auth'
+import { toDateInputValue } from '../utils/date'
 
 export default function Reservasi({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('reservasi')
@@ -48,26 +49,16 @@ export default function Reservasi({ onNavigate, onLogout }) {
     // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
 
-    // Helper: Ambil token JWT dari sessionStorage
-    const getAuthToken = useCallback(() => {
-        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')
-        if (!token && onLogout) {
-            onLogout()
-            return null
-        }
-        return token
-    }, [onLogout])
-
     // 1. Ambil daftar reservasi dari REST API (GET /api/v1/reservasi)
     const fetchReservasi = useCallback(async () => {
         setIsLoading(true)
         setApiError(null)
 
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(API_BASE_URL, {
+            const response = await fetch(API.reservasi.base, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -92,15 +83,15 @@ export default function Reservasi({ onNavigate, onLogout }) {
         } finally {
             setIsLoading(false)
         }
-    }, [getAuthToken, onLogout])
+    }, [onLogout])
 
     // 2. Ambil daftar dokter aktif untuk dropdown modal (GET /api/v1/reservasi/doctors)
     const fetchDoctors = useCallback(async () => {
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(`${API_BASE_URL}/doctors`, {
+            const response = await fetch(API.reservasi.doctors, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -115,7 +106,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
         } catch (err) {
             console.error('Error saat fetch doctors:', err)
         }
-    }, [getAuthToken])
+    }, [onLogout])
 
     useEffect(() => {
         let isMounted = true
@@ -178,7 +169,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
 
     // Simpan Data (POST Tambah Baru atau PUT Update)
     const handleSaveReservasi = async (data) => {
-        const token = getAuthToken()
+        const token = getAuthToken(onLogout)
         if (!token) return
 
         // Validasi Anti Duplikasi Data Reservasi di Frontend
@@ -207,10 +198,30 @@ export default function Reservasi({ onNavigate, onLogout }) {
             return
         }
 
+        if (editingItem) {
+            const isSamePasien = (data.namaPasien || '').trim().toLowerCase() === (editingItem.namaPasien || '').trim().toLowerCase()
+            const origTanggal = editingItem.tanggalIso || toDateInputValue(editingItem.tanggal_kunjungan || editingItem.tanggalKunjungan || editingItem.tanggal || '')
+            const isSameTanggal = (data.tanggal || '').trim() === origTanggal.trim()
+            const origTime = (editingItem.waktu || editingItem.waktu_kunjungan || '').replace(':', '.').replace(/[^\d.]/g, '').trim()
+            const isSameWaktu = String(data.waktu || '').trim() === origTime
+            const isSameDokter = (data.dokter || '').trim().toLowerCase() === (editingItem.dokter || '').trim().toLowerCase()
+            const isSameStatus = (data.status || '').trim().toLowerCase() === (editingItem.status || '').trim().toLowerCase()
+
+            if (isSamePasien && isSameTanggal && isSameWaktu && isSameDokter && isSameStatus) {
+                setAlertModal({
+                    isOpen: true,
+                    title: 'Tidak Ada Perubahan',
+                    message: 'Anda belum mengubah data apapun pada reservasi ini.',
+                    type: 'danger',
+                })
+                return
+            }
+        }
+
         try {
             if (editingItem) {
                 // PUT /api/v1/reservasi/:id
-                const response = await fetch(`${API_BASE_URL}/${editingItem.id}`, {
+                const response = await fetch(`${API.reservasi.base}/${editingItem.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -240,7 +251,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 setToastMessage({ type: 'success', text: 'Data reservasi berhasil diperbarui!' })
             } else {
                 // POST /api/v1/reservasi
-                const response = await fetch(API_BASE_URL, {
+                const response = await fetch(API.reservasi.base, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -288,11 +299,11 @@ export default function Reservasi({ onNavigate, onLogout }) {
         const { id, nama } = deleteConfirm
         if (!id) return
 
-        const token = getAuthToken()
+        const token = getAuthToken(onLogout)
         if (!token) return
 
         try {
-            const response = await fetch(`${API_BASE_URL}/${id}`, {
+            const response = await fetch(`${API.reservasi.base}/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -336,6 +347,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 <PageHeader
                     title="Kelola Reservasi Pasien"
                     subtitle="Kelola seluruh daftar reservasi, jadwal kedatangan, dan status kunjungan pasien secara terpusat."
+                    onLogout={onLogout}
                 />
 
                 {/* Area Konten Utama Kelola Reservasi */}
@@ -572,6 +584,15 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 doctors={doctors}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleSaveReservasi}
+                onNoChange={(msg) => {
+                    setIsModalOpen(false)
+                    setAlertModal({
+                        isOpen: true,
+                        title: 'Tidak Ada Perubahan',
+                        message: msg,
+                        type: 'danger',
+                    })
+                }}
             />
 
             {/* Modal Konfirmasi Hapus Reservasi */}

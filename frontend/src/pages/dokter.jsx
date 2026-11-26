@@ -16,8 +16,8 @@ import {
     ClearIcon,
 } from '../components/icon'
 import { getDoctorSchedule, calculateDoctorStatus } from '../utils/doctorStatus'
-
-const API_BASE_URL = 'http://localhost:5000/api/v1/dokter'
+import { API } from '../utils/api'
+import { getAuthToken } from '../utils/auth'
 
 export default function Dokter({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('dokter')
@@ -38,26 +38,16 @@ export default function Dokter({ onNavigate, onLogout }) {
     // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
 
-    // Helper: Ambil token JWT dari sessionStorage
-    const getAuthToken = useCallback(() => {
-        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token')
-        if (!token && onLogout) {
-            onLogout()
-            return null
-        }
-        return token
-    }, [onLogout])
-
     // Ambil data dokter dari Backend API (GET /api/v1/dokter)
     const fetchDokter = useCallback(async () => {
         setIsLoading(true)
         setApiError(null)
 
         try {
-            const token = getAuthToken()
+            const token = getAuthToken(onLogout)
             if (!token) return
 
-            const response = await fetch(API_BASE_URL, {
+            const response = await fetch(API.dokter.base, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -82,7 +72,7 @@ export default function Dokter({ onNavigate, onLogout }) {
         } finally {
             setIsLoading(false)
         }
-    }, [getAuthToken, onLogout])
+    }, [onLogout])
 
     useEffect(() => {
         let isMounted = true
@@ -112,9 +102,6 @@ export default function Dokter({ onNavigate, onLogout }) {
         }
     }
 
-    // Daftar dokter yang ditampilkan
-    const filteredDokterList = dokterList
-
     const handleOpenAddModal = () => {
         setEditingDoctor(null)
         setIsModalOpen(true)
@@ -127,7 +114,7 @@ export default function Dokter({ onNavigate, onLogout }) {
 
     // Simpan Data Dokter (POST Tambah Baru atau PUT Update)
     const handleSaveDoctor = async (data) => {
-        const token = getAuthToken()
+        const token = getAuthToken(onLogout)
         if (!token) return
 
         // Validasi Anti Duplikasi Dokter di Frontend
@@ -147,7 +134,7 @@ export default function Dokter({ onNavigate, onLogout }) {
         try {
             if (editingDoctor) {
                 // PUT /api/v1/dokter/:id
-                const response = await fetch(`${API_BASE_URL}/${editingDoctor.id}`, {
+                const response = await fetch(API.dokter.byId(editingDoctor.id), {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -175,7 +162,7 @@ export default function Dokter({ onNavigate, onLogout }) {
                 setToastMessage({ type: 'success', text: `Data ${data.nama} berhasil diperbarui!` })
             } else {
                 // POST /api/v1/dokter
-                const response = await fetch(API_BASE_URL, {
+                const response = await fetch(API.dokter.base, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -221,11 +208,11 @@ export default function Dokter({ onNavigate, onLogout }) {
         const { id, nama } = deleteConfirm
         if (!id) return
 
-        const token = getAuthToken()
+        const token = getAuthToken(onLogout)
         if (!token) return
 
         try {
-            const response = await fetch(`${API_BASE_URL}/${id}`, {
+            const response = await fetch(API.dokter.byId(id), {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -266,16 +253,7 @@ export default function Dokter({ onNavigate, onLogout }) {
                 <PageHeader
                     title="Kelola Dokter & Jadwal Praktik"
                     subtitle="Daftar dokter spesialis, ketersediaan, dan jadwal praktik harian."
-                    actions={
-                        <button
-                            type="button"
-                            onClick={handleOpenAddModal}
-                            className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
-                        >
-                            <span>Tambah Dokter</span>
-                            <PlusIcon className="w-4 h-4" />
-                        </button>
-                    }
+                    onLogout={onLogout}
                 />
 
                 {/* Area Konten Utama Kelola Dokter */}
@@ -313,6 +291,18 @@ export default function Dokter({ onNavigate, onLogout }) {
                         </div>
                     )}
 
+                    {/* Tombol Tambah Dokter (di bawah header, di atas card dokter) */}
+                    <div className="flex items-center justify-end">
+                        <button
+                            type="button"
+                            onClick={handleOpenAddModal}
+                            className="px-5 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#49baff]/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+                        >
+                            <span>Tambah Dokter</span>
+                            <PlusIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+
                     {/* Status Loading */}
                     {isLoading && (
                         <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -324,8 +314,8 @@ export default function Dokter({ onNavigate, onLogout }) {
                     {/* 2. Grid Card Dokter (3 Kolom sesuai DESIGN.md) */}
                     {!isLoading && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8 items-start">
-                            {filteredDokterList.length > 0 ? (
-                                filteredDokterList.map((doctor) => {
+                            {dokterList.length > 0 ? (
+                                dokterList.map((doctor) => {
                                     const schedules = getDoctorSchedule(doctor)
                                     const statusInfo = calculateDoctorStatus(doctor)
 
@@ -432,6 +422,15 @@ export default function Dokter({ onNavigate, onLogout }) {
                 initialData={editingDoctor}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleSaveDoctor}
+                onNoChange={(msg) => {
+                    setIsModalOpen(false)
+                    setAlertModal({
+                        isOpen: true,
+                        title: 'Tidak Ada Perubahan',
+                        message: msg,
+                        type: 'danger',
+                    })
+                }}
             />
 
             {/* Modal Konfirmasi Hapus Dokter */}

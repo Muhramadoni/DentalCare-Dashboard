@@ -147,6 +147,17 @@ const createDokter = async (req, res, next) => {
       });
     }
 
+    if (!spesialisasi || !spesialisasi.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Spesialisasi dokter wajib diisi.',
+          details: [{ field: 'spesialisasi', issue: 'Spesialisasi dokter tidak boleh kosong.' }],
+        },
+      });
+    }
+
     // Validasi Anti Duplikasi Data Dokter
     const existingDoctor = await prisma.dokter.findFirst({
       where: {
@@ -233,10 +244,28 @@ const updateDokter = async (req, res, next) => {
     }
 
     const dataToUpdate = {};
-    if (req.body.nama && req.body.nama.trim()) {
+    if (req.body.nama !== undefined) {
+      if (!req.body.nama || !req.body.nama.trim()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Nama dokter tidak boleh kosong.',
+          },
+        });
+      }
       dataToUpdate.nama = req.body.nama.trim();
     }
     if (req.body.spesialisasi !== undefined) {
+      if (!req.body.spesialisasi || !req.body.spesialisasi.trim()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Spesialisasi dokter tidak boleh kosong.',
+          },
+        });
+      }
       dataToUpdate.spesialisasi = req.body.spesialisasi.trim();
     }
     if (req.body.cabang !== undefined) {
