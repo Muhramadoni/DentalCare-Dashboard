@@ -46,19 +46,14 @@ export default function EMR({ onNavigate, onLogout }) {
 
     // State Mode Edit / Update langsung pada form (tanpa pop up)
     const [editingId, setEditingId] = useState(null)
-    const [formSuccess, setFormSuccess] = useState('')
+    const [toastMessage, setToastMessage] = useState(null)
     const [formError, setFormError] = useState('')
 
-    // State Konfirmasi Sebelum Simpan & Loading
-    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    // State Loading Simpan
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [pendingPayload, setPendingPayload] = useState(null)
 
     // State Modal Konfirmasi Hapus Rekam Medis
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
-
-    // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
-    const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
 
     // State Riwayat Rekam Medis (EMR) - Bersih dari data dummy, siap input manual
     const [emrList, setEmrList] = useState([])
@@ -308,10 +303,10 @@ export default function EMR({ onNavigate, onLogout }) {
 
     // Toast notifikasi hilang otomatis setelah 4 detik
     useEffect(() => {
-        if (!formSuccess) return
-        const timer = setTimeout(() => setFormSuccess(''), 4000)
+        if (!toastMessage) return
+        const timer = setTimeout(() => setToastMessage(null), 4000)
         return () => clearTimeout(timer)
-    }, [formSuccess])
+    }, [toastMessage])
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId)
@@ -333,7 +328,6 @@ export default function EMR({ onNavigate, onLogout }) {
         setInputResep(item.resep || '')
         setInputTerapi(item.terapi || '')
         setFormError('')
-        setFormSuccess('')
         // Saat edit data lama, field tanggal & dokter bisa diubah bebas
         setIsPatientLocked(false)
 
@@ -364,11 +358,10 @@ export default function EMR({ onNavigate, onLogout }) {
         setIsPatientLocked(false)
     }
 
-    // Validasi dan Buka Dialog Konfirmasi sebelum Simpan
+    // Validasi dan Simpan EMR langsung (tanpa pop up alert konfirmasi)
     const handlePreSubmit = (e) => {
         e.preventDefault()
         setFormError('')
-        setFormSuccess('')
 
         if (!inputPasien.trim()) {
             setFormError('Silakan pilih atau ketik nama pasien terlebih dahulu.')
@@ -437,15 +430,18 @@ export default function EMR({ onNavigate, onLogout }) {
 
                 if (isUnchanged) {
                     const noChangeMsg = 'Anda belum mengubah data apapun pada rekam medis ini.'
-                    setFormError(noChangeMsg)
-                    setAlertModal({
-                        isOpen: true,
-                        title: 'Tidak Ada Perubahan',
-                        message: noChangeMsg,
-                        type: 'danger',
+                    setToastMessage({
+                        type: 'warning',
+                        text: noChangeMsg,
                     })
                     // Langsung kosongkan seluruh input di kotak input (reset form)
                     handleResetForm()
+                    // Fokus dan scroll otomatis ke tabel riwayat rekam medis di bawah
+                    setTimeout(() => {
+                        if (tableSectionRef.current) {
+                            tableSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }
+                    }, 100)
                     return
                 }
             }
@@ -488,11 +484,9 @@ export default function EMR({ onNavigate, onLogout }) {
         if (isDuplicate) {
             const dupMsg = `Data rekam medis dengan rincian yang sama persis sudah pernah tersimpan sebelumnya untuk pasien "${inputPasien.trim()}". Tidak dapat menginputkan data yang sama untuk mencegah duplikasi data.`
             setFormError(dupMsg)
-            setAlertModal({
-                isOpen: true,
-                title: 'Duplikasi Data Terdeteksi',
-                message: dupMsg,
-                type: 'danger',
+            setToastMessage({
+                type: 'error',
+                text: dupMsg,
             })
             return
         }
@@ -510,14 +504,11 @@ export default function EMR({ onNavigate, onLogout }) {
             terapi: inputTerapi.trim(),
         }
 
-        setPendingPayload(payload)
-        setShowConfirmModal(true)
+        handleSaveEmr(payload)
     }
 
-    // Eksekusi Simpan Data ke Backend setelah dikonfirmasi
-    const handleConfirmSave = async () => {
-        if (!pendingPayload) return
-
+    // Eksekusi Simpan Data ke Backend langsung tanpa modal pop up konfirmasi
+    const handleSaveEmr = async (payload) => {
         setIsSubmitting(true)
         setFormError('')
 
@@ -535,7 +526,7 @@ export default function EMR({ onNavigate, onLogout }) {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(pendingPayload),
+                body: JSON.stringify(payload),
             })
 
             const result = await response.json()
@@ -548,11 +539,12 @@ export default function EMR({ onNavigate, onLogout }) {
                 throw new Error(result?.error?.message || 'Gagal menyimpan rekam medis.')
             }
 
-            setFormSuccess(
-                isEdit
+            setToastMessage({
+                type: 'success',
+                text: isEdit
                     ? 'Rekam medis berhasil diperbarui!'
-                    : 'Rekam medis baru berhasil disimpan!'
-            )
+                    : 'Rekam medis baru berhasil disimpan!',
+            })
 
             // Pindahkan data yang baru di-update/ditambah ke posisi teratas tabel
             if (isEdit) {
@@ -562,8 +554,6 @@ export default function EMR({ onNavigate, onLogout }) {
             }
             setCurrentPage(1)
 
-            setShowConfirmModal(false)
-            setPendingPayload(null)
             handleResetForm()
             fetchPatients()
 
@@ -577,13 +567,10 @@ export default function EMR({ onNavigate, onLogout }) {
             console.error('Error saat simpan EMR:', err)
             const errText = err.message || 'Terjadi kesalahan saat menyimpan rekam medis.'
             setFormError(errText)
-            setAlertModal({
-                isOpen: true,
-                title: errText.includes('Duplikasi') ? 'Duplikasi Data Terdeteksi' : 'Pemberitahuan Sistem',
-                message: errText,
-                type: 'danger',
+            setToastMessage({
+                type: 'error',
+                text: errText,
             })
-            setShowConfirmModal(false)
         } finally {
             setIsSubmitting(false)
         }
@@ -621,7 +608,10 @@ export default function EMR({ onNavigate, onLogout }) {
             }
 
             setEmrList((prev) => prev.filter((item) => item.id !== id))
-            setFormSuccess(`Rekam medis untuk ${nama} berhasil dihapus.`)
+            setToastMessage({
+                type: 'success',
+                text: `Rekam medis untuk ${nama} berhasil dihapus.`,
+            })
 
             // Jika sedang mengedit item yang baru dihapus, reset form
             if (editingId === id) {
@@ -629,11 +619,9 @@ export default function EMR({ onNavigate, onLogout }) {
             }
         } catch (err) {
             console.error('Error saat menghapus rekam medis:', err)
-            setAlertModal({
-                isOpen: true,
-                title: 'Gagal Menghapus Data',
-                message: err.message || 'Terjadi kesalahan saat menghapus data.',
-                type: 'danger',
+            setToastMessage({
+                type: 'error',
+                text: err.message || 'Terjadi kesalahan saat menghapus data.',
             })
         } finally {
             setDeleteConfirm({ isOpen: false, id: null, nama: '' })
@@ -1244,20 +1232,42 @@ export default function EMR({ onNavigate, onLogout }) {
                     2. BAGIAN BAWAH: RIWAYAT REKAM MEDIS (EMR)
                    ==================================================== */}
                     <div ref={tableSectionRef} className="flex flex-col gap-4">
-                        {/* Alert Notifikasi Sukses pada Tabel */}
-                        {formSuccess && (
-                            <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn shadow-xs">
-                                <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span>{formSuccess}</span>
+                        {/* Toast Alert Notifikasi Sukses Tambah/Update & Alert Tidak Ada Update di atas Tabel */}
+                        {toastMessage && (
+                            <div
+                                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium animate-fadeIn shadow-xs self-start sm:self-end transition-all ${
+                                    toastMessage.type === 'error' || toastMessage.type === 'danger'
+                                        ? 'bg-red-50 border-red-200 text-red-700'
+                                        : toastMessage.type === 'warning'
+                                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                                            : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                }`}
+                            >
+                                {toastMessage.type === 'error' || toastMessage.type === 'danger' ? (
+                                    <ErrorIcon className="w-4 h-4 text-red-600 shrink-0" />
+                                ) : toastMessage.type === 'warning' ? (
+                                    <ErrorIcon className="w-4 h-4 text-amber-600 shrink-0" />
+                                ) : (
+                                    <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                                )}
+                                <span>{toastMessage.text}</span>
                                 <button
                                     type="button"
-                                    onClick={() => setFormSuccess('')}
-                                    className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5 cursor-pointer"
+                                    onClick={() => setToastMessage(null)}
+                                    className={`ml-2 p-0.5 cursor-pointer hover:opacity-75 ${
+                                        toastMessage.type === 'error' || toastMessage.type === 'danger'
+                                            ? 'text-red-500 hover:text-red-700'
+                                            : toastMessage.type === 'warning'
+                                                ? 'text-amber-500 hover:text-amber-700'
+                                                : 'text-emerald-500 hover:text-emerald-700'
+                                    }`}
+                                    aria-label="Tutup notifikasi"
                                 >
                                     <ClearIcon className="w-3.5 h-3.5" />
                                 </button>
                             </div>
                         )}
+
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
@@ -1646,50 +1656,6 @@ export default function EMR({ onNavigate, onLogout }) {
                 </main>
             </div>
 
-            {/* Dialog Konfirmasi Sebelum Simpan EMR (sesuai FR-7 & security.md) */}
-            {showConfirmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs font-['Poppins'] animate-fadeIn">
-                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 flex flex-col p-6 sm:p-7">
-                        <h3 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
-                            {editingId ? 'Konfirmasi Pembaruan EMR' : 'Konfirmasi Simpan EMR'}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 mt-2 leading-relaxed">
-                            {editingId
-                                ? `Apakah Anda yakin ingin memperbarui data rekam medis untuk pasien "${pendingPayload?.namaPasien}"?`
-                                : `Apakah Anda yakin ingin menyimpan rekam medis baru untuk pasien "${pendingPayload?.namaPasien}"?`}
-                        </p>
-                        <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={() => {
-                                    setShowConfirmModal(false)
-                                    setPendingPayload(null)
-                                }}
-                                className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={handleConfirmSave}
-                                className="px-6 py-2.5 rounded-xl bg-[#49baff] hover:bg-[#38a9ee] active:scale-[0.99] text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#49baff]/30 transition-all cursor-pointer flex items-center gap-2"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <SpinnerIcon className="w-4 h-4 animate-spin text-white" />
-                                        <span>Menyimpan...</span>
-                                    </>
-                                ) : (
-                                    <span>Ya, Simpan</span>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Modal Konfirmasi Hapus Rekam Medis */}
             <ConfirmModal
                 isOpen={deleteConfirm.isOpen}
@@ -1700,17 +1666,6 @@ export default function EMR({ onNavigate, onLogout }) {
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
                 onConfirm={handleConfirmDeleteEmr}
-            />
-
-            {/* Modal Alert Sistem (Bergaya Persis Seperti Konfirmasi Hapus) */}
-            <ConfirmModal
-                isOpen={alertModal.isOpen}
-                isAlert={true}
-                type={alertModal.type || 'warning'}
-                title={alertModal.title}
-                message={alertModal.message}
-                confirmText="Mengerti"
-                onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
             />
         </div>
     )

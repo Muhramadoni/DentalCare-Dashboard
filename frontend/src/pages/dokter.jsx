@@ -35,9 +35,6 @@ export default function Dokter({ onNavigate, onLogout }) {
     // State Modal Konfirmasi Hapus Dokter
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
 
-    // State Modal Alert Sistem (Warna merah senada dengan modal konfirmasi hapus)
-    const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'danger' })
-
     // Ambil data dokter dari Backend API (GET /api/v1/dokter)
     const fetchDokter = useCallback(async () => {
         setIsLoading(true)
@@ -121,11 +118,9 @@ export default function Dokter({ onNavigate, onLogout }) {
         if (!editingDoctor) {
             const isDup = dokterList.some((doc) => doc.nama.trim().toLowerCase() === (data.nama || '').trim().toLowerCase())
             if (isDup) {
-                setAlertModal({
-                    isOpen: true,
-                    title: 'Duplikasi Data Dokter',
-                    message: `Dokter dengan nama "${data.nama}" sudah pernah didaftarkan sebelumnya!`,
-                    type: 'danger',
+                setToastMessage({
+                    type: 'error',
+                    text: `Dokter dengan nama "${data.nama}" sudah pernah didaftarkan sebelumnya!`,
                 })
                 return
             }
@@ -189,11 +184,9 @@ export default function Dokter({ onNavigate, onLogout }) {
             }
         } catch (err) {
             console.error('Error saat menyimpan dokter:', err)
-            setAlertModal({
-                isOpen: true,
-                title: err.message?.includes('Duplikasi') ? 'Duplikasi Data Terdeteksi' : 'Gagal Menyimpan Data',
-                message: err.message || 'Terjadi kesalahan saat menyimpan data dokter.',
-                type: 'warning',
+            setToastMessage({
+                type: 'error',
+                text: err.message || 'Terjadi kesalahan saat menyimpan data dokter.',
             })
         }
     }
@@ -229,11 +222,9 @@ export default function Dokter({ onNavigate, onLogout }) {
             setToastMessage({ type: 'success', text: `Data dokter "${nama}" berhasil dihapus!` })
         } catch (err) {
             console.error('Error saat menghapus dokter:', err)
-            setAlertModal({
-                isOpen: true,
-                title: 'Gagal Menghapus Data',
-                message: err.message || 'Terjadi kesalahan saat menghapus data.',
-                type: 'danger',
+            setToastMessage({
+                type: 'error',
+                text: err.message || 'Terjadi kesalahan saat menghapus data.',
             })
         } finally {
             setDeleteConfirm({ isOpen: false, id: null, nama: '' })
@@ -261,13 +252,34 @@ export default function Dokter({ onNavigate, onLogout }) {
 
                     {/* Toast Alert Notifikasi */}
                     {toastMessage && (
-                        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium animate-fadeIn shadow-xs">
-                            <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div
+                            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium animate-fadeIn shadow-xs self-start sm:self-end transition-all ${
+                                toastMessage.type === 'error' || toastMessage.type === 'danger'
+                                    ? 'bg-red-50 border-red-200 text-red-700'
+                                    : toastMessage.type === 'warning'
+                                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                                        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            }`}
+                        >
+                            {toastMessage.type === 'error' || toastMessage.type === 'danger' ? (
+                                <ErrorIcon className="w-4 h-4 text-red-600 shrink-0" />
+                            ) : toastMessage.type === 'warning' ? (
+                                <ErrorIcon className="w-4 h-4 text-amber-600 shrink-0" />
+                            ) : (
+                                <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                            )}
                             <span>{toastMessage.text}</span>
                             <button
                                 type="button"
                                 onClick={() => setToastMessage(null)}
-                                className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
+                                className={`ml-2 p-0.5 cursor-pointer hover:opacity-75 ${
+                                    toastMessage.type === 'error' || toastMessage.type === 'danger'
+                                        ? 'text-red-500 hover:text-red-700'
+                                        : toastMessage.type === 'warning'
+                                            ? 'text-amber-500 hover:text-amber-700'
+                                            : 'text-emerald-500 hover:text-emerald-700'
+                                }`}
+                                aria-label="Tutup notifikasi"
                             >
                                 <ClearIcon className="w-3.5 h-3.5" />
                             </button>
@@ -424,11 +436,9 @@ export default function Dokter({ onNavigate, onLogout }) {
                 onSubmit={handleSaveDoctor}
                 onNoChange={(msg) => {
                     setIsModalOpen(false)
-                    setAlertModal({
-                        isOpen: true,
-                        title: 'Tidak Ada Perubahan',
-                        message: msg,
-                        type: 'danger',
+                    setToastMessage({
+                        type: 'warning',
+                        text: msg || 'Anda belum mengubah data apapun pada dokter ini.',
                     })
                 }}
             />
@@ -443,17 +453,6 @@ export default function Dokter({ onNavigate, onLogout }) {
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
                 onConfirm={handleConfirmDeleteDoctor}
-            />
-
-            {/* Modal Alert Sistem (Bergaya Persis Seperti Konfirmasi Hapus) */}
-            <ConfirmModal
-                isOpen={alertModal.isOpen}
-                isAlert={true}
-                type={alertModal.type || 'warning'}
-                title={alertModal.title}
-                message={alertModal.message}
-                confirmText="Mengerti"
-                onClose={() => setAlertModal((prev) => ({ ...prev, isOpen: false }))}
             />
         </div>
     )
