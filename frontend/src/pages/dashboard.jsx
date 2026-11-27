@@ -15,20 +15,20 @@ import { calculateDoctorStatus } from '../utils/doctorStatus'
 import { API } from '../utils/api'
 import { getAuthToken } from '../utils/auth'
 
-// Palet warna batang statistik sesuai referensi (Merah, Plum, Cokelat, Ungu, Teal, Violet, Hijau Lemon, Hijau Daun, Indigo, Krem/Peach, Mustard, Hijau Muda)
+// Palet warna batang statistik bernuansa hijau selaras dengan warna hijau pada tag (#adc91f)
 const CHART_PALETTE = [
-    '#49baff', // Sky Blue (primary)
-    '#1e88e5', // Bright Blue
-    '#0ea5e9', // Light Blue
-    '#2563eb', // Royal Blue
-    '#38bdf8', // Soft Cyan Blue
-    '#3b82f6', // Medium Blue
-    '#60a5fa', // Periwinkle Blue
-    '#0284c7', // Deep Sky Blue
-    '#7dd3fc', // Pale Blue
-    '#1d4ed8', // Indigo Blue
-    '#93c5fd', // Muted Blue
-    '#0369a1', // Dark Ocean Blue
+    '#adc91f', // Hijau tag utama (Lime Green)
+    '#9bb619', // Olive Lime
+    '#b8d626', // Light Lime
+    '#8da612', // Deep Lime Green
+    '#c3e134', // Soft Lime
+    '#7f950f', // Forest Lime
+    '#a4c11b', // Medium Lime
+    '#71850c', // Dark Lime
+    '#cded45', // Bright Lime
+    '#637508', // Moss Green
+    '#93ad16', // Meadow Green
+    '#b1ce23', // Fresh Lime
 ]
 
 // Helper penghitungan skala sumbu Y (Y-Axis ticks) yang rapi
@@ -415,7 +415,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                         type="button"
                                         onClick={() => setSelectedTrendTab('diagnosa')}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${selectedTrendTab === 'diagnosa'
-                                            ? 'bg-[#49baff] text-white shadow-xs'
+                                            ? 'bg-[#adc91f] text-white shadow-xs'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                             }`}
                                     >
@@ -425,7 +425,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                         type="button"
                                         onClick={() => setSelectedTrendTab('regio')}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${selectedTrendTab === 'regio'
-                                            ? 'bg-[#49baff] text-white shadow-xs'
+                                            ? 'bg-[#adc91f] text-white shadow-xs'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                             }`}
                                     >
@@ -435,7 +435,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                         type="button"
                                         onClick={() => setSelectedTrendTab('tindakan')}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${selectedTrendTab === 'tindakan'
-                                            ? 'bg-[#49baff] text-white shadow-xs'
+                                            ? 'bg-[#adc91f] text-white shadow-xs'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                                             }`}
                                     >
@@ -543,7 +543,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                                             >
                                                                 <span
                                                                     title={item.label}
-                                                                    className="text-[10px] sm:text-[11px] font-semibold text-slate-700 leading-snug break-words text-center w-full hover:text-[#49baff] transition-colors cursor-default"
+                                                                    className="text-[10px] sm:text-[11px] font-semibold text-slate-700 leading-snug break-words text-center w-full hover:text-[#adc91f] transition-colors cursor-default"
                                                                 >
                                                                     {item.label}
                                                                 </span>

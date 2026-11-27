@@ -689,7 +689,7 @@ export default function EMR({ onNavigate, onLogout }) {
         const rows = [
             ['KLINIK GIGI IN DENTAL CARE'],
             ['LAPORAN REKAM MEDIS ELEKTRONIK (EMR) PASIEN'],
-            [`Tanggal Unduh: ${tanggalCetak}  |  Total Data: ${filteredEmrList.length} Rekam Medis  |  Dicetak oleh: Admin Dashboard`],
+            [`Tanggal Unduh: ${tanggalCetak}  |  Total Data: ${filteredEmrList.length} Rekam Medis`],
             [], // Baris kosong pemisah
             [
                 'NO',
