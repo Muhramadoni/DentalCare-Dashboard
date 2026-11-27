@@ -204,8 +204,8 @@ const getSummary = async (req, res, next) => {
       (items || []).forEach((item) => {
         const val = item[key];
         if (!val || val === '-' || !val.trim()) return;
-        if (splitByComma && val.includes(',')) {
-          val.split(',').forEach((sub) => {
+        if (splitByComma) {
+          String(val).split(/[,;]+/).forEach((sub) => {
             const clean = sub.trim();
             if (clean && clean !== '-') {
               freq[clean] = (freq[clean] || 0) + 1;

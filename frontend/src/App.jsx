@@ -8,24 +8,30 @@ import { API } from './utils/api'
 import { getAuthToken, clearAuthSession } from './utils/auth'
 
 function App() {
-    // Cek apakah token autentikasi tersimpan di sessionStorage (hilang otomatis saat tab ditutup)
+    // Cek token autentikasi & halaman terakhir yang dikunjungi saat refresh
     const [currentPage, setCurrentPage] = useState(() => {
         const token = getAuthToken()
-        return token ? 'dashboard' : 'login'
+        if (!token) return 'login'
+        const savedPage = sessionStorage.getItem('active_page')
+        const validPages = ['dashboard', 'reservasi', 'dokter', 'emr']
+        return validPages.includes(savedPage) ? savedPage : 'dashboard'
     })
 
     const handleNavigate = (pageId) => {
-        if (pageId === 'ringkasan') {
-            setCurrentPage('dashboard')
-        } else if (pageId === 'reservasi') {
-            setCurrentPage('reservasi')
-        } else if (pageId === 'dokter') {
-            setCurrentPage('dokter')
-        } else if (pageId === 'emr') {
-            setCurrentPage('emr')
-        } else {
-            console.log('Navigasi halaman:', pageId)
+        const pageMap = {
+            ringkasan: 'dashboard',
+            dashboard: 'dashboard',
+            reservasi: 'reservasi',
+            dokter: 'dokter',
+            emr: 'emr',
         }
+        const targetPage = pageMap[pageId]
+        if (!targetPage) {
+            console.log('Navigasi halaman:', pageId)
+            return
+        }
+        sessionStorage.setItem('active_page', targetPage)
+        setCurrentPage(targetPage)
     }
 
     // Logout manual: Hanya dieksekusi saat admin menekan tombol "Logout"
@@ -51,7 +57,12 @@ function App() {
     return (
         <main className="w-full min-h-screen">
             {currentPage === 'login' && (
-                <Login onLoginSuccess={() => setCurrentPage('dashboard')} />
+                <Login
+                    onLoginSuccess={() => {
+                        sessionStorage.setItem('active_page', 'dashboard')
+                        setCurrentPage('dashboard')
+                    }}
+                />
             )}
 
             {currentPage === 'dashboard' && (

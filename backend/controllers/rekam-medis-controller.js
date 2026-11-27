@@ -266,7 +266,7 @@ const createRekamMedis = async (req, res, next) => {
     const cleanResep = sanitizeText(req.body.resep || req.body.prescription);
     const cleanTerapi = sanitizeText(req.body.terapi || req.body.therapy);
 
-    if (!cleanRegio || !cleanRegio.trim() || cleanRegio === '-') {
+    if (!cleanRegio || !cleanRegio.trim()) {
       return res.status(400).json({
         success: false,
         error: {
@@ -277,7 +277,7 @@ const createRekamMedis = async (req, res, next) => {
       });
     }
 
-    if (!cleanAnamnesa || !cleanAnamnesa.trim() || cleanAnamnesa === '-') {
+    if (!cleanAnamnesa || !cleanAnamnesa.trim()) {
       return res.status(400).json({
         success: false,
         error: {
@@ -288,7 +288,7 @@ const createRekamMedis = async (req, res, next) => {
       });
     }
 
-    if (!cleanTindakan || !cleanTindakan.trim() || cleanTindakan === '-') {
+    if (!cleanTindakan || !cleanTindakan.trim()) {
       return res.status(400).json({
         success: false,
         error: {
@@ -299,7 +299,7 @@ const createRekamMedis = async (req, res, next) => {
       });
     }
 
-    if (!cleanResep || !cleanResep.trim() || cleanResep === '-') {
+    if (!cleanResep || !cleanResep.trim()) {
       return res.status(400).json({
         success: false,
         error: {
@@ -310,7 +310,7 @@ const createRekamMedis = async (req, res, next) => {
       });
     }
 
-    if (!cleanTerapi || !cleanTerapi.trim() || cleanTerapi === '-') {
+    if (!cleanTerapi || !cleanTerapi.trim()) {
       return res.status(400).json({
         success: false,
         error: {
@@ -522,7 +522,7 @@ const updateRekamMedis = async (req, res, next) => {
     // 1. Sanitasi dan update data klinis jika ada
     if (req.body.regio !== undefined) {
       const sanitized = sanitizeText(req.body.regio);
-      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+      if (!sanitized || !sanitized.trim()) {
         return res.status(400).json({
           success: false,
           error: { code: 'VALIDATION_ERROR', message: 'Regio (gigi) tidak boleh kosong.' },
@@ -532,7 +532,7 @@ const updateRekamMedis = async (req, res, next) => {
     }
     if (req.body.anamnesa !== undefined) {
       const sanitized = sanitizeText(req.body.anamnesa);
-      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+      if (!sanitized || !sanitized.trim()) {
         return res.status(400).json({
           success: false,
           error: { code: 'VALIDATION_ERROR', message: 'Anamnesa (diagnosa) tidak boleh kosong.' },
@@ -542,7 +542,7 @@ const updateRekamMedis = async (req, res, next) => {
     }
     if (req.body.tindakan !== undefined) {
       const sanitized = sanitizeText(req.body.tindakan);
-      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+      if (!sanitized || !sanitized.trim()) {
         return res.status(400).json({
           success: false,
           error: { code: 'VALIDATION_ERROR', message: 'Tindakan pelayanan tidak boleh kosong.' },
@@ -552,7 +552,7 @@ const updateRekamMedis = async (req, res, next) => {
     }
     if (req.body.resep !== undefined) {
       const sanitized = sanitizeText(req.body.resep);
-      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+      if (!sanitized || !sanitized.trim()) {
         return res.status(400).json({
           success: false,
           error: { code: 'VALIDATION_ERROR', message: 'Resep obat (PF) tidak boleh kosong.' },
@@ -562,7 +562,7 @@ const updateRekamMedis = async (req, res, next) => {
     }
     if (req.body.terapi !== undefined) {
       const sanitized = sanitizeText(req.body.terapi);
-      if (!sanitized || !sanitized.trim() || sanitized === '-') {
+      if (!sanitized || !sanitized.trim()) {
         return res.status(400).json({
           success: false,
           error: { code: 'VALIDATION_ERROR', message: 'Terapi (prosedur) tidak boleh kosong.' },

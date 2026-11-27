@@ -32,4 +32,5 @@ export function saveAuthSession(token, email) {
 export function clearAuthSession() {
     sessionStorage.removeItem('auth_token')
     sessionStorage.removeItem('user_email')
+    sessionStorage.removeItem('active_page')
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Sidebar from '../components/sidebar'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
@@ -88,8 +88,8 @@ export default function Dashboard({ onNavigate, onLogout }) {
                 ; (records || []).forEach((r) => {
                     const val = r[key]
                     if (!val || val === '-' || !val.trim()) return
-                    if (splitComma && val.includes(',')) {
-                        val.split(',').forEach((s) => {
+                    if (splitComma) {
+                        String(val).split(/[,;]+/).forEach((s) => {
                             const clean = s.trim()
                             if (clean && clean !== '-') map[clean] = (map[clean] || 0) + 1
                         })
@@ -243,13 +243,41 @@ export default function Dashboard({ onNavigate, onLogout }) {
     const aktivitasList = summary.riwayatAktivitas || []
 
     // Data tren EMR aktif berdasarkan filter tab (menampilkan semua data tanpa dipotong)
-    const trenData = summary.trenEmr || { diagnosa: [], regio: [], tindakan: [] }
-    const currentChartItems =
-        selectedTrendTab === 'diagnosa'
-            ? trenData.diagnosa || []
-            : selectedTrendTab === 'regio'
-                ? trenData.regio || []
-                : trenData.tindakan || []
+    // Pastikan jika regio gigi berisi lebih dari 1 (dipisah koma), setiap regio dipisah batangnya (chart) secara individual
+    const currentChartItems = useMemo(() => {
+        const trenData = summary.trenEmr || { diagnosa: [], regio: [], tindakan: [] }
+        const rawChartItems =
+            selectedTrendTab === 'diagnosa'
+                ? trenData.diagnosa || []
+                : selectedTrendTab === 'regio'
+                    ? trenData.regio || []
+                    : trenData.tindakan || []
+
+        if (selectedTrendTab !== 'regio') return rawChartItems
+
+        const map = {}
+        rawChartItems.forEach((item) => {
+            if (!item || !item.label) return
+            const labelStr = String(item.label)
+            if (labelStr.includes(',') || labelStr.includes(';')) {
+                labelStr.split(/[,;]+/).forEach((sub) => {
+                    const clean = sub.trim()
+                    if (clean && clean !== '-') {
+                        map[clean] = (map[clean] || 0) + (item.count || 1)
+                    }
+                })
+            } else {
+                const clean = labelStr.trim()
+                if (clean && clean !== '-') {
+                    map[clean] = (map[clean] || 0) + (item.count || 0)
+                }
+            }
+        })
+
+        return Object.entries(map)
+            .map(([label, count]) => ({ label, count }))
+            .sort((a, b) => b.count - a.count)
+    }, [selectedTrendTab, summary.trenEmr])
 
     const maxChartCount = Math.max(...currentChartItems.map((item) => item.count), 0)
     const { ticks: yAxisTicks, maxDisplay: chartMaxDisplay } = getYAxisTicks(maxChartCount)

@@ -40,6 +40,9 @@ export default function EMR({ onNavigate, onLogout }) {
     // State Pasien Search / Combobox pada Form Input (Atas)
     const [isPasienFormOpen, setIsPasienFormOpen] = useState(false)
     const pasienFormRef = useRef(null)
+    const mainScrollRef = useRef(null)
+    const formCardRef = useRef(null)
+    const tableSectionRef = useRef(null)
 
     // State Mode Edit / Update langsung pada form (tanpa pop up)
     const [editingId, setEditingId] = useState(null)
@@ -301,7 +304,7 @@ export default function EMR({ onNavigate, onLogout }) {
     const applyFilter = useCallback((setter, value) => {
         setter(value)
         setCurrentPage(1)
-    }, [])
+    }, [setCurrentPage])
 
     // Toast notifikasi hilang otomatis setelah 4 detik
     useEffect(() => {
@@ -323,18 +326,24 @@ export default function EMR({ onNavigate, onLogout }) {
         setInputPasien(item.namaPasien)
         setIsPasienFormOpen(false)
         setInputTanggal(item.tanggalIso || toDateInputValue(item.tanggal))
-        setInputRegio(item.regio === '-' ? '' : item.regio)
+        setInputRegio(item.regio || '')
         setInputDokter(item.dokter)
-        setInputAnamnesa(item.anamnesa === '-' ? '' : item.anamnesa)
-        setInputTindakan(item.tindakan === '-' ? '' : item.tindakan)
-        setInputResep(item.resep === '-' ? '' : item.resep)
-        setInputTerapi(item.terapi === '-' ? '' : item.terapi)
+        setInputAnamnesa(item.anamnesa || '')
+        setInputTindakan(item.tindakan || '')
+        setInputResep(item.resep || '')
+        setInputTerapi(item.terapi || '')
         setFormError('')
         setFormSuccess('')
         // Saat edit data lama, field tanggal & dokter bisa diubah bebas
         setIsPatientLocked(false)
 
-        // Scroll halus ke atas menuju form
+        // Scroll langsung ke form input di bagian atas container <main> dan window
+        if (mainScrollRef.current) {
+            mainScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+        if (formCardRef.current) {
+            formCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
@@ -409,12 +418,12 @@ export default function EMR({ onNavigate, onLogout }) {
             if (currentItem) {
                 const origPasien = (currentItem.namaPasien || '').trim().toLowerCase()
                 const origTanggal = (currentItem.tanggalIso || toDateInputValue(currentItem.tanggal) || '').trim()
-                const origRegio = ((currentItem.regio === '-' ? '' : currentItem.regio) || '').trim().toLowerCase()
+                const origRegio = (currentItem.regio || '').trim().toLowerCase()
                 const origDokter = (currentItem.dokter || '').trim().toLowerCase()
-                const origAnamnesa = ((currentItem.anamnesa === '-' ? '' : currentItem.anamnesa) || '').trim().toLowerCase()
-                const origTindakan = ((currentItem.tindakan === '-' ? '' : currentItem.tindakan) || '').trim().toLowerCase()
-                const origResep = ((currentItem.resep === '-' ? '' : currentItem.resep) || '').trim().toLowerCase()
-                const origTerapi = ((currentItem.terapi === '-' ? '' : currentItem.terapi) || '').trim().toLowerCase()
+                const origAnamnesa = (currentItem.anamnesa || '').trim().toLowerCase()
+                const origTindakan = (currentItem.tindakan || '').trim().toLowerCase()
+                const origResep = (currentItem.resep || '').trim().toLowerCase()
+                const origTerapi = (currentItem.terapi || '').trim().toLowerCase()
 
                 const isUnchanged =
                     inputPasien.trim().toLowerCase() === origPasien &&
@@ -435,6 +444,8 @@ export default function EMR({ onNavigate, onLogout }) {
                         message: noChangeMsg,
                         type: 'danger',
                     })
+                    // Langsung kosongkan seluruh input di kotak input (reset form)
+                    handleResetForm()
                     return
                 }
             }
@@ -450,11 +461,11 @@ export default function EMR({ onNavigate, onLogout }) {
             const sameDate = itemDate === inputDateClean || item.tanggal === inputDateClean
             const sameDoctor = (item.dokter || '').trim().toLowerCase() === inputDokter.trim().toLowerCase()
 
-            const itemRegio = ((item.regio === '-' ? '' : item.regio) || '').trim().toLowerCase()
-            const itemAnamnesa = ((item.anamnesa === '-' ? '' : item.anamnesa) || '').trim().toLowerCase()
-            const itemTindakan = ((item.tindakan === '-' ? '' : item.tindakan) || '').trim().toLowerCase()
-            const itemResep = ((item.resep === '-' ? '' : item.resep) || '').trim().toLowerCase()
-            const itemTerapi = ((item.terapi === '-' ? '' : item.terapi) || '').trim().toLowerCase()
+            const itemRegio = (item.regio || '').trim().toLowerCase()
+            const itemAnamnesa = (item.anamnesa || '').trim().toLowerCase()
+            const itemTindakan = (item.tindakan || '').trim().toLowerCase()
+            const itemResep = (item.resep || '').trim().toLowerCase()
+            const itemTerapi = (item.terapi || '').trim().toLowerCase()
 
             const inRegio = (inputRegio || '').trim().toLowerCase()
             const inAnamnesa = (inputAnamnesa || '').trim().toLowerCase()
@@ -543,11 +554,25 @@ export default function EMR({ onNavigate, onLogout }) {
                     : 'Rekam medis baru berhasil disimpan!'
             )
 
+            // Pindahkan data yang baru di-update/ditambah ke posisi teratas tabel
+            if (isEdit) {
+                setEmrList((prev) => [result.data, ...prev.filter((item) => item.id !== editingId)])
+            } else {
+                setEmrList((prev) => [result.data, ...prev])
+            }
+            setCurrentPage(1)
+
             setShowConfirmModal(false)
             setPendingPayload(null)
             handleResetForm()
-            fetchEmr()
             fetchPatients()
+
+            // Fokus dan scroll otomatis ke tabel riwayat rekam medis di bawah
+            setTimeout(() => {
+                if (tableSectionRef.current) {
+                    tableSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+            }, 100)
         } catch (err) {
             console.error('Error saat simpan EMR:', err)
             const errText = err.message || 'Terjadi kesalahan saat menyimpan rekam medis.'
@@ -871,29 +896,14 @@ export default function EMR({ onNavigate, onLogout }) {
                 />
 
                 {/* Area Konten Utama EMR */}
-                <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-8 pb-12">
+                <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 flex flex-col gap-8 pb-12">
                     {/* ====================================================
                     1. BAGIAN ATAS: FORM INPUT & UPDATE REKAM MEDIS (EMR)
                    ==================================================== */}
                     <div className="flex flex-col gap-4">
 
                         {/* Card Form Input Langsung */}
-                        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col">
-                            {/* Alert Notifikasi Sukses */}
-                            {formSuccess && (
-                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn">
-                                    <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>{formSuccess}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormSuccess('')}
-                                        className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5"
-                                    >
-                                        <ClearIcon className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                            )}
-
+                        <div ref={formCardRef} className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col">
                             {/* Alert Notifikasi Error */}
                             {formError && (
                                 <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm font-medium flex items-center justify-between animate-fadeIn">
@@ -913,8 +923,10 @@ export default function EMR({ onNavigate, onLogout }) {
 
                             {/* Banner Mode Edit */}
                             {editingId && (
-                                <div className="mb-4 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium animate-fadeIn">
-                                    <span>Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik "Simpan Perubahan".</span>
+                                <div className="mb-5 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium animate-fadeIn">
+                                    <span>
+                                        Sedang mengedit rekam medis pasien terpilih. Ubah data di bawah dan klik &quot;Simpan Perubahan&quot;.
+                                    </span>
                                 </div>
                             )}
 
@@ -931,11 +943,12 @@ export default function EMR({ onNavigate, onLogout }) {
                                             <input
                                                 type="text"
                                                 value={inputPasien}
+                                                disabled={Boolean(editingId)}
                                                 onChange={(e) => {
                                                     setInputPasien(e.target.value)
                                                     setIsPasienFormOpen(true)
                                                 }}
-                                                onFocus={() => setIsPasienFormOpen(true)}
+                                                onFocus={() => !editingId && setIsPasienFormOpen(true)}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Escape') {
                                                         setIsPasienFormOpen(false)
@@ -952,6 +965,7 @@ export default function EMR({ onNavigate, onLogout }) {
                                                     }
                                                 }}
                                                 onBlur={() => {
+                                                    if (editingId) return
                                                     setTimeout(() => {
                                                         const exactMatch = formPasienList.find(
                                                             (p) => p.nama.toLowerCase() === inputPasien.trim().toLowerCase()
@@ -968,44 +982,49 @@ export default function EMR({ onNavigate, onLogout }) {
                                                     }, 200)
                                                 }}
                                                 placeholder="Ketik atau pilih nama pasien..."
-                                                className="w-full pl-4 pr-16 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
+                                                className={`w-full pl-4 pr-16 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${editingId
+                                                    ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed select-none'
+                                                    : 'border-gray-300 text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none'
+                                                    }`}
                                             />
 
                                             {/* Action Buttons di dalam input: Clear + Chevron */}
-                                            <div className="absolute right-2.5 flex items-center gap-1 text-gray-400">
-                                                {inputPasien && (
+                                            {!editingId && (
+                                                <div className="absolute right-2.5 flex items-center gap-1 text-gray-400">
+                                                    {inputPasien && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setInputPasien('')
+                                                                setIsPasienFormOpen(true)
+                                                                // Buka kunci field tanggal & dokter saat pasien di-clear
+                                                                setIsPatientLocked(false)
+                                                                setInputTanggal('')
+                                                                setInputDokter('')
+                                                            }}
+                                                            title="Hapus nama pasien"
+                                                            className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                                                        >
+                                                            <ClearIcon className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            setInputPasien('')
-                                                            setIsPasienFormOpen(true)
-                                                            // Buka kunci field tanggal & dokter saat pasien di-clear
-                                                            setIsPatientLocked(false)
-                                                            setInputTanggal('')
-                                                            setInputDokter('')
-                                                        }}
-                                                        title="Hapus nama pasien"
+                                                        onClick={() => setIsPasienFormOpen((prev) => !prev)}
+                                                        title="Buka / tutup daftar pasien"
                                                         className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
                                                     >
-                                                        <ClearIcon className="w-3.5 h-3.5" />
+                                                        <ChevronDownIcon
+                                                            className={`w-4 h-4 transition-transform duration-200 ${isPasienFormOpen ? 'rotate-180' : ''
+                                                                }`}
+                                                        />
                                                     </button>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsPasienFormOpen((prev) => !prev)}
-                                                    title="Buka / tutup daftar pasien"
-                                                    className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-                                                >
-                                                    <ChevronDownIcon
-                                                        className={`w-4 h-4 transition-transform duration-200 ${isPasienFormOpen ? 'rotate-180' : ''
-                                                            }`}
-                                                    />
-                                                </button>
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Dropdown Menu Pasien untuk Form Input */}
-                                        {isPasienFormOpen && (
+                                        {!editingId && isPasienFormOpen && (
                                             <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden text-xs sm:text-sm animate-in fade-in duration-100">
                                                 <div className="px-3 py-1.5 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-medium">
                                                     <span>
@@ -1072,9 +1091,10 @@ export default function EMR({ onNavigate, onLogout }) {
                                             type="date"
                                             value={inputTanggal}
                                             onChange={(e) => setInputTanggal(e.target.value)}
-                                            onClick={(e) => !isPatientLocked && e.target.showPicker?.()}
-                                            readOnly={isPatientLocked}
-                                            className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${isPatientLocked
+                                            onClick={(e) => !editingId && !isPatientLocked && e.target.showPicker?.()}
+                                            disabled={Boolean(editingId) || isPatientLocked}
+                                            readOnly={Boolean(editingId) || isPatientLocked}
+                                            className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm transition-all ${editingId || isPatientLocked
                                                 ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed pointer-events-none'
                                                 : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
                                                 }`}
@@ -1090,8 +1110,8 @@ export default function EMR({ onNavigate, onLogout }) {
                                             <select
                                                 value={inputDokter}
                                                 onChange={(e) => setInputDokter(e.target.value)}
-                                                disabled={isPatientLocked}
-                                                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm appearance-none pr-10 transition-all ${isPatientLocked
+                                                disabled={Boolean(editingId) || isPatientLocked}
+                                                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm appearance-none pr-10 transition-all ${editingId || isPatientLocked
                                                     ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
                                                     : 'border-gray-300 text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none cursor-pointer'
                                                     }`}
@@ -1109,17 +1129,22 @@ export default function EMR({ onNavigate, onLogout }) {
                                 </div>
 
                                 {/* Baris 2: Regio (Gigi) */}
-                                <div className="w-full sm:w-1/3">
-                                    <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                        Regio (Gigi)
-                                    </label>
+                                <div className="w-full sm:w-1/2 lg:w-1/3">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-800">
+                                            Regio (Gigi)
+                                        </label>
+                                    </div>
                                     <input
                                         type="text"
                                         value={inputRegio}
                                         onChange={(e) => setInputRegio(e.target.value)}
-                                        placeholder="Contoh: 16, 21, Full Arch"
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none"
+                                        placeholder="Contoh: 16, 21"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all"
                                     />
+                                    <p className="text-[11px] text-gray-500 mt-1 font-medium">
+                                        *Jika regio gigi lebih dari 1 yang diinput, pisahkan dengan tanda koma (contoh: 16, 21)
+                                    </p>
                                 </div>
 
                                 {/* Baris 3: Anamnesa (Diagnosa) & Tindakan Pelayanan (2 Kolom Textarea) */}
@@ -1218,7 +1243,21 @@ export default function EMR({ onNavigate, onLogout }) {
                     {/* ====================================================
                     2. BAGIAN BAWAH: RIWAYAT REKAM MEDIS (EMR)
                    ==================================================== */}
-                    <div className="flex flex-col gap-4">
+                    <div ref={tableSectionRef} className="flex flex-col gap-4">
+                        {/* Alert Notifikasi Sukses pada Tabel */}
+                        {formSuccess && (
+                            <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn shadow-xs">
+                                <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>{formSuccess}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormSuccess('')}
+                                    className="ml-auto text-emerald-500 hover:text-emerald-700 p-0.5 cursor-pointer"
+                                >
+                                    <ClearIcon className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        )}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 className="text-base sm:text-lg font-semibold text-slate-800 tracking-tight">
