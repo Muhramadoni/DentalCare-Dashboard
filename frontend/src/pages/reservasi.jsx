@@ -21,6 +21,35 @@ import { API } from '../utils/api'
 import { getAuthToken } from '../utils/auth'
 import { toDateInputValue } from '../utils/date'
 
+// Helper ekstraksi format YYYY-MM-DD dari item reservasi
+const getReservasiDateKey = (item) => {
+    if (!item) return ''
+    if (item.tanggalIso && /^\d{4}-\d{2}-\d{2}$/.test(item.tanggalIso)) {
+        return item.tanggalIso
+    }
+    const raw = item.tanggal_kunjungan || item.tanggalKunjungan || item.tanggal || ''
+    const str = String(raw).trim()
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        return str.slice(0, 10)
+    }
+    return toDateInputValue(str)
+}
+
+// Helper pengurutan daftar reservasi: tanggal_kunjungan DESC, lalu id DESC (selaras 100% dengan backend)
+const sortReservasiList = (list) => {
+    return [...list].sort((a, b) => {
+        const dateA = getReservasiDateKey(a)
+        const dateB = getReservasiDateKey(b)
+
+        if (dateA !== dateB) {
+            // Tanggal menurun: tanggal lebih baru di atas (misal 27 di atas 26)
+            return dateB.localeCompare(dateA)
+        }
+        // Jika tanggal sama, urutkan berdasarkan id menurun
+        return (Number(b.id) || 0) - (Number(a.id) || 0)
+    })
+}
+
 export default function Reservasi({ onNavigate, onLogout }) {
     const [activeTab, setActiveTab] = useState('reservasi')
 
@@ -193,10 +222,12 @@ export default function Reservasi({ onNavigate, onLogout }) {
             return
         }
 
+        let isSameTanggal = true
         if (editingItem) {
             const isSamePasien = (data.namaPasien || '').trim().toLowerCase() === (editingItem.namaPasien || '').trim().toLowerCase()
-            const origTanggal = editingItem.tanggalIso || toDateInputValue(editingItem.tanggal_kunjungan || editingItem.tanggalKunjungan || editingItem.tanggal || '')
-            const isSameTanggal = (data.tanggal || '').trim() === origTanggal.trim()
+            const origTanggal = (editingItem.tanggalIso || toDateInputValue(editingItem.tanggal_kunjungan || editingItem.tanggalKunjungan || editingItem.tanggal || '')).trim()
+            const inputTanggal = toDateInputValue(data.tanggal_kunjungan || data.tanggal || '').trim()
+            isSameTanggal = inputTanggal === origTanggal
             const origTime = (editingItem.waktu || editingItem.waktu_kunjungan || '').replace(':', '.').replace(/[^\d.]/g, '').trim()
             const isSameWaktu = String(data.waktu || '').trim() === origTime
             const isSameDokter = (data.dokter || '').trim().toLowerCase() === (editingItem.dokter || '').trim().toLowerCase()
@@ -238,10 +269,20 @@ export default function Reservasi({ onNavigate, onLogout }) {
                     throw new Error(result?.error?.message || 'Gagal memperbarui reservasi.')
                 }
 
-                // Update list state lokal
-                setReservasiList((prev) =>
-                    prev.map((item) => (item.id === editingItem.id ? result.data : item))
-                )
+                // Update list state lokal:
+                // Jika tanggal kunjungan diubah, urutkan ulang sesuai tanggal kunjungan menurun (dan ID menurun)
+                // sehingga jika tanggal lebih baru naik ke atas, dan jika diubah menjadi tanggal lebih lama akan turun berurutan
+                if (!isSameTanggal) {
+                    setReservasiList((prev) => {
+                        const updatedList = prev.map((item) => (item.id === editingItem.id ? result.data : item))
+                        return sortReservasiList(updatedList)
+                    })
+                    setCurrentPage(1)
+                } else {
+                    setReservasiList((prev) =>
+                        prev.map((item) => (item.id === editingItem.id ? result.data : item))
+                    )
+                }
                 setToastMessage({ type: 'success', text: 'Data reservasi berhasil diperbarui!' })
             } else {
                 // POST /api/v1/reservasi
@@ -268,8 +309,9 @@ export default function Reservasi({ onNavigate, onLogout }) {
                     throw new Error(result?.error?.message || 'Gagal membuat reservasi baru.')
                 }
 
-                // Tambahkan reservasi baru di paling atas
-                setReservasiList((prev) => [result.data, ...prev])
+                // Tambahkan reservasi baru dan urutkan sesuai tanggal kunjungan (dan ID)
+                setReservasiList((prev) => sortReservasiList([result.data, ...prev]))
+                setCurrentPage(1)
                 setToastMessage({ type: 'success', text: 'Reservasi baru berhasil ditambahkan!' })
             }
         } catch (err) {
