@@ -437,7 +437,7 @@ export default function Dokter({ onNavigate, onLogout }) {
                 onNoChange={(msg) => {
                     setIsModalOpen(false)
                     setToastMessage({
-                        type: 'warning',
+                        type: 'error',
                         text: msg || 'Anda belum mengubah data apapun pada dokter ini.',
                     })
                 }}

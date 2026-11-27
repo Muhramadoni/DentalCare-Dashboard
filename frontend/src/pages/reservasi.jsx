@@ -205,7 +205,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
             if (isSamePasien && isSameTanggal && isSameWaktu && isSameDokter && isSameStatus) {
                 setIsModalOpen(false)
                 setToastMessage({
-                    type: 'warning',
+                    type: 'error',
                     text: 'Anda belum mengubah data apapun pada reservasi ini.',
                 })
                 return
@@ -598,7 +598,7 @@ export default function Reservasi({ onNavigate, onLogout }) {
                 onNoChange={(msg) => {
                     setIsModalOpen(false)
                     setToastMessage({
-                        type: 'warning',
+                        type: 'error',
                         text: msg || 'Anda belum mengubah data apapun pada reservasi ini.',
                     })
                 }}

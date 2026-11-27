@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Sidebar from '../components/sidebar'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
@@ -30,6 +30,42 @@ const CHART_PALETTE = [
     '#93ad16', // Meadow Green
     '#b1ce23', // Fresh Lime
 ]
+
+// Hook animasi counter angka dari 0 ke target (easeOut cubic) — digunakan pada Stat Cards
+function useCountUp(target, duration = 1000, start = false) {
+    const [count, setCount] = useState(0)
+    const rafRef = useRef(null)
+
+    useEffect(() => {
+        if (!start) {
+            setCount(0)
+            return
+        }
+        if (target === 0) {
+            setCount(0)
+            return
+        }
+        let startTime = null
+        const step = (timestamp) => {
+            if (!startTime) startTime = timestamp
+            const progress = Math.min((timestamp - startTime) / duration, 1)
+            // Easing easeOut cubic agar animasi terasa natural
+            const eased = 1 - Math.pow(1 - progress, 3)
+            setCount(Math.floor(eased * target))
+            if (progress < 1) {
+                rafRef.current = requestAnimationFrame(step)
+            } else {
+                setCount(target)
+            }
+        }
+        rafRef.current = requestAnimationFrame(step)
+        return () => {
+            if (rafRef.current) cancelAnimationFrame(rafRef.current)
+        }
+    }, [target, duration, start])
+
+    return count
+}
 
 // Helper penghitungan skala sumbu Y (Y-Axis ticks) yang rapi
 const getYAxisTicks = (maxVal) => {
@@ -73,6 +109,8 @@ export default function Dashboard({ onNavigate, onLogout }) {
     })
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
+    // State untuk memicu animasi batang grafik dan counter angka saat data selesai dimuat
+    const [chartReady, setChartReady] = useState(false)
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId)
@@ -201,6 +239,9 @@ export default function Dashboard({ onNavigate, onLogout }) {
             setError(err.message || 'Tidak dapat terhubung ke server backend.')
         } finally {
             setIsLoading(false)
+            // Reset animasi lalu nyalakan kembali agar animasi counter & grafik selalu ulang saat data tiba
+            setChartReady(false)
+            setTimeout(() => setChartReady(true), 60)
         }
     }, [onLogout])
 
@@ -241,6 +282,21 @@ export default function Dashboard({ onNavigate, onLogout }) {
 
     const reservasiList = summary.daftarReservasi || []
     const aktivitasList = summary.riwayatAktivitas || []
+
+    // Animasi ulang batang grafik setiap kali pengguna mengganti tab (Diagnosa/Regio/Tindakan)
+    useEffect(() => {
+        setChartReady(false)
+        const t = setTimeout(() => setChartReady(true), 60)
+        return () => clearTimeout(t)
+    }, [selectedTrendTab])
+
+    // Nilai animasi counter untuk Stat Cards (dari 0 ke angka target saat data tiba)
+    const animatedReservasi = useCountUp(summary.totalReservasiHariIni ?? 0, 1000, chartReady)
+    const animatedDokterAktif = useCountUp(
+        summary.totalDokterPraktikHariIni ?? summary.totalDokterAktif ?? 0,
+        1000,
+        chartReady
+    )
 
     // Data tren EMR aktif berdasarkan filter tab (menampilkan semua data tanpa dipotong)
     // Pastikan jika regio gigi berisi lebih dari 1 (dipisah koma), setiap regio dipisah batangnya (chart) secara individual
@@ -343,7 +399,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                     <div className="h-9 w-16 bg-slate-100 animate-pulse rounded-md"></div>
                                 ) : (
                                     <span className="text-3xl sm:text-4xl font-bold text-[#49baff] tracking-tight">
-                                        {summary.totalReservasiHariIni}
+                                        {animatedReservasi}
                                     </span>
                                 )}
                                 <span className="bg-[#adc91f] text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-xs">
@@ -374,7 +430,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                     <div className="h-9 w-16 bg-slate-100 animate-pulse rounded-md"></div>
                                 ) : (
                                     <span className="text-3xl sm:text-4xl font-bold text-[#49baff] tracking-tight">
-                                        {summary.totalDokterPraktikHariIni ?? summary.totalDokterAktif ?? 0}
+                                        {animatedDokterAktif}
                                     </span>
                                 )}
                                 <span className="bg-[#adc91f] text-white text-xs font-medium px-3 py-0.5 rounded-full shadow-xs">
@@ -523,10 +579,11 @@ export default function Dashboard({ onNavigate, onLogout }) {
                                                                         {/* Batang Solid Persegi Bergaya Statistik */}
                                                                         <div
                                                                             style={{
-                                                                                height: `${Math.max(heightPercent, 2)}%`,
+                                                                                height: chartReady ? `${Math.max(heightPercent, 2)}%` : '0%',
                                                                                 backgroundColor: barColor,
+                                                                                transition: `height ${300 + idx * 60}ms cubic-bezier(0.34, 1.56, 0.64, 1)`,
                                                                             }}
-                                                                            className="w-full max-w-[34px] sm:max-w-[46px] rounded-t-[2px] transition-all duration-300 group-hover:brightness-110 shadow-xs"
+                                                                            className="w-full max-w-[34px] sm:max-w-[46px] rounded-t-[2px] group-hover:brightness-110 shadow-xs"
                                                                         />
                                                                     </div>
                                                                 )

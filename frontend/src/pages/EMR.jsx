@@ -431,7 +431,7 @@ export default function EMR({ onNavigate, onLogout }) {
                 if (isUnchanged) {
                     const noChangeMsg = 'Anda belum mengubah data apapun pada rekam medis ini.'
                     setToastMessage({
-                        type: 'warning',
+                        type: 'error',
                         text: noChangeMsg,
                     })
                     // Langsung kosongkan seluruh input di kotak input (reset form)
