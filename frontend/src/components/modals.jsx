@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
     ReservationIcon,
     DoctorIcon,
@@ -7,7 +7,11 @@ import {
     ChevronDownIcon,
 } from './icon'
 import { toDateInputValue, toDisplayDate } from '../utils/date'
-import { calculateDoctorStatus } from '../utils/doctorStatus'
+import {
+    getDayNameFromDate,
+    doctorHasScheduleOnDay,
+    DAYS_CAPITALIZED,
+} from '../utils/doctorStatus'
 
 /**
  * Modal Tambah / Update Reservasi Pasien
@@ -31,6 +35,41 @@ export function ReservationModal({
 
     // Daftar dokter aktif dari backend (tanpa data dummy, siap input manual)
     const activeDoctorList = doctors || []
+
+    const selectedDayName = getDayNameFromDate(tanggal)
+
+    // Daftar dokter yang ditampilkan: HANYA dokter yang memiliki jadwal praktik di hari kunjungan yang dipilih
+    // Berlaku untuk seluruh kondisi: Tambah Reservasi Baru, Update Reservasi, Status Appointment, maupun Reschedule
+    const displayedDoctors = useMemo(() => {
+        if (!selectedDayName) return []
+
+        return activeDoctorList.filter((doc) => {
+            if (typeof doc === 'object' && doc !== null) {
+                const isStatusAktif = doc.status ? doc.status.toLowerCase() === 'aktif' : true
+                return isStatusAktif && doctorHasScheduleOnDay(doc, selectedDayName)
+            }
+            return false
+        })
+    }, [activeDoctorList, selectedDayName])
+
+    // Saat tanggal kunjungan dipilih atau berubah:
+    // Jika dokter yang sedang terpilih tidak memiliki jadwal di hari tersebut, reset pilihan dokter
+    useEffect(() => {
+        if (selectedDayName) {
+            if (dokter) {
+                const isDocAvailable = displayedDoctors.some((d) =>
+                    (typeof d === 'object' ? d.nama : d) === dokter
+                )
+                if (!isDocAvailable) {
+                    setDokter('')
+                }
+            }
+        } else if (!tanggal) {
+            if (dokter) {
+                setDokter('')
+            }
+        }
+    }, [selectedDayName, displayedDoctors, dokter, tanggal])
 
     useEffect(() => {
         Promise.resolve().then(() => {
@@ -75,11 +114,11 @@ export function ReservationModal({
             return
         }
         if (!tanggal.trim()) {
-            setError('Tanggal reservasi wajib diisi.')
+            setError('Tanggal kunjungan wajib diisi.')
             return
         }
         if (!String(waktu).trim()) {
-            setError('Waktu reservasi wajib diisi.')
+            setError('Waktu kunjungan wajib diisi.')
             return
         }
         if (!dokter) {
@@ -101,11 +140,14 @@ export function ReservationModal({
         }
 
         if (typeof selectedDocObj === 'object') {
-            const statusInfo = calculateDoctorStatus(selectedDocObj)
             const isStatusNonAktif = selectedDocObj.status && selectedDocObj.status.toLowerCase() !== 'aktif'
-            const isSameInitialDoctor = isEdit && initialData?.dokter === selectedDocObj.nama
-            if ((isStatusNonAktif || !statusInfo.isActive) && !isSameInitialDoctor) {
-                setError('Jadwal dokter yang dipilih sedang tidak aktif dan tidak dapat dipilih.')
+            if (isStatusNonAktif) {
+                setError('Dokter yang dipilih berstatus tidak aktif.')
+                return
+            }
+
+            if (selectedDayName && !doctorHasScheduleOnDay(selectedDocObj, selectedDayName)) {
+                setError(`Dokter ${selectedDocObj.nama} tidak memiliki jadwal praktik pada hari ${DAYS_CAPITALIZED[selectedDayName] || selectedDayName}.`)
                 return
             }
         }
@@ -267,36 +309,45 @@ export function ReservationModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Dokter */}
                         <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-800 mb-1.5">
-                                Dokter
-                            </label>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-xs sm:text-sm font-medium text-gray-800">
+                                    Dokter
+                                </label>
+                                {selectedDayName && (
+                                    <span className="text-[10px] text-[#0584bc] font-medium bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
+                                        Praktik Hari {DAYS_CAPITALIZED[selectedDayName]}
+                                    </span>
+                                )}
+                            </div>
                             <div className="relative flex items-center">
                                 <select
                                     value={dokter}
                                     onChange={(e) => setDokter(e.target.value)}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none transition-all appearance-none cursor-pointer pr-10"
+                                    disabled={!tanggal}
+                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all appearance-none pr-10 cursor-pointer ${!tanggal
+                                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed select-none'
+                                        : 'bg-white text-gray-800 border-gray-300 hover:border-gray-400 focus:border-[#49baff] focus:ring-2 focus:ring-[#49baff]/20 focus:outline-none'
+                                        }`}
                                 >
                                     <option value="" disabled>
-                                        Pilih Dokter
+                                        {!tanggal
+                                            ? 'Pilih tanggal kunjungan terlebih dahulu'
+                                            : displayedDoctors.length === 0
+                                                ? `Tidak ada dokter praktik di hari ${DAYS_CAPITALIZED[selectedDayName] || ''}`
+                                                : 'Pilih Dokter'}
                                     </option>
-                                    {activeDoctorList.map((doc, idx) => {
+                                    {displayedDoctors.map((doc, idx) => {
                                         const isObj = typeof doc === 'object' && doc !== null
                                         const name = isObj ? doc.nama : doc
-                                        const statusInfo = isObj ? calculateDoctorStatus(doc) : { isActive: true, reason: '' }
-                                        const isStatusNonAktif = isObj && doc.status && doc.status.toLowerCase() !== 'aktif'
-                                        const isDisabled = isStatusNonAktif || !statusInfo.isActive
-                                        const label = isDisabled
-                                            ? `${name} (${isStatusNonAktif ? 'Tidak Aktif' : 'Jadwal Tidak Aktif'})`
-                                            : name
+                                        const spec = isObj && doc.spesialisasi ? ` - ${doc.spesialisasi}` : ''
 
                                         return (
                                             <option
                                                 key={isObj ? (doc.id || idx) : idx}
                                                 value={name}
-                                                disabled={isDisabled}
-                                                className={isDisabled ? 'text-gray-400 bg-gray-50' : 'text-gray-800'}
+                                                className="text-gray-800"
                                             >
-                                                {label}
+                                                {name}{spec}
                                             </option>
                                         )
                                     })}
@@ -305,6 +356,11 @@ export function ReservationModal({
                                     <ChevronDownIcon className="w-4 h-4" />
                                 </div>
                             </div>
+                            {tanggal && displayedDoctors.length === 0 && (
+                                <p className="mt-1 text-[11px] text-amber-600">
+                                    * Tidak ada dokter yang memiliki jadwal praktik di hari {DAYS_CAPITALIZED[selectedDayName]}. Silakan pilih tanggal kunjungan lain.
+                                </p>
+                            )}
                         </div>
 
                         {/* Status */}

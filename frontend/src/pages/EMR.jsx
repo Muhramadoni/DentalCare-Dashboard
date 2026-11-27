@@ -54,6 +54,10 @@ export default function EMR({ onNavigate, onLogout }) {
     // State Modal Konfirmasi Hapus Rekam Medis
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, nama: '' })
 
+    // State Modal Konfirmasi Simpan / Perbarui Rekam Medis
+    const [submitConfirm, setSubmitConfirm] = useState({ isOpen: false, isEdit: false })
+    const [pendingPayload, setPendingPayload] = useState(null)
+
     // State Riwayat Rekam Medis (EMR) - Bersih dari data dummy, siap input manual
     const [emrList, setEmrList] = useState([])
     const [dbPatients, setDbPatients] = useState([])
@@ -503,10 +507,12 @@ export default function EMR({ onNavigate, onLogout }) {
             terapi: inputTerapi.trim(),
         }
 
-        handleSaveEmr(payload)
+        // Simpan payload sementara, lalu buka modal konfirmasi
+        setPendingPayload(payload)
+        setSubmitConfirm({ isOpen: true, isEdit: Boolean(editingId) })
     }
 
-    // Eksekusi Simpan Data ke Backend langsung tanpa modal pop up konfirmasi
+    // Eksekusi Simpan Data ke Backend setelah admin mengkonfirmasi
     const handleSaveEmr = async (payload) => {
         setIsSubmitting(true)
         setFormError('')
@@ -1667,6 +1673,28 @@ export default function EMR({ onNavigate, onLogout }) {
                 cancelText="Batal"
                 onClose={() => setDeleteConfirm({ isOpen: false, id: null, nama: '' })}
                 onConfirm={handleConfirmDeleteEmr}
+            />
+
+            {/* Modal Konfirmasi Simpan / Perbarui Rekam Medis */}
+            <ConfirmModal
+                isOpen={submitConfirm.isOpen}
+                type="info"
+                title={submitConfirm.isEdit ? 'Konfirmasi Perbarui Rekam Medis' : 'Konfirmasi Simpan Rekam Medis'}
+                message={
+                    submitConfirm.isEdit
+                        ? 'Apakah Anda yakin ingin memperbarui data rekam medis ini? Pastikan semua informasi sudah benar sebelum menyimpan.'
+                        : 'Apakah Anda yakin ingin menyimpan data rekam medis baru ini? Pastikan semua informasi sudah benar sebelum menyimpan.'
+                }
+                confirmText={submitConfirm.isEdit ? 'Ya, Perbarui' : 'Ya, Simpan'}
+                cancelText="Batal"
+                onClose={() => setSubmitConfirm({ isOpen: false, isEdit: false })}
+                onConfirm={() => {
+                    setSubmitConfirm({ isOpen: false, isEdit: false })
+                    if (pendingPayload) {
+                        handleSaveEmr(pendingPayload)
+                        setPendingPayload(null)
+                    }
+                }}
             />
         </div>
     )

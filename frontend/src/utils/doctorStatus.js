@@ -94,3 +94,56 @@ export function calculateDoctorStatus(doctor, customNow) {
     }
 }
 
+export const DAYS_ID = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+export const DAYS_CAPITALIZED = {
+    minggu: 'Minggu',
+    senin: 'Senin',
+    selasa: 'Selasa',
+    rabu: 'Rabu',
+    kamis: 'Kamis',
+    jumat: 'Jumat',
+    sabtu: 'Sabtu',
+}
+
+/**
+ * Mendapatkan nama hari (Bahasa Indonesia: 'minggu', 'senin', dst.) dari format tanggal YYYY-MM-DD
+ * @param {string} dateString
+ * @returns {string}
+ */
+export function getDayNameFromDate(dateString) {
+    if (!dateString) return ''
+    const clean = String(dateString).trim()
+    const parts = clean.split('-')
+    if (parts.length === 3) {
+        const year = parseInt(parts[0], 10)
+        const month = parseInt(parts[1], 10) - 1
+        const day = parseInt(parts[2], 10)
+        const d = new Date(year, month, day)
+        return DAYS_ID[d.getDay()] || ''
+    }
+    const d = new Date(clean)
+    if (!isNaN(d.getTime())) {
+        return DAYS_ID[d.getDay()] || ''
+    }
+    return ''
+}
+
+/**
+ * Memeriksa apakah dokter memiliki jadwal praktik pada hari tertentu (contoh: 'minggu')
+ * @param {Object} doctor
+ * @param {string} dayName
+ * @returns {boolean}
+ */
+export function doctorHasScheduleOnDay(doctor, dayName) {
+    if (!doctor || !dayName) return false
+    const schedules = getDoctorSchedule(doctor)
+    if (!schedules || !Array.isArray(schedules) || schedules.length === 0) return false
+
+    const targetDay = dayName.toLowerCase().trim()
+    return schedules.some((s) => {
+        if (!s || !s.hari) return false
+        const cleanDay = String(s.hari).replace(':', '').trim().toLowerCase()
+        return cleanDay.includes(targetDay) || targetDay.includes(cleanDay)
+    })
+}
+
