@@ -1,11 +1,25 @@
-import { useState, useCallback } from 'react'
-import Login from './pages/login'
-import Dashboard from './pages/dashboard'
-import Reservasi from './pages/reservasi'
-import Dokter from './pages/dokter'
-import EMR from './pages/EMR'
+import { useState, useCallback, lazy, Suspense } from 'react'
 import { API } from './utils/api'
 import { getAuthToken, clearAuthSession } from './utils/auth'
+
+// Lazy loading halaman-halaman utama agar ukuran bundle awal kecil dan performa navigasi cepat
+const Login = lazy(() => import('./pages/login'))
+const Dashboard = lazy(() => import('./pages/dashboard'))
+const Reservasi = lazy(() => import('./pages/reservasi'))
+const Dokter = lazy(() => import('./pages/dokter'))
+const EMR = lazy(() => import('./pages/EMR'))
+
+// Indikator loading ringan saat komponen halaman diunduh secara dinamis (lazy load)
+function PageLoader() {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-[#f9f8ff] font-['Poppins'] select-none">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 border-3 border-[#49baff]/20 border-t-[#49baff] rounded-full animate-spin"></div>
+                <span className="text-xs text-slate-500 font-medium tracking-wide">Memuat halaman...</span>
+            </div>
+        </div>
+    )
+}
 
 function App() {
     // Cek token autentikasi & halaman terakhir yang dikunjungi saat refresh
@@ -56,42 +70,44 @@ function App() {
 
     return (
         <main className="w-full min-h-screen">
-            {currentPage === 'login' && (
-                <Login
-                    onLoginSuccess={() => {
-                        sessionStorage.setItem('active_page', 'dashboard')
-                        setCurrentPage('dashboard')
-                    }}
-                />
-            )}
+            <Suspense fallback={<PageLoader />}>
+                {currentPage === 'login' && (
+                    <Login
+                        onLoginSuccess={() => {
+                            sessionStorage.setItem('active_page', 'dashboard')
+                            setCurrentPage('dashboard')
+                        }}
+                    />
+                )}
 
-            {currentPage === 'dashboard' && (
-                <Dashboard
-                    onNavigate={handleNavigate}
-                    onLogout={handleLogout}
-                />
-            )}
+                {currentPage === 'dashboard' && (
+                    <Dashboard
+                        onNavigate={handleNavigate}
+                        onLogout={handleLogout}
+                    />
+                )}
 
-            {currentPage === 'reservasi' && (
-                <Reservasi
-                    onNavigate={handleNavigate}
-                    onLogout={handleLogout}
-                />
-            )}
+                {currentPage === 'reservasi' && (
+                    <Reservasi
+                        onNavigate={handleNavigate}
+                        onLogout={handleLogout}
+                    />
+                )}
 
-            {currentPage === 'dokter' && (
-                <Dokter
-                    onNavigate={handleNavigate}
-                    onLogout={handleLogout}
-                />
-            )}
+                {currentPage === 'dokter' && (
+                    <Dokter
+                        onNavigate={handleNavigate}
+                        onLogout={handleLogout}
+                    />
+                )}
 
-            {currentPage === 'emr' && (
-                <EMR
-                    onNavigate={handleNavigate}
-                    onLogout={handleLogout}
-                />
-            )}
+                {currentPage === 'emr' && (
+                    <EMR
+                        onNavigate={handleNavigate}
+                        onLogout={handleLogout}
+                    />
+                )}
+            </Suspense>
         </main>
     )
 }

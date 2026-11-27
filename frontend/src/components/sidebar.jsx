@@ -39,6 +39,8 @@ export default function Sidebar({ activeTab = 'ringkasan', onTabChange }) {
                     <img
                         src={logoImg}
                         alt="Logo IN Dental Care"
+                        loading="lazy"
+                        decoding="async"
                         className="w-8 h-8 object-contain shrink-0"
                     />
                     <div className="flex flex-col justify-center gap-0.5 min-w-0">

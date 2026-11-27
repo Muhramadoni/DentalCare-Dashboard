@@ -1,5 +1,4 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import XLSX from 'xlsx-js-style'
 import Sidebar from '../components/sidebar'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
@@ -666,17 +665,19 @@ export default function EMR({ onNavigate, onLogout }) {
         })
     }, [emrList, searchQuery, selectedPasienFilter, selectedDokterFilter, startDate, endDate])
 
-    // Fungsi unduh data rekam medis ke file Excel (.xlsx) dengan tampilan desain profesional
-    const handleExportExcel = () => {
+    // Fungsi unduh data rekam medis ke file Excel (.xlsx) dengan tampilan desain profesional (Lazy Load XLSX)
+    const handleExportExcel = async () => {
         if (!filteredEmrList || filteredEmrList.length === 0) {
-            setAlertModal({
-                isOpen: true,
-                title: 'Informasi Unduh Data',
-                message: 'Tidak ada data rekam medis yang dapat diunduh.',
+            setToastMessage({
                 type: 'warning',
+                text: 'Tidak ada data rekam medis yang dapat diunduh.',
             })
             return
         }
+
+        // Lazy load library xlsx-js-style secara asinkron hanya saat tombol unduh diklik
+        const xlsxModule = await import('xlsx-js-style')
+        const XLSX = xlsxModule?.default?.utils ? xlsxModule.default : xlsxModule
 
         const dateNow = new Date()
         const tanggalCetak = dateNow.toLocaleDateString('id-ID', {

@@ -119,6 +119,8 @@ export default function Login({ onLoginSuccess }) {
                 <img
                     src={doctorImg}
                     alt="Dokter IN Dental Care"
+                    loading="lazy"
+                    decoding="async"
                     className="h-[80%] sm:h-[82%] lg:h-[80vh] max-h-[820px] w-auto object-contain object-bottom pointer-events-none select-none transition-transform duration-300"
                 />
             </div>
@@ -134,6 +136,8 @@ export default function Login({ onLoginSuccess }) {
                         <img
                             src={logoImg}
                             alt="Logo IN Dental Care"
+                            loading="lazy"
+                            decoding="async"
                             className="h-24 sm:h-28 w-auto object-contain transition-transform duration-300 hover:scale-105"
                         />
                     </div>
