@@ -31,9 +31,10 @@ const CHART_PALETTE = [
     '#b1ce23', // Fresh Lime
 ]
 
-// Hook animasi counter angka dari 0 ke target (easeOut cubic) — digunakan pada Stat Cards
+// Hook animasi counter angka dari 0 ke target (easeOut cubic) — hanya berjalan sekali saat awal muat / refresh / login
 function useCountUp(target, duration = 1000, start = false) {
     const [count, setCount] = useState(0)
+    const hasAnimatedRef = useRef(false)
     const rafRef = useRef(null)
 
     useEffect(() => {
@@ -41,8 +42,14 @@ function useCountUp(target, duration = 1000, start = false) {
             setCount(0)
             return
         }
+        // Jika sudah pernah dianimasikan sekali saat awal masuk, langsung set target tanpa animasi dari 0
+        if (hasAnimatedRef.current) {
+            setCount(target)
+            return
+        }
         if (target === 0) {
             setCount(0)
+            hasAnimatedRef.current = true
             return
         }
         let startTime = null
@@ -56,6 +63,7 @@ function useCountUp(target, duration = 1000, start = false) {
                 rafRef.current = requestAnimationFrame(step)
             } else {
                 setCount(target)
+                hasAnimatedRef.current = true
             }
         }
         rafRef.current = requestAnimationFrame(step)
@@ -109,7 +117,9 @@ export default function Dashboard({ onNavigate, onLogout }) {
     })
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
-    // State untuk memicu animasi batang grafik dan counter angka saat data selesai dimuat
+    // State animasi awal untuk angka kartu statistik (hanya saat awal muat / refresh / login)
+    const [statsReady, setStatsReady] = useState(false)
+    // State animasi batang grafik tren EMR
     const [chartReady, setChartReady] = useState(false)
 
     const handleTabChange = (tabId) => {
@@ -239,9 +249,12 @@ export default function Dashboard({ onNavigate, onLogout }) {
             setError(err.message || 'Tidak dapat terhubung ke server backend.')
         } finally {
             setIsLoading(false)
-            // Reset animasi lalu nyalakan kembali agar animasi counter & grafik selalu ulang saat data tiba
-            setChartReady(false)
-            setTimeout(() => setChartReady(true), 60)
+            // Jalankan animasi HANYA saat request bukan silent (awal buka web, refresh halaman, atau pasca login)
+            if (!isSilent) {
+                setStatsReady(true)
+                setChartReady(false)
+                setTimeout(() => setChartReady(true), 60)
+            }
         }
     }, [onLogout])
 
@@ -283,19 +296,26 @@ export default function Dashboard({ onNavigate, onLogout }) {
     const reservasiList = summary.daftarReservasi || []
     const aktivitasList = summary.riwayatAktivitas || []
 
-    // Animasi ulang batang grafik setiap kali pengguna mengganti tab (Diagnosa/Regio/Tindakan)
+    // Ref untuk menandai inisialisasi tab tren pertama kali agar tidak bentrok dengan fetch summary awal
+    const isInitialTrendMount = useRef(true)
+
+    // Animasi ulang batang grafik HANYA saat pengguna mengganti tab (Diagnosa/Regio/Tindakan)
     useEffect(() => {
+        if (isInitialTrendMount.current) {
+            isInitialTrendMount.current = false
+            return
+        }
         setChartReady(false)
         const t = setTimeout(() => setChartReady(true), 60)
         return () => clearTimeout(t)
     }, [selectedTrendTab])
 
-    // Nilai animasi counter untuk Stat Cards (dari 0 ke angka target saat data tiba)
-    const animatedReservasi = useCountUp(summary.totalReservasiHariIni ?? 0, 1000, chartReady)
+    // Nilai animasi counter untuk Stat Cards (hanya terikat pada statsReady, BUKAN selectedTrendTab / chartReady)
+    const animatedReservasi = useCountUp(summary.totalReservasiHariIni ?? 0, 1000, statsReady)
     const animatedDokterAktif = useCountUp(
         summary.totalDokterPraktikHariIni ?? summary.totalDokterAktif ?? 0,
         1000,
-        chartReady
+        statsReady
     )
 
     // Data tren EMR aktif berdasarkan filter tab (menampilkan semua data tanpa dipotong)
@@ -571,7 +591,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
 
                                                                         {/* Angka Ringkas di Atas Batang */}
                                                                         {item.count > 0 && (
-                                                                            <span className="mb-1 text-[10px] sm:text-[11px] font-bold text-slate-600 select-none">
+                                                                            <span className={`mb-1 text-[10px] sm:text-[11px] font-bold text-slate-600 select-none transition-opacity duration-300 ${chartReady ? 'opacity-100' : 'opacity-0'}`}>
                                                                                 {item.count}
                                                                             </span>
                                                                         )}
